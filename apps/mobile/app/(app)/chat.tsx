@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Alert, KeyboardAvoidingView, Platform, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import {
@@ -16,6 +16,11 @@ import {
   generateMessageId,
   type ChatRequestMessage,
 } from "../../lib/chat-api";
+import {
+  loadPersistedMessages,
+  savePersistedMessages,
+  clearPersistedMessages,
+} from "../../lib/chat-storage";
 import { MessageList } from "../../components/chat/message-list";
 import { ChatInput } from "../../components/chat/chat-input";
 import { ChatHeader } from "../../components/chat/chat-header";
@@ -25,6 +30,32 @@ export default function ChatScreen() {
   const { user, profile } = useAuth();
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [isWaiting, setIsWaiting] = useState(false);
+  const [hasHydrated, setHasHydrated] = useState(false);
+  const userIdRef = useRef<string | null>(null);
+
+  // Hydrate persisted chat history once we know the user
+  useEffect(() => {
+    let mounted = true;
+    if (!user?.id) {
+      setHasHydrated(true);
+      return;
+    }
+    userIdRef.current = user.id;
+    loadPersistedMessages(user.id).then((persisted) => {
+      if (!mounted) return;
+      setMessages(persisted);
+      setHasHydrated(true);
+    });
+    return () => {
+      mounted = false;
+    };
+  }, [user?.id]);
+
+  // Persist messages whenever they change (post-hydration only)
+  useEffect(() => {
+    if (!hasHydrated || !user?.id) return;
+    void savePersistedMessages(user.id, messages);
+  }, [messages, user?.id, hasHydrated]);
 
   const avatarStyle: AvatarStyle =
     (profile?.avatar_style_preference as AvatarStyle) ?? DEFAULT_AVATAR_STYLE;
@@ -125,6 +156,10 @@ export default function ChatScreen() {
   );
 
   const handleSignOut = useCallback(() => {
+    // Clear locally cached messages so the next signed-in user doesn't see them
+    if (userIdRef.current) {
+      void clearPersistedMessages(userIdRef.current);
+    }
     void supabase.auth.signOut();
   }, []);
 
@@ -158,6 +193,10 @@ export default function ChatScreen() {
           <MessageList
             messages={messages}
             characters={allCharacters}
+            customNames={
+              (profile?.custom_character_names as Record<string, string> | null) ??
+              undefined
+            }
             avatarStyle={avatarStyle}
           />
         </View>

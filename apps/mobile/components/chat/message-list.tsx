@@ -9,10 +9,16 @@ import { MessageItem, type ChatMessage } from "./message-item";
 type MessageListProps = {
   messages: ChatMessage[];
   characters: CharacterCatalogEntry[];
+  customNames?: Record<string, string>;
   avatarStyle: AvatarStyle;
 };
 
-export function MessageList({ messages, characters, avatarStyle }: MessageListProps) {
+export function MessageList({
+  messages,
+  characters,
+  customNames,
+  avatarStyle,
+}: MessageListProps) {
   const listRef = useRef<FlatList<ChatMessage>>(null);
 
   useEffect(() => {
@@ -35,10 +41,13 @@ export function MessageList({ messages, characters, avatarStyle }: MessageListPr
         const character = isUser
           ? null
           : characters.find((c) => c.id === item.speaker) ?? null;
+        const customName =
+          !isUser && customNames ? customNames[item.speaker] : undefined;
         return (
           <MessageItem
             message={item}
             character={character}
+            customName={customName}
             avatarStyle={avatarStyle}
             isUser={isUser}
           />

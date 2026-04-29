@@ -17,6 +17,7 @@ export type ChatMessage = {
 type MessageItemProps = {
   message: ChatMessage;
   character?: Character | null;
+  customName?: string | null;
   avatarStyle: AvatarStyle;
   isUser: boolean;
 };
@@ -24,9 +25,11 @@ type MessageItemProps = {
 export function MessageItem({
   message,
   character,
+  customName,
   avatarStyle,
   isUser,
 }: MessageItemProps) {
+  const displayName = customName ?? character?.name;
   if (isUser) {
     return (
       <View className="my-1 flex-row justify-end px-3">
@@ -53,9 +56,9 @@ export function MessageItem({
         ) : null}
       </View>
       <View className="max-w-[78%]">
-        {character ? (
+        {displayName ? (
           <Text className="mb-0.5 text-[11px] font-semibold text-zinc-500">
-            {character.name}
+            {displayName}
           </Text>
         ) : null}
         <View className="rounded-2xl rounded-bl-md bg-zinc-800 px-4 py-2">
