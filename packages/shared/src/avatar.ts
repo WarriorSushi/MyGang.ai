@@ -1,4 +1,4 @@
-import type { Character } from '@/stores/chat-store'
+import type { Character } from "./types/character";
 
 export const AVATAR_STYLES = ['robots', 'human', 'retro'] as const
 export type AvatarStyle = (typeof AVATAR_STYLES)[number]

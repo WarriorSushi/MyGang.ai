@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import { AvatarStyleStep } from '@/components/onboarding/avatar-style-step'
-import type { AvatarStyle } from '@/lib/avatar-style'
+import type { AvatarStyle } from '@mygang/shared'
 
 export default function AvatarStylePreviewPage() {
     const [selectedStyle, setSelectedStyle] = useState<AvatarStyle>('retro')

@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button'
 import { MovingBorder } from '@/components/ui/moving-border'
 import { getCharactersForAvatarStyle } from '@/constants/characters'
 import { cn } from '@/lib/utils'
-import type { AvatarStyle } from '@/lib/avatar-style'
+import type { AvatarStyle } from '@mygang/shared'
 
 interface AvatarStyleStepProps {
     selectedStyle: AvatarStyle
