@@ -5,6 +5,7 @@ import { useEffect } from "react";
 
 import "../global.css";
 import { AuthProvider, useAuth } from "../lib/auth-context";
+import { LoadingScreen } from "../components/loading-screen";
 
 function RouteGate() {
   const { session, profile, isLoading } = useAuth();
@@ -39,6 +40,10 @@ function RouteGate() {
       }
     }
   }, [session, profile, isLoading, segments, router]);
+
+  if (isLoading) {
+    return <LoadingScreen label="Waking up the gang…" />;
+  }
 
   return (
     <Stack screenOptions={{ headerShown: false }}>
