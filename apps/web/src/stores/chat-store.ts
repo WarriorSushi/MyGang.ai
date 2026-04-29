@@ -3,7 +3,8 @@ import { createJSONStorage, persist, type StateStorage } from 'zustand/middlewar
 import type { ChatWallpaper } from '@/constants/wallpapers'
 import { CHARACTERS } from '@/constants/characters'
 import { applyAvatarStyleToGang, DEFAULT_AVATAR_STYLE, normalizeAvatarStyle, type AvatarStyle } from '@/lib/avatar-style'
-import type { SubscriptionTier } from '@mygang/shared'
+import type { Character, SubscriptionTier } from '@mygang/shared'
+export type { Character } from '@mygang/shared'
 
 const MAX_PERSISTED_MESSAGES = 100
 const CHAT_STORAGE_KEY = 'mygang-chat-storage'
@@ -60,21 +61,6 @@ export interface Message {
     deliveryStatus?: 'sending' | 'sent' | 'failed'
     deliveryError?: string
     source?: 'chat' | 'wywa' | 'system' // Message origin for filtering
-}
-
-export interface Character {
-    id: string
-    name: string
-    vibe: string
-    color: string
-    roleLabel?: string
-    avatar?: string
-    archetype?: string
-    gradient?: string
-    voice?: string
-    sample?: string
-    typingSpeed?: number
-    tags?: string[]
 }
 
 interface ChatState {

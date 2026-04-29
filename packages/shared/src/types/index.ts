@@ -1,3 +1,5 @@
+export * from "./character";
+
 export type TokenUsage = {
     promptChars: number
     responseChars: number
