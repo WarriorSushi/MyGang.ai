@@ -13,7 +13,7 @@ import {
 } from '@/lib/admin/login-security'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { generateWywaForUser, type WywaResult } from '@/lib/ai/wywa'
-import type { SubscriptionTier } from '@/lib/billing'
+import type { SubscriptionTier } from '@mygang/shared'
 import { isTurnstileServerEnabled, verifyTurnstileToken } from '@/lib/turnstile'
 import { sendTierChangeEmail } from '@/lib/email'
 

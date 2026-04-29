@@ -9,7 +9,7 @@ import { useTheme } from 'next-themes'
 import type { Session } from '@supabase/supabase-js'
 import { addSquadTierMembers } from '@/app/auth/actions'
 import { fetchJourneyState, persistUserJourney } from '@/lib/supabase/client-journey'
-import { getSquadLimit, getTierFromProfile, type SubscriptionTier } from '@/lib/billing'
+import { getSquadLimit, getTierFromProfile, type SubscriptionTier } from '@mygang/shared'
 import { CHARACTER_WELCOME_BACK_MESSAGES } from '@/constants/character-messages'
 import { trackOperationalError, trackOperationalEvent } from '@/lib/operational-telemetry'
 

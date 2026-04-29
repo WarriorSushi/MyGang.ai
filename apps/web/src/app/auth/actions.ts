@@ -9,7 +9,7 @@ import { z } from 'zod'
 import { CHARACTERS } from '@/constants/characters'
 import { AVATAR_STYLES, normalizeAvatarStyle, type AvatarStyle } from '@/lib/avatar-style'
 import { sanitizeMessageId } from '@/lib/chat-utils'
-import { getMemoryVaultPreviewLimit, getTierFromProfile, getSquadLimit } from '@/lib/billing'
+import { getMemoryVaultPreviewLimit, getTierFromProfile, getSquadLimit } from '@mygang/shared'
 import { filterActiveMemories } from '@/lib/ai/memory'
 import {
     createMemoryMutationFailure,

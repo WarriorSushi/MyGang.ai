@@ -5,7 +5,7 @@ import { ChevronRight, Crown } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { UserDrawer, type AdminUserRow } from '@/components/admin/user-drawer'
 import type { WywaResult } from '@/lib/ai/wywa'
-import { TIER_LIMITS } from '@/lib/billing'
+import { TIER_LIMITS } from '@mygang/shared'
 
 type UsersTableProps = {
     users: AdminUserRow[]

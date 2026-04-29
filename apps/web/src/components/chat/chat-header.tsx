@@ -10,7 +10,7 @@ import { updateUserSettings } from '@/app/auth/actions'
 import Image from 'next/image'
 import { truncateText } from '@/lib/utils'
 import type { TokenUsage } from '@mygang/shared'
-import type { SubscriptionTier } from '@/lib/billing'
+import type { SubscriptionTier } from '@mygang/shared'
 import { AvatarLightbox } from './avatar-lightbox'
 
 interface ChatHeaderProps {

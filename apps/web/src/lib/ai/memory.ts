@@ -4,7 +4,7 @@ import type { SupabaseClient } from '@supabase/supabase-js'
 import { createClient } from '@/lib/supabase/server'
 import type { Database } from '@/lib/database.types'
 import { openRouterModel } from '@/lib/ai/openrouter'
-import { getMemoryMaxCount, getMemoryInPromptLimit, type SubscriptionTier } from '@/lib/billing'
+import { getMemoryMaxCount, getMemoryInPromptLimit, type SubscriptionTier } from '@mygang/shared'
 
 const embeddingModel = google.textEmbeddingModel('text-embedding-004')
 

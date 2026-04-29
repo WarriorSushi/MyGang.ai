@@ -4,7 +4,7 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { rateLimit } from '@/lib/rate-limit'
 import type { Database } from '@/lib/database.types'
 import { getDodoClient } from '@/lib/billing-server'
-import type { SubscriptionTier } from '@/lib/billing'
+import type { SubscriptionTier } from '@mygang/shared'
 import { generateEventId, buildPurchaseEvent, sendCAPIEvent } from '@/lib/meta'
 
 const activateSchema = z.object({

@@ -3,7 +3,7 @@ import { createJSONStorage, persist, type StateStorage } from 'zustand/middlewar
 import type { ChatWallpaper } from '@/constants/wallpapers'
 import { CHARACTERS } from '@/constants/characters'
 import { applyAvatarStyleToGang, DEFAULT_AVATAR_STYLE, normalizeAvatarStyle, type AvatarStyle } from '@/lib/avatar-style'
-import type { SubscriptionTier } from '@/lib/billing'
+import type { SubscriptionTier } from '@mygang/shared'
 
 const MAX_PERSISTED_MESSAGES = 100
 const CHAT_STORAGE_KEY = 'mygang-chat-storage'

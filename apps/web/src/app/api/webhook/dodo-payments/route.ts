@@ -1,7 +1,7 @@
 import { Webhooks } from '@dodopayments/nextjs'
 import { createAdminClient } from '@/lib/supabase/admin'
 import type { Database } from '@/lib/database.types'
-import { TIER_LIMITS } from '@/lib/billing'
+import { TIER_LIMITS } from '@mygang/shared'
 import { backfillMemoryEmbeddings } from '@/lib/ai/memory'
 import { waitUntil } from '@vercel/functions'
 import {

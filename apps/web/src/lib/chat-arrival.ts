@@ -1,4 +1,4 @@
-import { FREE_MEMORY_VAULT_PREVIEW_LIMIT } from '@/lib/billing'
+import { FREE_MEMORY_VAULT_PREVIEW_LIMIT } from '@mygang/shared'
 
 const PENDING_ARRIVAL_KEY = 'mygang-pending-arrival'
 const PENDING_ARRIVAL_FALLBACK_KEY = 'mygang-pending-arrival-fallback'

@@ -10,7 +10,7 @@ import { getCharactersForAvatarStyle } from '@/constants/characters'
 import { normalizeAvatarStyle } from '@/lib/avatar-style'
 import { useChatStore } from '@/stores/chat-store'
 import { trackOperationalError, trackOperationalEvent } from '@/lib/operational-telemetry'
-import { getTierFromProfile } from '@/lib/billing'
+import { getTierFromProfile } from '@mygang/shared'
 import { pixelTrack } from '@/components/meta-pixel'
 
 const DEFAULT_POST_AUTH_TIMEOUT_MS = 8_000

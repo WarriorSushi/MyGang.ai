@@ -4,7 +4,7 @@ import { useState, useTransition } from 'react'
 import { X, Crown, Trash2, Zap, RotateCcw } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import type { WywaResult } from '@/lib/ai/wywa'
-import { TIER_LIMITS } from '@/lib/billing'
+import { TIER_LIMITS } from '@mygang/shared'
 import { SubmitButton } from '@/components/admin/submit-button'
 
 export type AdminUserRow = {

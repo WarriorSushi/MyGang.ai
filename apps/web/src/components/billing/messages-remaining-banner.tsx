@@ -4,7 +4,7 @@ import { useChatStore } from '@/stores/chat-store'
 import { useShallow } from 'zustand/react/shallow'
 import Link from 'next/link'
 import { AlertTriangle } from 'lucide-react'
-import { getTierCopy } from '@/lib/billing'
+import { getTierCopy } from '@mygang/shared'
 
 export function MessagesRemainingBanner() {
     const { messagesRemaining, subscriptionTier } = useChatStore(useShallow((s) => ({

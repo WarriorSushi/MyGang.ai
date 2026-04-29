@@ -7,7 +7,7 @@ import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import { GlassCard } from '@/components/holographic/glass-card'
 import { getMemoriesPage, deleteMemory, updateMemory } from '@/app/auth/actions'
-import { FREE_MEMORY_VAULT_PREVIEW_LIMIT, type SubscriptionTier } from '@/lib/billing'
+import { FREE_MEMORY_VAULT_PREVIEW_LIMIT, type SubscriptionTier } from '@mygang/shared'
 
 interface Memory {
     id: string

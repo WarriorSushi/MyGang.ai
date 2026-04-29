@@ -5,7 +5,7 @@ import type { ChatWallpaper } from '@/constants/wallpapers'
 import type { Database } from '@/lib/database.types'
 import { normalizeAvatarStyle, type AvatarStyle } from '@/lib/avatar-style'
 import { persistGangMembership, SquadPersistenceError } from '@/lib/supabase/squad-persistence'
-import type { SubscriptionTier } from '@/lib/billing'
+import type { SubscriptionTier } from '@mygang/shared'
 
 export type JourneyProfile = {
     username: string | null

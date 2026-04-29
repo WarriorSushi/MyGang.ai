@@ -5,7 +5,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } f
 import { Button } from "@/components/ui/button"
 import Link from 'next/link'
 import { Clock, Infinity, Brain, Zap, ArrowRight, Check, Users, Sparkles, Palette, MessageCircle } from 'lucide-react'
-import { getTierCopy, getMessagesPerWindow, getTierFromProfile } from '@/lib/billing'
+import { getTierCopy, getMessagesPerWindow, getTierFromProfile } from '@mygang/shared'
 
 interface PaywallPopupProps {
     open: boolean
