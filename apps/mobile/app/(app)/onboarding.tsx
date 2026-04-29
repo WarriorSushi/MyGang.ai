@@ -1,126 +1,249 @@
-import { useState } from "react";
-import { Alert, FlatList, Text, View } from "react-native";
-import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { z } from "zod";
-import { CHARACTERS, usernameSchema } from "@mygang/shared";
+import { useMemo, useState } from "react";
+import { Alert, Pressable, Text, View } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
+import {
+  CHARACTERS,
+  DEFAULT_AVATAR_STYLE,
+  applyAvatarStyleToGang,
+  getSquadLimit,
+  persistGangMembership,
+  recommendCharacters,
+  type AvatarStyle,
+  type CharacterCatalogEntry,
+  type SubscriptionTier,
+  type VibeProfile,
+} from "@mygang/shared";
 
-import { supabase } from "../../lib/supabase";
 import { useAuth } from "../../lib/auth-context";
-import { FormField } from "../../components/form-field";
-import { PrimaryButton } from "../../components/primary-button";
-import { CharacterCard } from "../../components/character-card";
+import { supabase } from "../../lib/supabase";
+import { WelcomeStep } from "../../components/onboarding/welcome-step";
+import { IdentityStep } from "../../components/onboarding/identity-step";
+import { VibeQuizStep } from "../../components/onboarding/vibe-quiz-step";
+import { AvatarGiftStep } from "../../components/onboarding/avatar-gift-step";
+import { AvatarStyleStep } from "../../components/onboarding/avatar-style-step";
+import { SelectionStep } from "../../components/onboarding/selection-step";
+import { FriendsIntroStep } from "../../components/onboarding/friends-intro-step";
+import {
+  LoadingStep,
+  buildLoadingStates,
+} from "../../components/onboarding/loading-step";
 
-const SITE_URL = "https://mygang.ai";
-const GANG_SIZE = 4;
+type Step =
+  | "WELCOME"
+  | "IDENTITY"
+  | "VIBE_QUIZ"
+  | "AVATAR_GIFT"
+  | "AVATAR_STYLE"
+  | "SELECTION"
+  | "INTRO"
+  | "LOADING";
 
-const onboardingStepOneSchema = z.object({ username: usernameSchema });
-type OnboardingStepOneInput = z.infer<typeof onboardingStepOneSchema>;
+const STEP_ORDER: Step[] = [
+  "WELCOME",
+  "IDENTITY",
+  "VIBE_QUIZ",
+  "AVATAR_GIFT",
+  "AVATAR_STYLE",
+  "SELECTION",
+  "INTRO",
+  "LOADING",
+];
+
+const BACK_MAP: Partial<Record<Step, Step>> = {
+  IDENTITY: "WELCOME",
+  VIBE_QUIZ: "IDENTITY",
+  AVATAR_GIFT: "VIBE_QUIZ",
+  AVATAR_STYLE: "AVATAR_GIFT",
+  SELECTION: "AVATAR_STYLE",
+  INTRO: "SELECTION",
+};
 
 export default function OnboardingScreen() {
-  const { user, refreshProfile } = useAuth();
-  const [step, setStep] = useState<"username" | "gang">("username");
-  const [username, setUsername] = useState("");
-  const [selected, setSelected] = useState<string[]>([]);
-  const [isSubmitting, setIsSubmitting] = useState(false);
+  const { user, profile, refreshProfile } = useAuth();
+  const [step, setStep] = useState<Step>("WELCOME");
+  const [name, setName] = useState("");
+  const [vibeProfile, setVibeProfile] = useState<VibeProfile | null>(null);
+  const [avatarStyle, setAvatarStyle] = useState<AvatarStyle>(
+    DEFAULT_AVATAR_STYLE
+  );
+  const [selectedIds, setSelectedIds] = useState<string[]>([]);
+  const [customNames, setCustomNames] = useState<Record<string, string>>({});
 
-  const {
-    control,
-    handleSubmit,
-    formState: { errors },
-  } = useForm<OnboardingStepOneInput>({
-    resolver: zodResolver(onboardingStepOneSchema),
-    defaultValues: { username: "" },
-  });
+  const tier: SubscriptionTier =
+    (profile?.subscription_tier as SubscriptionTier) ?? "free";
+  const maxMembers = getSquadLimit(tier);
 
-  function onUsernameSubmit(values: OnboardingStepOneInput) {
-    setUsername(values.username);
-    setStep("gang");
-  }
+  const characters: CharacterCatalogEntry[] = useMemo(() => {
+    return applyAvatarStyleToGang(
+      CHARACTERS as CharacterCatalogEntry[],
+      avatarStyle
+    ) as CharacterCatalogEntry[];
+  }, [avatarStyle]);
+
+  const recommendedIds = useMemo(() => {
+    if (!vibeProfile) return [];
+    return recommendCharacters(vibeProfile).slice(0, 4);
+  }, [vibeProfile]);
 
   function toggleCharacter(id: string) {
-    setSelected((prev) => {
+    setSelectedIds((prev) => {
       if (prev.includes(id)) return prev.filter((x) => x !== id);
-      if (prev.length >= GANG_SIZE) return prev;
+      if (prev.length >= maxMembers) return prev;
       return [...prev, id];
     });
   }
 
+  function handleNameChange(characterId: string, nextName: string) {
+    setCustomNames((prev) => ({ ...prev, [characterId]: nextName }));
+  }
+
+  function goBack() {
+    const back = BACK_MAP[step];
+    if (back) setStep(back);
+  }
+
   async function finalize() {
     if (!user) return;
-    if (selected.length !== GANG_SIZE) {
-      Alert.alert("Pick your gang", `Choose exactly ${GANG_SIZE} friends.`);
-      return;
-    }
+    if (selectedIds.length < 2) return;
 
-    setIsSubmitting(true);
-    const { error } = await supabase
-      .from("profiles")
-      .update({
-        username,
-        preferred_squad: selected,
-        onboarding_completed: true,
-      })
-      .eq("id", user.id);
-    setIsSubmitting(false);
+    try {
+      // Step 1: write to gangs + gang_members tables (same logic web uses)
+      await persistGangMembership(supabase, user.id, selectedIds);
 
-    if (error) {
-      Alert.alert("Could not save your gang", error.message);
-      return;
+      // Step 2: trim custom names to non-empty entries
+      const trimmedCustomNames: Record<string, string> = {};
+      for (const [k, v] of Object.entries(customNames)) {
+        if (v && v.trim().length > 0) {
+          trimmedCustomNames[k] = v.trim();
+        }
+      }
+
+      // Step 3: update profile with all the onboarding payload
+      const { error: profileError } = await supabase
+        .from("profiles")
+        .update({
+          username: name.trim(),
+          preferred_squad: selectedIds,
+          onboarding_completed: true,
+          custom_character_names:
+            Object.keys(trimmedCustomNames).length > 0
+              ? trimmedCustomNames
+              : null,
+          avatar_style_preference: avatarStyle,
+          ...(vibeProfile ? { vibe_profile: vibeProfile } : {}),
+        })
+        .eq("id", user.id);
+
+      if (profileError) {
+        Alert.alert(
+          "Could not finish onboarding",
+          profileError.message
+        );
+        setStep("INTRO");
+        return;
+      }
+
+      await refreshProfile();
+      // Route gate redirects to (app)/index on next render.
+    } catch (err) {
+      Alert.alert(
+        "Could not finish onboarding",
+        err instanceof Error ? err.message : "Unknown error"
+      );
+      setStep("INTRO");
     }
-    await refreshProfile();
-    // Route gate will redirect to (app)/index next render.
   }
 
-  if (step === "username") {
-    return (
-      <View className="flex-1 justify-center bg-zinc-950 px-6">
-        <Text className="mb-2 text-3xl font-bold text-white">Pick a username</Text>
-        <Text className="mb-6 text-zinc-400">Your gang will know you by this.</Text>
-
-        <FormField
-          control={control}
-          name="username"
-          label="Username"
-          autoCapitalize="none"
-          autoCorrect={false}
-          error={errors.username?.message}
-        />
-
-        <PrimaryButton label="Next" onPress={handleSubmit(onUsernameSubmit)} />
-      </View>
-    );
-  }
+  const showBack = Boolean(BACK_MAP[step]) && step !== "LOADING";
 
   return (
-    <View className="flex-1 bg-zinc-950 px-6 pt-12">
-      <Text className="mb-2 text-3xl font-bold text-white">Pick your gang</Text>
-      <Text className="mb-4 text-zinc-400">
-        Choose {GANG_SIZE}. Selected: {selected.length}/{GANG_SIZE}.
-      </Text>
+    <SafeAreaView className="flex-1 bg-zinc-950" edges={["top", "left", "right"]}>
+      {showBack ? (
+        <View className="absolute left-4 top-12 z-50">
+          <Pressable
+            onPress={goBack}
+            className="rounded-full border border-zinc-700 bg-zinc-900 px-3 py-1.5"
+          >
+            <Text className="text-xs font-semibold text-zinc-400">← Back</Text>
+          </Pressable>
+        </View>
+      ) : null}
 
-      <FlatList
-        data={CHARACTERS}
-        keyExtractor={(c) => c.id}
-        renderItem={({ item }) => (
-          <CharacterCard
-            character={item}
-            selected={selected.includes(item.id)}
-            onPress={() => toggleCharacter(item.id)}
-            siteUrl={SITE_URL}
-          />
-        )}
-        contentContainerClassName="pb-32"
-      />
+      {step === "WELCOME" ? (
+        <WelcomeStep onNext={() => setStep("IDENTITY")} />
+      ) : null}
 
-      <View className="absolute bottom-6 left-6 right-6">
-        <PrimaryButton
-          label={`Finish (${selected.length}/${GANG_SIZE})`}
-          onPress={finalize}
-          isLoading={isSubmitting}
-          disabled={selected.length !== GANG_SIZE}
+      {step === "IDENTITY" ? (
+        <IdentityStep
+          name={name}
+          setName={setName}
+          onNext={() => setStep("VIBE_QUIZ")}
         />
-      </View>
-    </View>
+      ) : null}
+
+      {step === "VIBE_QUIZ" ? (
+        <VibeQuizStep
+          onNext={(vibe) => {
+            setVibeProfile(vibe);
+            setStep("AVATAR_GIFT");
+          }}
+        />
+      ) : null}
+
+      {step === "AVATAR_GIFT" ? (
+        <AvatarGiftStep onNext={() => setStep("AVATAR_STYLE")} />
+      ) : null}
+
+      {step === "AVATAR_STYLE" ? (
+        <AvatarStyleStep
+          selectedStyle={avatarStyle}
+          onSelectStyle={setAvatarStyle}
+          onNext={() => setStep("SELECTION")}
+        />
+      ) : null}
+
+      {step === "SELECTION" ? (
+        <SelectionStep
+          characters={characters}
+          selectedIds={selectedIds}
+          toggleCharacter={toggleCharacter}
+          recommendedIds={recommendedIds}
+          maxMembers={maxMembers}
+          avatarStyle={avatarStyle}
+          onNext={() => setStep("INTRO")}
+        />
+      ) : null}
+
+      {step === "INTRO" ? (
+        <FriendsIntroStep
+          characters={characters}
+          selectedIds={selectedIds}
+          customNames={customNames}
+          onNameChange={handleNameChange}
+          avatarStyle={avatarStyle}
+          onNext={() => {
+            setStep("LOADING");
+            // kick off backend write while loading animation plays
+            finalize();
+          }}
+        />
+      ) : null}
+
+      {step === "LOADING" ? (
+        <LoadingStep
+          states={buildLoadingStates(
+            characters
+              .filter((c) => selectedIds.includes(c.id))
+              .map((c) => ({
+                displayName: customNames[c.id]?.trim() || c.name,
+              })),
+            name.trim() || undefined
+          )}
+          onComplete={() => {
+            // The route gate handles the actual redirect once profile.onboarding_completed flips.
+          }}
+        />
+      ) : null}
+    </SafeAreaView>
   );
 }
