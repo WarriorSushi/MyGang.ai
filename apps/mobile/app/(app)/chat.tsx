@@ -20,6 +20,7 @@ import {
   loadPersistedMessages,
   savePersistedMessages,
 } from "../../lib/chat-storage";
+import { fetchRecentChatHistory } from "../../lib/chat-history";
 import { MessageList } from "../../components/chat/message-list";
 import { ChatInput } from "../../components/chat/chat-input";
 import { ChatHeader } from "../../components/chat/chat-header";
@@ -27,6 +28,7 @@ import { AiDisclaimer } from "../../components/chat/ai-disclaimer";
 import { EmptyState } from "../../components/chat/empty-state";
 import { TypingIndicator } from "../../components/chat/typing-indicator";
 import { MessageActionsSheet } from "../../components/chat/message-actions-sheet";
+import { AvatarLightbox } from "../../components/chat/avatar-lightbox";
 import { type ChatMessage } from "../../components/chat/message-item";
 
 export default function ChatScreen() {
@@ -36,9 +38,14 @@ export default function ChatScreen() {
   const [hasHydrated, setHasHydrated] = useState(false);
   const [typingCharacterId, setTypingCharacterId] = useState<string | null>(null);
   const [actionMessage, setActionMessage] = useState<ChatMessage | null>(null);
+  const [lightboxCharacter, setLightboxCharacter] =
+    useState<CharacterCatalogEntry | null>(null);
   const userIdRef = useRef<string | null>(null);
 
-  // Hydrate persisted chat history once we know the user
+  // Hydrate persisted chat history once we know the user.
+  // Strategy: AsyncStorage first (instant), then fetch from Supabase
+  // chat_history (cross-device source of truth) and replace if server
+  // has data. Falls back gracefully if either fails.
   useEffect(() => {
     let mounted = true;
     if (!user?.id) {
@@ -46,11 +53,21 @@ export default function ChatScreen() {
       return;
     }
     userIdRef.current = user.id;
-    loadPersistedMessages(user.id).then((persisted) => {
+
+    (async () => {
+      const cached = await loadPersistedMessages(user.id);
+      if (mounted && cached.length > 0) {
+        setMessages(cached);
+      }
+
+      const server = await fetchRecentChatHistory(user.id);
       if (!mounted) return;
-      setMessages(persisted);
+      if (server.length > 0) {
+        setMessages(server);
+      }
       setHasHydrated(true);
-    });
+    })();
+
     return () => {
       mounted = false;
     };
@@ -215,7 +232,11 @@ export default function ChatScreen() {
         className="flex-1"
         behavior={Platform.OS === "ios" ? "padding" : undefined}
       >
-        <ChatHeader characters={gang} avatarStyle={avatarStyle} />
+        <ChatHeader
+          characters={gang}
+          avatarStyle={avatarStyle}
+          onAvatarPress={(c) => setLightboxCharacter(c)}
+        />
         <View className="flex-1">
           {messages.length === 0 && hasHydrated ? (
             <EmptyState
@@ -266,6 +287,19 @@ export default function ChatScreen() {
           if (actionMessage) void handleReact(actionMessage, emoji);
         }}
         canReact={actionMessage !== null && actionMessage.speaker !== "user"}
+      />
+
+      <AvatarLightbox
+        character={lightboxCharacter}
+        customName={
+          lightboxCharacter
+            ? (profile?.custom_character_names as Record<string, string> | null)?.[
+                lightboxCharacter.id
+              ] ?? null
+            : null
+        }
+        avatarStyle={avatarStyle}
+        onClose={() => setLightboxCharacter(null)}
       />
     </SafeAreaView>
   );

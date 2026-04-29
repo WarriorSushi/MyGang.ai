@@ -7,9 +7,14 @@ const SITE_URL = "https://mygang.ai";
 type ChatHeaderProps = {
   characters: CharacterCatalogEntry[];
   avatarStyle: AvatarStyle;
+  onAvatarPress?: (character: CharacterCatalogEntry) => void;
 };
 
-export function ChatHeader({ characters, avatarStyle }: ChatHeaderProps) {
+export function ChatHeader({
+  characters,
+  avatarStyle,
+  onAvatarPress,
+}: ChatHeaderProps) {
   const router = useRouter();
   return (
     <View className="flex-row items-center justify-between border-b border-zinc-800 bg-zinc-950 px-4 py-3">
@@ -17,8 +22,9 @@ export function ChatHeader({ characters, avatarStyle }: ChatHeaderProps) {
         {characters.slice(0, 6).map((c) => {
           const url = `${SITE_URL}${resolveAvatarUrl(c.id, avatarStyle)}`;
           return (
-            <View
+            <Pressable
               key={c.id}
+              onPress={() => onAvatarPress?.(c)}
               className="h-8 w-8 overflow-hidden rounded-full border-2 border-zinc-950 bg-zinc-800"
             >
               <Image
@@ -26,7 +32,7 @@ export function ChatHeader({ characters, avatarStyle }: ChatHeaderProps) {
                 className="h-full w-full"
                 resizeMode="cover"
               />
-            </View>
+            </Pressable>
           );
         })}
       </View>
