@@ -1,4 +1,5 @@
 import { Image, Pressable, Text, View } from "react-native";
+import { useRouter } from "expo-router";
 import { resolveAvatarUrl, type AvatarStyle, type CharacterCatalogEntry } from "@mygang/shared";
 
 const SITE_URL = "https://mygang.ai";
@@ -6,10 +7,10 @@ const SITE_URL = "https://mygang.ai";
 type ChatHeaderProps = {
   characters: CharacterCatalogEntry[];
   avatarStyle: AvatarStyle;
-  onSignOut?: () => void;
 };
 
-export function ChatHeader({ characters, avatarStyle, onSignOut }: ChatHeaderProps) {
+export function ChatHeader({ characters, avatarStyle }: ChatHeaderProps) {
+  const router = useRouter();
   return (
     <View className="flex-row items-center justify-between border-b border-zinc-800 bg-zinc-950 px-4 py-3">
       <View className="flex-row -space-x-2">
@@ -35,14 +36,12 @@ export function ChatHeader({ characters, avatarStyle, onSignOut }: ChatHeaderPro
           {characters.length} online
         </Text>
       </View>
-      {onSignOut ? (
-        <Pressable
-          onPress={onSignOut}
-          className="rounded-full border border-zinc-700 bg-zinc-900 px-3 py-1.5"
-        >
-          <Text className="text-xs font-semibold text-zinc-400">Sign out</Text>
-        </Pressable>
-      ) : null}
+      <Pressable
+        onPress={() => router.push("/(app)/settings")}
+        className="h-9 w-9 items-center justify-center rounded-full border border-zinc-700 bg-zinc-900"
+      >
+        <Text className="text-base text-zinc-400">⚙</Text>
+      </Pressable>
     </View>
   );
 }

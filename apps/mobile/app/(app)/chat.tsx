@@ -10,7 +10,6 @@ import {
 } from "@mygang/shared";
 
 import { useAuth } from "../../lib/auth-context";
-import { supabase } from "../../lib/supabase";
 import {
   postChat,
   generateMessageId,
@@ -19,11 +18,12 @@ import {
 import {
   loadPersistedMessages,
   savePersistedMessages,
-  clearPersistedMessages,
 } from "../../lib/chat-storage";
 import { MessageList } from "../../components/chat/message-list";
 import { ChatInput } from "../../components/chat/chat-input";
 import { ChatHeader } from "../../components/chat/chat-header";
+import { AiDisclaimer } from "../../components/chat/ai-disclaimer";
+import { EmptyState } from "../../components/chat/empty-state";
 import { type ChatMessage } from "../../components/chat/message-item";
 
 export default function ChatScreen() {
@@ -155,25 +155,16 @@ export default function ChatScreen() {
     [isWaiting, messages, gangIds, profile?.username, scheduleEvents]
   );
 
-  const handleSignOut = useCallback(() => {
-    // Clear locally cached messages so the next signed-in user doesn't see them
-    if (userIdRef.current) {
-      void clearPersistedMessages(userIdRef.current);
-    }
-    void supabase.auth.signOut();
-  }, []);
-
   // If we somehow got here without a gang, show a helpful state instead of an empty chat.
   if (gang.length === 0) {
     return (
-      <SafeAreaView className="flex-1 items-center justify-center bg-zinc-950 px-6">
-        <View className="items-center">
-          <ChatHeader
-            characters={[]}
-            avatarStyle={avatarStyle}
-            onSignOut={handleSignOut}
-          />
-        </View>
+      <SafeAreaView className="flex-1 bg-zinc-950">
+        <ChatHeader characters={[]} avatarStyle={avatarStyle} />
+        <EmptyState
+          gang={[]}
+          avatarStyle={avatarStyle}
+          username={profile?.username ?? null}
+        />
       </SafeAreaView>
     );
   }
@@ -184,23 +175,28 @@ export default function ChatScreen() {
         className="flex-1"
         behavior={Platform.OS === "ios" ? "padding" : undefined}
       >
-        <ChatHeader
-          characters={gang}
-          avatarStyle={avatarStyle}
-          onSignOut={handleSignOut}
-        />
+        <ChatHeader characters={gang} avatarStyle={avatarStyle} />
         <View className="flex-1">
-          <MessageList
-            messages={messages}
-            characters={allCharacters}
-            customNames={
-              (profile?.custom_character_names as Record<string, string> | null) ??
-              undefined
-            }
-            avatarStyle={avatarStyle}
-          />
+          {messages.length === 0 && hasHydrated ? (
+            <EmptyState
+              gang={gang}
+              avatarStyle={avatarStyle}
+              username={profile?.username ?? null}
+            />
+          ) : (
+            <MessageList
+              messages={messages}
+              characters={allCharacters}
+              customNames={
+                (profile?.custom_character_names as Record<string, string> | null) ??
+                undefined
+              }
+              avatarStyle={avatarStyle}
+            />
+          )}
         </View>
         <ChatInput onSend={handleSend} disabled={isWaiting} />
+        <AiDisclaimer />
       </KeyboardAvoidingView>
     </SafeAreaView>
   );
