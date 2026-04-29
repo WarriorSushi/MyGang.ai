@@ -163,12 +163,25 @@ export default function SettingsScreen() {
               </Pressable>
             </Link>
             <Link href="/(app)/custom-names" asChild>
-              <Pressable className="active:bg-zinc-800/50">
+              <Pressable className="border-b border-zinc-800 active:bg-zinc-800/50">
                 <View className="flex-row items-center justify-between px-4 py-3">
                   <View className="flex-1">
                     <Text className="text-base text-white">Custom names</Text>
                     <Text className="text-xs text-zinc-500">
                       Rename characters in your chat
+                    </Text>
+                  </View>
+                  <Text className="text-zinc-500">›</Text>
+                </View>
+              </Pressable>
+            </Link>
+            <Link href="/(app)/memory-vault" asChild>
+              <Pressable className="active:bg-zinc-800/50">
+                <View className="flex-row items-center justify-between px-4 py-3">
+                  <View className="flex-1">
+                    <Text className="text-base text-white">Memory vault</Text>
+                    <Text className="text-xs text-zinc-500">
+                      What your gang remembers about you
                     </Text>
                   </View>
                   <Text className="text-zinc-500">›</Text>
