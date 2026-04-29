@@ -16,7 +16,7 @@ import {
     createMemoryMutationSuccess,
     type MemoryMutationResult,
 } from '@/lib/memory-mutation'
-import { persistGangMembership, SquadPersistenceError } from '@/lib/supabase/squad-persistence'
+import { persistGangMembership, SquadPersistenceError } from '@mygang/shared'
 import { generateEventId, buildCompleteRegistrationEvent, sendCAPIEvent } from '@/lib/meta'
 
 type ChatHistoryPageRow = {

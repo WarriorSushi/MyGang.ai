@@ -4,3 +4,4 @@ export * from "./avatar";
 export * from "./characters";
 export * from "./auth/schemas";
 export * from "./recommendation";
+export * from "./squad-persistence";
