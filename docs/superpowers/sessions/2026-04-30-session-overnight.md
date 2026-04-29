@@ -1,8 +1,8 @@
 # Session 2026-04-30 — Overnight autonomous run
 
 **Agent:** Claude Code (Opus 4.7, 1M context)
-**Phase:** Phase 1 close-out + Phase 2 (Chat) execution
-**Status:** ended at branch tip — significant Phase 2 progress, Phase 2 not finished (it's months of work)
+**Phase:** Phase 1 close-out + Phase 2 (Chat) execution + parity sprint
+**Status:** ended at branch tip — substantial Phase 2 progress, parity sprint covered settings depth, memory vault, lightbox, history, wallpapers
 
 ## Context entering this session
 
@@ -123,6 +123,72 @@ Nothing committed is broken. The "unfinished" items are deferred features not ye
 - **Sign-out clears the local message cache** to prevent the next signed-in user (e.g., if they share a phone) from seeing old messages.
 - **Disabled `experiments.typedRoutes`** in Phase 1; left disabled here. If a future session wants the type-safety, they can re-enable AFTER all routes exist and Expo can stat the final tree.
 - **chat-arrival.ts NOT lifted** — uses browser sessionStorage. Needs a storage-adapter pattern before lifting; deferred.
+
+## Phase 2 parity sprint (later in session, after handoff log was first written)
+
+User instruction: "Go through the web app make sure everything is brought into mobile app feature wise almost all. Continue development don't stop. Plan what next to do, pick tasks, etc and go ahead and do it"
+
+Completed in this sprint:
+
+**Lifts to @mygang/shared:**
+- `wallpapers.ts` — CHAT_WALLPAPERS catalog (7 wallpapers) + ChatWallpaper type
+
+**Chat polish:**
+- `components/chat/message-actions-sheet.tsx` — long-press a message → bottom sheet with Quick Reactions row (👍 ❤️ 😂 😮 😢 🔥), Copy (uses expo-clipboard), Cancel
+- Reactions render under the message bubble; sent through to /api/chat on next request
+- chat_mode (gang_focus | ecosystem) now read from profile and passed to /api/chat
+- `components/chat/typing-indicator.tsx` exists from earlier; now in use during typing_ghost events
+- `components/chat/avatar-lightbox.tsx` — tap any avatar in chat header → full-screen modal with image, archetype, vibe, voice, sample, tags
+- `components/chat/wallpaper-background.tsx` — applies chat wallpaper preference as a 3-color linear gradient. Uses expo-linear-gradient.
+- `lib/chat-history.ts` — fetchRecentChatHistory(userId) reads from Supabase chat_history table; chat screen now does stale-while-revalidate (AsyncStorage instant + server replace)
+
+**Settings depth (settings.tsx now mirrors web's chat-settings.tsx breadth):**
+- Account section now has Plan card with Upgrade badge for free users; tapping → /(app)/pricing
+- Gang section: Manage gang + Custom names + Memory vault links
+- Chat mode toggle (gang_focus / ecosystem)
+- Avatar pack picker (already there)
+- Chat wallpaper picker (Default / Neon / Soft / Aurora / Sunset / Graphite / Midnight)
+- Sign out + Delete account links
+
+**New screens under /(app)/:**
+- `pricing.tsx` — Free/Basic/Pro plan cards; upgrade CTA opens https://mygang.ai/pricing in system browser (Play Billing is Phase 4)
+- `custom-names.tsx` — per-character name editor for the user's gang (writes profile.custom_character_names)
+- `delete-account.tsx` — typed-email confirmation gate; marks profile fields null + deletion_requested_at, clears local cache, signs out
+- `memory-vault.tsx` — paginated list of episodic+compacted memories from Supabase memories table; respects free-tier preview limit (FREE_MEMORY_VAULT_PREVIEW_LIMIT=5); delete-individual-memory works; locked-count banner with link to /(app)/pricing
+
+**Installed (new dev deps for mobile):**
+- expo-clipboard (for message copy)
+- expo-linear-gradient (for wallpaper backgrounds)
+
+**Final commit count for the overnight session: 18+ commits, all on `mobile-app-init`, all pushed.**
+
+## What's still missing from full parity (deferred to future sessions)
+
+**Chat:**
+- Realtime subscription for cross-device sync (would need Supabase channel + dedup-by-client_message_id; deferred for risk reasons — easy to introduce double-render bugs without phone testing)
+- Image rendering / link previews
+- Pull-to-refresh on chat history
+- Infinite scroll loading older messages
+- Retry / Delete message actions in the long-press menu (Copy + React are done)
+- WYWA (What Would You Ask) feature — dedicated scratchpad for drafting prompts
+- Multi-character interleaving polish — current implementation handles the events.delay-driven case but doesn't gracefully handle complex turn-taking
+
+**Settings:**
+- Wallpaper preview thumbnails (currently text-only list)
+- Notifications settings (depends on Phase 3 push wiring)
+- Theme — mobile is locked to dark; web has light/dark/system
+
+**Onboarding:**
+- Reanimated polish on step transitions (currently instant swaps)
+- Animated avatar gift reveal (currently a static card)
+- Marquee-scrolling avatar pack preview on Avatar Style step (web has it; mobile uses static cards)
+
+**Phase 3+ untouched:**
+- Push notifications (FCM + expo-notifications + /api/push/register backend)
+- Account deletion server-side cleanup job (delete-account.tsx marks deletion_requested_at; backend job needed)
+- Play Billing integration
+- App icon / splash / Play Store listing
+- Sentry RN re-enabling (requires dev build, currently disabled to allow Expo Go to work)
 
 ## Notes
 
