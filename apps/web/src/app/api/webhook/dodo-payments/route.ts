@@ -1,6 +1,6 @@
 import { Webhooks } from '@dodopayments/nextjs'
 import { createAdminClient } from '@/lib/supabase/admin'
-import type { Database } from '@/lib/database.types'
+import type { Database } from '@mygang/shared/database/types'
 import { TIER_LIMITS } from '@mygang/shared'
 import { backfillMemoryEmbeddings } from '@/lib/ai/memory'
 import { waitUntil } from '@vercel/functions'
@@ -135,7 +135,7 @@ async function logBillingEvent(userId: string | null, eventType: string, dodoEve
                 user_id: userId,
                 event_type: eventType,
                 dodo_event_id: dodoEventId,
-                payload: payload as unknown as import('@/lib/database.types').Json,
+                payload: payload as unknown as import('@mygang/shared/database/types').Json,
             })
         if (insertError) {
             // Unique constraint violation means duplicate — not an error
@@ -153,7 +153,7 @@ async function logBillingEvent(userId: string | null, eventType: string, dodoEve
         user_id: userId,
         event_type: eventType,
         dodo_event_id: dodoEventId,
-        payload: payload as unknown as import('@/lib/database.types').Json,
+        payload: payload as unknown as import('@mygang/shared/database/types').Json,
     })
     if (error) throw new Error(`logBillingEvent failed: ${error.message}`)
     return true
@@ -202,7 +202,7 @@ export const POST = Webhooks({
                 user_id: null,
                 event_type: 'subscription.active.orphaned',
                 dodo_event_id: null,
-                payload: data as unknown as import('@/lib/database.types').Json,
+                payload: data as unknown as import('@mygang/shared/database/types').Json,
             })
             return
         }

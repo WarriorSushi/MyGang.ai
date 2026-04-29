@@ -1,7 +1,7 @@
 import { z } from 'zod'
 import { createClient } from '@/lib/supabase/server'
 import { rateLimit } from '@/lib/rate-limit'
-import type { Json } from '@/lib/database.types'
+import type { Json } from '@mygang/shared/database/types'
 
 const requestSchema = z.object({
     event: z.string().min(1).max(64),

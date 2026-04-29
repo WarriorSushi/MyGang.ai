@@ -2,7 +2,7 @@
 
 import type { SupabaseClient } from '@supabase/supabase-js'
 import type { ChatWallpaper } from '@/constants/wallpapers'
-import type { Database } from '@/lib/database.types'
+import type { Database } from '@mygang/shared/database/types'
 import { normalizeAvatarStyle, type AvatarStyle } from '@mygang/shared'
 import { persistGangMembership, SquadPersistenceError } from '@/lib/supabase/squad-persistence'
 import type { SubscriptionTier } from '@mygang/shared'

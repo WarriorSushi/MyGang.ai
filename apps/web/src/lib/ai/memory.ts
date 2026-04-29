@@ -2,7 +2,7 @@ import { google } from '@ai-sdk/google'
 import { embed, generateText } from 'ai'
 import type { SupabaseClient } from '@supabase/supabase-js'
 import { createClient } from '@/lib/supabase/server'
-import type { Database } from '@/lib/database.types'
+import type { Database } from '@mygang/shared/database/types'
 import { openRouterModel } from '@/lib/ai/openrouter'
 import { getMemoryMaxCount, getMemoryInPromptLimit, type SubscriptionTier } from '@mygang/shared'
 

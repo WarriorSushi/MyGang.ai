@@ -21,7 +21,7 @@ import {
 } from '@/lib/ai/response-style'
 import { buildSystemPrompt } from '@/lib/ai/system-prompt'
 import { buildTimeoutFallbackTurn, shouldUseFastTimeoutFallback } from '@/lib/ai/timeout-fallback'
-import type { Json } from '@/lib/database.types'
+import type { Json } from '@mygang/shared/database/types'
 import type { SupabaseClient } from '@supabase/supabase-js'
 import { waitUntil } from '@vercel/functions'
 import { buildCharacterContextEntry } from '@/lib/ai/character-prompt'

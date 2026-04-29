@@ -1,5 +1,5 @@
 import { createClient, SupabaseClient } from '@supabase/supabase-js'
-import type { Database } from '@/lib/database.types'
+import type { Database } from '@mygang/shared/database/types'
 
 let adminClient: SupabaseClient<Database> | null = null
 

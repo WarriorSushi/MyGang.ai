@@ -1,5 +1,5 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
-import type { Database } from '@/lib/database.types'
+import type { Database } from '@mygang/shared/database/types'
 import { CHARACTERS } from '@mygang/shared'
 
 type AppSupabaseClient = SupabaseClient<Database>
