@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Alert, Pressable, ScrollView, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { useRouter } from "expo-router";
+import { Link, useRouter } from "expo-router";
 import {
   AVATAR_STYLES,
   DEFAULT_AVATAR_STYLE,
@@ -116,6 +116,26 @@ export default function SettingsScreen() {
               </Text>
             </View>
           </View>
+        </View>
+
+        {/* Gang section */}
+        <View className="mt-6 px-4">
+          <Text className="mb-2 text-[11px] font-semibold uppercase tracking-widest text-zinc-500">
+            Your gang
+          </Text>
+          <Link href="/(app)/edit-gang" asChild>
+            <Pressable className="overflow-hidden rounded-xl border border-zinc-800 bg-zinc-900/60">
+              <View className="flex-row items-center justify-between px-4 py-3">
+                <View className="flex-1">
+                  <Text className="text-base text-white">Manage gang</Text>
+                  <Text className="text-xs text-zinc-500">
+                    Add or remove characters
+                  </Text>
+                </View>
+                <Text className="text-zinc-500">›</Text>
+              </View>
+            </Pressable>
+          </Link>
         </View>
 
         {/* Appearance section */}
