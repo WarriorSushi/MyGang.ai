@@ -4,8 +4,8 @@
  *
  * Run: pnpm exec tsx tests/character-recommendation.test.ts
  */
-import { recommendCharacters } from '../src/lib/ai/character-recommendation'
-import type { VibeProfile } from '../src/lib/ai/character-recommendation'
+import { recommendCharacters } from '@mygang/shared'
+import type { VibeProfile } from '@mygang/shared'
 
 let passed = 0
 let failed = 0

@@ -2,6 +2,10 @@
  * Pure character recommendation engine.
  * Maps vibe quiz answers to ranked character IDs.
  * Deterministic — no randomness, no side effects.
+ *
+ * Used by both web (apps/web/src/app/onboarding) and mobile
+ * (apps/mobile/app/(app)/onboarding) so both apps recommend the same
+ * characters for the same vibe-quiz answers.
  */
 
 export type VibeProfile = {

@@ -5,7 +5,7 @@ import { AnimatePresence, m, useReducedMotion } from 'framer-motion'
 import { ArrowLeft, Check } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
-import type { VibeProfile } from '@/lib/ai/character-recommendation'
+import type { VibeProfile } from '@mygang/shared'
 
 interface VibeQuizStepProps {
     onNext: (vibe: VibeProfile) => void
