@@ -1,7 +1,7 @@
 import { create } from 'zustand'
 import { createJSONStorage, persist, type StateStorage } from 'zustand/middleware'
 import type { ChatWallpaper } from '@/constants/wallpapers'
-import { CHARACTERS } from '@/constants/characters'
+import { CHARACTERS } from '@mygang/shared'
 import { applyAvatarStyleToGang, DEFAULT_AVATAR_STYLE, normalizeAvatarStyle, type AvatarStyle } from '@mygang/shared'
 import type { Character, SubscriptionTier } from '@mygang/shared'
 export type { Character } from '@mygang/shared'

@@ -7,7 +7,7 @@ import { cn } from '@/lib/utils'
 import Image from 'next/image'
 import { ChevronDown } from 'lucide-react'
 import { Button } from '@/components/ui/button'
-import { CHARACTERS } from '@/constants/characters'
+import { CHARACTERS } from '@mygang/shared'
 import { useTheme } from 'next-themes'
 
 function ChatSkeleton() {

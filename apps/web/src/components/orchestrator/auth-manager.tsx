@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useRef } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { useChatStore } from '@/stores/chat-store'
-import { getCharactersForAvatarStyle } from '@/constants/characters'
+import { getCharactersForAvatarStyle } from '@mygang/shared'
 import { normalizeAvatarStyle } from '@mygang/shared'
 import { useTheme } from 'next-themes'
 import type { Session } from '@supabase/supabase-js'

@@ -10,7 +10,7 @@ import { useRouter, useSearchParams } from 'next/navigation'
 import { ensureAnalyticsSession, trackEvent } from '@/lib/analytics'
 import { isSquadTierWriteError, trackOperationalError } from '@/lib/operational-telemetry'
 import { saveGang, deactivateSquadTierMembers } from '@/app/auth/actions'
-import { getCharactersForAvatarStyle } from '@/constants/characters'
+import { getCharactersForAvatarStyle } from '@mygang/shared'
 import { buildArrivalBannerCopy, buildStarterChips, consumePendingArrivalContext, readPendingArrivalContext, type PendingArrivalContext } from '@/lib/chat-arrival'
 
 // Modular components

@@ -3,7 +3,7 @@
 import { Suspense, useEffect, useMemo, useState } from 'react'
 import { AnimatePresence } from 'framer-motion'
 import { completeOnboarding } from '@/app/auth/actions'
-import { getCharactersForAvatarStyle } from '@/constants/characters'
+import { getCharactersForAvatarStyle } from '@mygang/shared'
 import { BackgroundBlobs } from '@/components/holographic/background-blobs'
 import { useChatStore } from '@/stores/chat-store'
 import { useRouter, useSearchParams } from 'next/navigation'

@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { m, AnimatePresence } from 'framer-motion'
 import { Button } from '@/components/ui/button'
-import { getCharactersForAvatarStyle } from '@/constants/characters'
+import { getCharactersForAvatarStyle } from '@mygang/shared'
 import { CHARACTER_INTRO_MESSAGES } from '@/constants/character-messages'
 import { Check, ChevronRight, Sparkles, X } from 'lucide-react'
 import { cn } from '@/lib/utils'

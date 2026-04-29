@@ -3,7 +3,7 @@
 import { type KeyboardEvent, useState, useEffect, useRef } from 'react'
 import { m, AnimatePresence } from 'framer-motion'
 import { Button } from '@/components/ui/button'
-import type { CharacterCatalogEntry } from '@/constants/characters'
+import type { CharacterCatalogEntry } from '@mygang/shared'
 import { Check, ChevronRight, X } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import Image from 'next/image'

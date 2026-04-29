@@ -1,6 +1,6 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
 import type { Database } from '@/lib/database.types'
-import { CHARACTERS } from '@/constants/characters'
+import { CHARACTERS } from '@mygang/shared'
 
 type AppSupabaseClient = SupabaseClient<Database>
 type GangRow = Pick<Database['public']['Tables']['gangs']['Row'], 'id'>

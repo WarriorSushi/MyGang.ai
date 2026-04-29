@@ -5,7 +5,7 @@ import { m, AnimatePresence } from 'framer-motion'
 import Image from 'next/image'
 import { ChevronRight, X } from 'lucide-react'
 import { Button } from '@/components/ui/button'
-import type { CharacterCatalogEntry } from '@/constants/characters'
+import type { CharacterCatalogEntry } from '@mygang/shared'
 
 interface FriendsIntroStepProps {
     characters: CharacterCatalogEntry[]

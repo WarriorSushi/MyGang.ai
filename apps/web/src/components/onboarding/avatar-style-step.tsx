@@ -5,7 +5,7 @@ import Image from 'next/image'
 import { Check } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { MovingBorder } from '@/components/ui/moving-border'
-import { getCharactersForAvatarStyle } from '@/constants/characters'
+import { getCharactersForAvatarStyle } from '@mygang/shared'
 import { cn } from '@/lib/utils'
 import type { AvatarStyle } from '@mygang/shared'
 

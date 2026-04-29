@@ -4,7 +4,7 @@ import { m } from 'framer-motion'
 import Image from 'next/image'
 import { Gift } from 'lucide-react'
 import { Button } from '@/components/ui/button'
-import { getCharactersForAvatarStyle } from '@/constants/characters'
+import { getCharactersForAvatarStyle } from '@mygang/shared'
 
 function MarqueeRow({
     style,

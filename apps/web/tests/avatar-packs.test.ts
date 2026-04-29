@@ -1,7 +1,6 @@
 import fs from 'node:fs'
 import path from 'node:path'
-import { CHARACTERS, getCharactersForAvatarStyle } from '../src/constants/characters'
-import { DEFAULT_AVATAR_STYLE, normalizeAvatarStyle, resolveAvatarUrl } from '../src/lib/avatar-style'
+import { CHARACTERS, DEFAULT_AVATAR_STYLE, getCharactersForAvatarStyle, normalizeAvatarStyle, resolveAvatarUrl } from '@mygang/shared'
 
 let passed = 0
 let failed = 0

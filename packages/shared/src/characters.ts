@@ -1,5 +1,5 @@
-import type { Character } from '@/stores/chat-store'
-import { AVATAR_STYLES, DEFAULT_AVATAR_STYLE, normalizeAvatarStyle, resolveAvatarUrl, type AvatarStyle } from '@mygang/shared'
+import type { Character } from "./types/character";
+import { AVATAR_STYLES, DEFAULT_AVATAR_STYLE, normalizeAvatarStyle, resolveAvatarUrl, type AvatarStyle } from "./avatar";
 
 export type CharacterCatalogEntry = Character & { avatar: string; roleLabel: string }
 
