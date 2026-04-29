@@ -17,8 +17,8 @@
 | Phase | Name | Plan file | Status |
 |---|---|---|---|
 | 0 | Foundation (monorepo + Hello World mobile build) | This file (Phase 0 section below) | ✅ Done (verified on real device 2026-04-29) |
-| 1 | Auth + app shell | [`2026-04-29-mobile-app-phase-1-auth.md`](./2026-04-29-mobile-app-phase-1-auth.md) | Ready to execute |
-| 2 | Core chat experience | `2026-XX-XX-mobile-app-phase-2-chat.md` | Plan to be written when Phase 1 completes |
+| 1 | Auth + app shell | [`2026-04-29-mobile-app-phase-1-auth.md`](./2026-04-29-mobile-app-phase-1-auth.md) | ✅ Done (2026-04-30) — code complete + verified end-to-end on real device for sign-up/sign-in/session persistence; full 8-step onboarding port committed (manual onboarding test pending) |
+| 2 | Core chat experience | [`2026-04-30-mobile-app-phase-2-chat.md`](./2026-04-30-mobile-app-phase-2-chat.md) | In progress |
 | 3 | Push, settings, account | `2026-XX-XX-mobile-app-phase-3-platform.md` | Plan to be written when Phase 2 completes |
 | 4 | Billing & Play Console | `2026-XX-XX-mobile-app-phase-4-billing.md` | Plan to be written when Phase 3 completes |
 | 5 | Polish & closed beta | `2026-XX-XX-mobile-app-phase-5-polish.md` | Plan to be written when Phase 4 completes |
