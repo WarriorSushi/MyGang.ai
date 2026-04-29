@@ -4,10 +4,12 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { Link, useRouter } from "expo-router";
 import {
   AVATAR_STYLES,
+  CHAT_WALLPAPERS,
   DEFAULT_AVATAR_STYLE,
   getTierCopy,
   getTierFromProfile,
   type AvatarStyle,
+  type ChatWallpaper,
 } from "@mygang/shared";
 
 import { useAuth } from "../../lib/auth-context";
@@ -20,24 +22,34 @@ const STYLE_LABELS: Record<AvatarStyle, string> = {
   retro: "Retro",
 };
 
+type ChatMode = "gang_focus" | "ecosystem";
+
 export default function SettingsScreen() {
   const router = useRouter();
   const { user, profile, refreshProfile } = useAuth();
-  const [savingStyle, setSavingStyle] = useState(false);
+  const [savingField, setSavingField] = useState<string | null>(null);
 
   const tier = getTierFromProfile(profile?.subscription_tier ?? null);
   const tierCopy = getTierCopy(tier);
   const currentStyle: AvatarStyle =
     (profile?.avatar_style_preference as AvatarStyle) ?? DEFAULT_AVATAR_STYLE;
+  const currentWallpaper: ChatWallpaper =
+    (profile?.chat_wallpaper as ChatWallpaper) ?? "default";
+  const currentChatMode: ChatMode =
+    (profile?.chat_mode as ChatMode) ?? "gang_focus";
 
-  async function setAvatarStyle(style: AvatarStyle) {
-    if (!user || style === currentStyle) return;
-    setSavingStyle(true);
+  async function updateProfileField(
+    field: string,
+    value: string,
+    label: string
+  ) {
+    if (!user) return;
+    setSavingField(field);
     const { error } = await supabase
       .from("profiles")
-      .update({ avatar_style_preference: style })
+      .update({ [field]: value })
       .eq("id", user.id);
-    setSavingStyle(false);
+    setSavingField(null);
     if (error) {
       Alert.alert("Could not save", error.message);
       return;
@@ -101,20 +113,33 @@ export default function SettingsScreen() {
                 {user?.email ?? "(unknown)"}
               </Text>
             </View>
-            <View className="px-4 py-3">
-              <Text className="text-[11px] uppercase tracking-wider text-zinc-500">
-                Plan
-              </Text>
-              <Text className="mt-0.5 text-base text-white">
-                {tierCopy.label}{" "}
-                <Text className="text-sm text-zinc-400">
-                  · {tierCopy.priceLabel}
-                </Text>
-              </Text>
-              <Text className="mt-0.5 text-xs text-zinc-500">
-                {tierCopy.usageHeading}
-              </Text>
-            </View>
+            <Link href="/(app)/pricing" asChild>
+              <Pressable className="px-4 py-3 active:bg-zinc-800/50">
+                <View className="flex-row items-center justify-between">
+                  <View>
+                    <Text className="text-[11px] uppercase tracking-wider text-zinc-500">
+                      Plan
+                    </Text>
+                    <Text className="mt-0.5 text-base text-white">
+                      {tierCopy.label}{" "}
+                      <Text className="text-sm text-zinc-400">
+                        · {tierCopy.priceLabel}
+                      </Text>
+                    </Text>
+                    <Text className="mt-0.5 text-xs text-zinc-500">
+                      {tierCopy.usageHeading}
+                    </Text>
+                  </View>
+                  {tier === "free" ? (
+                    <View className="rounded-full bg-amber-500/15 px-3 py-1">
+                      <Text className="text-[10px] font-bold text-amber-400">
+                        Upgrade
+                      </Text>
+                    </View>
+                  ) : null}
+                </View>
+              </Pressable>
+            </Link>
           </View>
         </View>
 
@@ -123,22 +148,78 @@ export default function SettingsScreen() {
           <Text className="mb-2 text-[11px] font-semibold uppercase tracking-widest text-zinc-500">
             Your gang
           </Text>
-          <Link href="/(app)/edit-gang" asChild>
-            <Pressable className="overflow-hidden rounded-xl border border-zinc-800 bg-zinc-900/60">
-              <View className="flex-row items-center justify-between px-4 py-3">
-                <View className="flex-1">
-                  <Text className="text-base text-white">Manage gang</Text>
-                  <Text className="text-xs text-zinc-500">
-                    Add or remove characters
-                  </Text>
+          <View className="overflow-hidden rounded-xl border border-zinc-800 bg-zinc-900/60">
+            <Link href="/(app)/edit-gang" asChild>
+              <Pressable className="border-b border-zinc-800 active:bg-zinc-800/50">
+                <View className="flex-row items-center justify-between px-4 py-3">
+                  <View className="flex-1">
+                    <Text className="text-base text-white">Manage gang</Text>
+                    <Text className="text-xs text-zinc-500">
+                      Add or remove characters
+                    </Text>
+                  </View>
+                  <Text className="text-zinc-500">›</Text>
                 </View>
-                <Text className="text-zinc-500">›</Text>
-              </View>
-            </Pressable>
-          </Link>
+              </Pressable>
+            </Link>
+            <Link href="/(app)/custom-names" asChild>
+              <Pressable className="active:bg-zinc-800/50">
+                <View className="flex-row items-center justify-between px-4 py-3">
+                  <View className="flex-1">
+                    <Text className="text-base text-white">Custom names</Text>
+                    <Text className="text-xs text-zinc-500">
+                      Rename characters in your chat
+                    </Text>
+                  </View>
+                  <Text className="text-zinc-500">›</Text>
+                </View>
+              </Pressable>
+            </Link>
+          </View>
         </View>
 
-        {/* Appearance section */}
+        {/* Chat mode section */}
+        <View className="mt-6 px-4">
+          <Text className="mb-2 text-[11px] font-semibold uppercase tracking-widest text-zinc-500">
+            Chat mode
+          </Text>
+          <View className="overflow-hidden rounded-xl border border-zinc-800 bg-zinc-900/60">
+            {(["gang_focus", "ecosystem"] as ChatMode[]).map((mode, idx) => {
+              const isCurrent = currentChatMode === mode;
+              const label = mode === "gang_focus" ? "Gang focus" : "Ecosystem";
+              const desc =
+                mode === "gang_focus"
+                  ? "Just your selected gang chats with you."
+                  : "All 14 characters can drop in occasionally.";
+              return (
+                <Pressable
+                  key={mode}
+                  onPress={() =>
+                    void updateProfileField("chat_mode", mode, label)
+                  }
+                  disabled={savingField !== null}
+                  className={`px-4 py-3 active:bg-zinc-800/50 ${
+                    idx === 0 ? "border-b border-zinc-800" : ""
+                  }`}
+                >
+                  <View className="flex-row items-center justify-between">
+                    <View className="flex-1">
+                      <Text className="text-base text-white">{label}</Text>
+                      <Text className="text-xs text-zinc-500">{desc}</Text>
+                    </View>
+                    {isCurrent ? (
+                      <View className="h-6 w-6 items-center justify-center rounded-full bg-white">
+                        <Text className="text-xs font-bold text-zinc-950">✓</Text>
+                      </View>
+                    ) : null}
+                  </View>
+                </Pressable>
+              );
+            })}
+          </View>
+        </View>
+
+        {/* Avatar pack section */}
         <View className="mt-6 px-4">
           <Text className="mb-2 text-[11px] font-semibold uppercase tracking-widest text-zinc-500">
             Avatar pack
@@ -149,9 +230,15 @@ export default function SettingsScreen() {
               return (
                 <Pressable
                   key={style}
-                  onPress={() => void setAvatarStyle(style)}
-                  disabled={savingStyle}
-                  className={`flex-row items-center justify-between px-4 py-3 ${
+                  onPress={() =>
+                    void updateProfileField(
+                      "avatar_style_preference",
+                      style,
+                      STYLE_LABELS[style]
+                    )
+                  }
+                  disabled={savingField !== null}
+                  className={`flex-row items-center justify-between px-4 py-3 active:bg-zinc-800/50 ${
                     index < AVATAR_STYLES.length - 1
                       ? "border-b border-zinc-800"
                       : ""
@@ -169,10 +256,46 @@ export default function SettingsScreen() {
               );
             })}
           </View>
-          <Text className="mt-2 px-1 text-xs text-zinc-500">
-            Changes the visual style of every character. Human and Retro packs
-            are unlocked for early users.
+        </View>
+
+        {/* Wallpaper section */}
+        <View className="mt-6 px-4">
+          <Text className="mb-2 text-[11px] font-semibold uppercase tracking-widest text-zinc-500">
+            Chat wallpaper
           </Text>
+          <View className="overflow-hidden rounded-xl border border-zinc-800 bg-zinc-900/60">
+            {CHAT_WALLPAPERS.map((w, idx) => {
+              const isCurrent = currentWallpaper === w.id;
+              return (
+                <Pressable
+                  key={w.id}
+                  onPress={() =>
+                    void updateProfileField("chat_wallpaper", w.id, w.label)
+                  }
+                  disabled={savingField !== null}
+                  className={`px-4 py-3 active:bg-zinc-800/50 ${
+                    idx < CHAT_WALLPAPERS.length - 1
+                      ? "border-b border-zinc-800"
+                      : ""
+                  }`}
+                >
+                  <View className="flex-row items-center justify-between">
+                    <View className="flex-1">
+                      <Text className="text-base text-white">{w.label}</Text>
+                      <Text className="text-xs text-zinc-500">
+                        {w.description}
+                      </Text>
+                    </View>
+                    {isCurrent ? (
+                      <View className="h-6 w-6 items-center justify-center rounded-full bg-white">
+                        <Text className="text-xs font-bold text-zinc-950">✓</Text>
+                      </View>
+                    ) : null}
+                  </View>
+                </Pressable>
+              );
+            })}
+          </View>
         </View>
 
         {/* Danger section */}
@@ -185,6 +308,16 @@ export default function SettingsScreen() {
               Sign out
             </Text>
           </Pressable>
+        </View>
+
+        <View className="mt-3 px-4">
+          <Link href="/(app)/delete-account" asChild>
+            <Pressable className="rounded-xl px-4 py-3 active:bg-zinc-800/50">
+              <Text className="text-center text-xs text-zinc-500 underline">
+                Delete account
+              </Text>
+            </Pressable>
+          </Link>
         </View>
 
         <View className="mt-6 px-4">
