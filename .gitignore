@@ -3,9 +3,9 @@
 # mcp config (contains secrets)
 .mcp.json
 
-# dependencies
-/node_modules
-/.pnp
+# dependencies (workspace-aware — match at any depth)
+node_modules/
+.pnp
 .pnp.*
 .yarn/*
 !.yarn/patches
@@ -13,17 +13,17 @@
 !.yarn/releases
 !.yarn/versions
 
-# testing
-/coverage
-/test-results
-/playwright-report
+# testing (workspace-aware)
+coverage/
+test-results/
+playwright-report/
 
-# next.js
-/.next/
-/out/
+# next.js (workspace-aware)
+.next/
+out/
 
 # production
-/build
+build/
 
 # misc
 .DS_Store
