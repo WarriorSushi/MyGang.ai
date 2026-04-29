@@ -14,5 +14,8 @@
     "test": "echo 'no tests configured for @mygang/shared yet'",
     "test:fast": "echo 'no fast tests configured for @mygang/shared yet'",
     "build": "echo 'no build step needed; @mygang/shared is consumed as TS source'"
+  },
+  "dependencies": {
+    "zod": "^3.23.8"
   }
 }
