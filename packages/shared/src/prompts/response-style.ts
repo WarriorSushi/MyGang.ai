@@ -1,4 +1,4 @@
-import { hasOpenFloorIntent } from '@/lib/chat-utils'
+import { hasOpenFloorIntent } from '../chat/utils'
 
 export type TurnIntent =
     | 'greeting'

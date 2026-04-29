@@ -4,7 +4,7 @@ import {
     getTurnPolicy,
     isCorrectionOrClarificationTurn,
     shouldPreserveSingleBubbleTurn,
-} from '../src/lib/ai/response-style'
+} from '@mygang/shared'
 
 let passed = 0
 let failed = 0

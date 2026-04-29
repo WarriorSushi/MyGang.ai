@@ -1,4 +1,4 @@
-import { formatHistoryForLLM } from '../src/lib/ai/history-format'
+import { formatHistoryForLLM } from '@mygang/shared'
 
 let passed = 0
 let failed = 0

@@ -1,7 +1,7 @@
 import { z } from 'zod'
 import { createClient } from '@/lib/supabase/server'
 import { rateLimit } from '@/lib/rate-limit'
-import { sanitizeMessageId, isMissingHistoryMetadataColumnsError } from '@/lib/chat-utils'
+import { sanitizeMessageId, isMissingHistoryMetadataColumnsError } from '@mygang/shared'
 
 const MAX_EVENT_CONTENT = 700
 

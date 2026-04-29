@@ -2,10 +2,10 @@
 
 import { useCallback, useEffect, useRef } from 'react'
 import { useChatStore, type Message } from '@/stores/chat-store'
-import { normalizeActivityStatus } from '../constants/character-greetings'
+import { normalizeActivityStatus } from '@mygang/shared'
 import { ensureAnalyticsSession, trackEvent } from '@/lib/analytics'
 import { getTierFromProfile } from '@mygang/shared'
-import { hasOpenFloorIntent } from '@/lib/chat-utils'
+import { hasOpenFloorIntent } from '@mygang/shared'
 import type { PendingArrivalContext } from '@/lib/chat-arrival'
 import type { TokenUsage } from '@mygang/shared'
 

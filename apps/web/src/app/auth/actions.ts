@@ -8,7 +8,7 @@ import { headers } from 'next/headers'
 import { z } from 'zod'
 import { CHARACTERS } from '@mygang/shared'
 import { AVATAR_STYLES, normalizeAvatarStyle, type AvatarStyle } from '@mygang/shared'
-import { sanitizeMessageId } from '@/lib/chat-utils'
+import { sanitizeMessageId } from '@mygang/shared'
 import { getMemoryVaultPreviewLimit, getTierFromProfile, getSquadLimit } from '@mygang/shared'
 import { filterActiveMemories } from '@/lib/ai/memory'
 import {

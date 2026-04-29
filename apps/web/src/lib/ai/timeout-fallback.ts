@@ -1,4 +1,4 @@
-import type { TurnIntent } from './response-style'
+import type { TurnIntent } from '@mygang/shared'
 
 const FAST_TIMEOUT_FALLBACK_PATTERN = /\b(one single action|single action|one concrete (step|action)|single (step|action)|just practical advice|no intro|no meta|no list|be more concrete|keep it to one step|one best action)\b/i
 const OVERWHELMED_PATTERN = /\b(overwhelmed|overthinking|anxious|anxiety|panic|panicking|spiral(?:ing)?|stressed|stress)\b/i

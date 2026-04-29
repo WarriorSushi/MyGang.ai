@@ -1,4 +1,4 @@
-import { buildCharacterContextEntry, buildPersonaRegisterGuidance } from '../src/lib/ai/character-prompt'
+import { buildCharacterContextEntry, buildPersonaRegisterGuidance } from '@mygang/shared'
 
 let passed = 0
 let failed = 0

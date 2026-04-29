@@ -1,4 +1,4 @@
-import { buildSystemPrompt, type BuildSystemPromptInput } from '../src/lib/ai/system-prompt'
+import { buildSystemPrompt, type BuildSystemPromptInput } from '@mygang/shared'
 
 let passed = 0
 let failed = 0

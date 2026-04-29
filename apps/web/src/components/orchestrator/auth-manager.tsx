@@ -10,7 +10,7 @@ import type { Session } from '@supabase/supabase-js'
 import { addSquadTierMembers } from '@/app/auth/actions'
 import { fetchJourneyState, persistUserJourney } from '@/lib/supabase/client-journey'
 import { getSquadLimit, getTierFromProfile, type SubscriptionTier } from '@mygang/shared'
-import { CHARACTER_WELCOME_BACK_MESSAGES } from '@/constants/character-messages'
+import { CHARACTER_WELCOME_BACK_MESSAGES } from '@mygang/shared'
 import { trackOperationalError, trackOperationalEvent } from '@/lib/operational-telemetry'
 
 export function AuthManager() {

@@ -15,7 +15,7 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { CHARACTERS } from '@mygang/shared'
 import { TYPING_STYLES } from './wywa-prompt'
 import { sendWywaTeaser } from '@/lib/push/wywa-teaser'
-import { detectUnsafeContent } from '@/lib/chat-utils'
+import { detectUnsafeContent } from '@mygang/shared'
 
 // ── Constants ──
 

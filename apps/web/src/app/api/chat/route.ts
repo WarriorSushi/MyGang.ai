@@ -8,9 +8,9 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { rateLimit } from '@/lib/rate-limit'
 import { getTierFromProfile, isMemoryEnabled, getContextLimit, getMemoryInPromptLimit, getSquadLimit, type SubscriptionTier } from '@mygang/shared'
 import { CHARACTERS } from '@mygang/shared'
-import { ACTIVITY_STATUSES, normalizeActivityStatus } from '../../../constants/character-greetings'
-import { sanitizeMessageId, isMissingHistoryMetadataColumnsError, detectUnsafeContent, hasOpenFloorIntent } from '@/lib/chat-utils'
-import { formatHistoryForLLM } from '@/lib/ai/history-format'
+import { ACTIVITY_STATUSES, normalizeActivityStatus } from '@mygang/shared'
+import { sanitizeMessageId, isMissingHistoryMetadataColumnsError, detectUnsafeContent, hasOpenFloorIntent } from '@mygang/shared'
+import { formatHistoryForLLM } from '@mygang/shared'
 import {
     classifyTurnIntent,
     countQuestionBearingMessages,
@@ -18,13 +18,13 @@ import {
     getTurnPolicy,
     isCorrectionOrClarificationTurn,
     shouldPreserveSingleBubbleTurn,
-} from '@/lib/ai/response-style'
-import { buildSystemPrompt } from '@/lib/ai/system-prompt'
+} from '@mygang/shared'
+import { buildSystemPrompt } from '@mygang/shared'
 import { buildTimeoutFallbackTurn, shouldUseFastTimeoutFallback } from '@/lib/ai/timeout-fallback'
 import type { Json } from '@mygang/shared/database/types'
 import type { SupabaseClient } from '@supabase/supabase-js'
 import { waitUntil } from '@vercel/functions'
-import { buildCharacterContextEntry } from '@/lib/ai/character-prompt'
+import { buildCharacterContextEntry } from '@mygang/shared'
 
 export const maxDuration = 45
 

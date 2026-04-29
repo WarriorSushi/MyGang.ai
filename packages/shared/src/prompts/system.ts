@@ -6,7 +6,7 @@
  * This module only assembles prompt text from already-computed inputs.
  */
 
-import { buildTypingFingerprints, buildDepthLines, buildFilteredDynamics, buildPersonaRegisterGuidance, DEPTH_MOMENT_RULE } from './character-prompt'
+import { buildTypingFingerprints, buildDepthLines, buildFilteredDynamics, buildPersonaRegisterGuidance, DEPTH_MOMENT_RULE } from './character'
 import type { TurnIntent } from './response-style'
 
 // ---------------------------------------------------------------------------
