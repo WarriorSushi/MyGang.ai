@@ -8,6 +8,7 @@ import {
   DEFAULT_AVATAR_STYLE,
   type AvatarStyle,
   type CharacterCatalogEntry,
+  type ChatWallpaper,
 } from "@mygang/shared";
 
 import { useAuth } from "../../lib/auth-context";
@@ -29,6 +30,7 @@ import { EmptyState } from "../../components/chat/empty-state";
 import { TypingIndicator } from "../../components/chat/typing-indicator";
 import { MessageActionsSheet } from "../../components/chat/message-actions-sheet";
 import { AvatarLightbox } from "../../components/chat/avatar-lightbox";
+import { WallpaperBackground } from "../../components/chat/wallpaper-background";
 import { type ChatMessage } from "../../components/chat/message-item";
 
 export default function ChatScreen() {
@@ -81,6 +83,8 @@ export default function ChatScreen() {
 
   const avatarStyle: AvatarStyle =
     (profile?.avatar_style_preference as AvatarStyle) ?? DEFAULT_AVATAR_STYLE;
+  const wallpaper: ChatWallpaper =
+    (profile?.chat_wallpaper as ChatWallpaper) ?? "default";
 
   const allCharacters: CharacterCatalogEntry[] = useMemo(
     () =>
@@ -228,15 +232,16 @@ export default function ChatScreen() {
 
   return (
     <SafeAreaView className="flex-1 bg-zinc-950" edges={["top", "left", "right"]}>
-      <KeyboardAvoidingView
-        className="flex-1"
-        behavior={Platform.OS === "ios" ? "padding" : undefined}
-      >
-        <ChatHeader
-          characters={gang}
-          avatarStyle={avatarStyle}
-          onAvatarPress={(c) => setLightboxCharacter(c)}
-        />
+      <WallpaperBackground wallpaper={wallpaper}>
+        <KeyboardAvoidingView
+          className="flex-1"
+          behavior={Platform.OS === "ios" ? "padding" : undefined}
+        >
+          <ChatHeader
+            characters={gang}
+            avatarStyle={avatarStyle}
+            onAvatarPress={(c) => setLightboxCharacter(c)}
+          />
         <View className="flex-1">
           {messages.length === 0 && hasHydrated ? (
             <EmptyState
@@ -275,7 +280,8 @@ export default function ChatScreen() {
         </View>
         <ChatInput onSend={handleSend} disabled={isWaiting} />
         <AiDisclaimer />
-      </KeyboardAvoidingView>
+        </KeyboardAvoidingView>
+      </WallpaperBackground>
 
       <MessageActionsSheet
         visible={actionMessage !== null}
