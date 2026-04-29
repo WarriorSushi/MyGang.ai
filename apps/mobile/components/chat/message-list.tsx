@@ -11,6 +11,7 @@ type MessageListProps = {
   characters: CharacterCatalogEntry[];
   customNames?: Record<string, string>;
   avatarStyle: AvatarStyle;
+  onMessageLongPress?: (message: ChatMessage) => void;
 };
 
 export function MessageList({
@@ -18,6 +19,7 @@ export function MessageList({
   characters,
   customNames,
   avatarStyle,
+  onMessageLongPress,
 }: MessageListProps) {
   const listRef = useRef<FlatList<ChatMessage>>(null);
 
@@ -50,6 +52,9 @@ export function MessageList({
             customName={customName}
             avatarStyle={avatarStyle}
             isUser={isUser}
+            onLongPress={
+              onMessageLongPress ? () => onMessageLongPress(item) : undefined
+            }
           />
         );
       }}

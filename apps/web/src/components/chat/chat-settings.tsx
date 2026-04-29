@@ -30,7 +30,7 @@ import { deleteAccount, deleteAllMessages, signOut, updateUserSettings } from '@
 import Link from 'next/link'
 import { Switch } from '@/components/ui/switch'
 import { cn } from '@/lib/utils'
-import { CHAT_WALLPAPERS, type ChatWallpaper } from '@/constants/wallpapers'
+import { CHAT_WALLPAPERS, type ChatWallpaper } from '@mygang/shared'
 import { createClient } from '@/lib/supabase/client'
 import { m, AnimatePresence } from 'framer-motion'
 

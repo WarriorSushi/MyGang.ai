@@ -1,7 +1,7 @@
 'use client'
 
 import type { SupabaseClient } from '@supabase/supabase-js'
-import type { ChatWallpaper } from '@/constants/wallpapers'
+import type { ChatWallpaper } from '@mygang/shared'
 import type { Database } from '@mygang/shared/database/types'
 import { normalizeAvatarStyle, type AvatarStyle } from '@mygang/shared'
 import { persistGangMembership, SquadPersistenceError } from '@mygang/shared'

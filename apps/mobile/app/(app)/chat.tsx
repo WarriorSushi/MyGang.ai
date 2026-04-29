@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Alert, KeyboardAvoidingView, Platform, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import * as Clipboard from "expo-clipboard";
 import {
   CHARACTERS,
   applyAvatarStyleToGang,
@@ -25,6 +26,7 @@ import { ChatHeader } from "../../components/chat/chat-header";
 import { AiDisclaimer } from "../../components/chat/ai-disclaimer";
 import { EmptyState } from "../../components/chat/empty-state";
 import { TypingIndicator } from "../../components/chat/typing-indicator";
+import { MessageActionsSheet } from "../../components/chat/message-actions-sheet";
 import { type ChatMessage } from "../../components/chat/message-item";
 
 export default function ChatScreen() {
@@ -33,6 +35,7 @@ export default function ChatScreen() {
   const [isWaiting, setIsWaiting] = useState(false);
   const [hasHydrated, setHasHydrated] = useState(false);
   const [typingCharacterId, setTypingCharacterId] = useState<string | null>(null);
+  const [actionMessage, setActionMessage] = useState<ChatMessage | null>(null);
   const userIdRef = useRef<string | null>(null);
 
   // Hydrate persisted chat history once we know the user
@@ -123,6 +126,29 @@ export default function ChatScreen() {
     []
   );
 
+  const chatMode = (profile?.chat_mode as "gang_focus" | "ecosystem") ?? "gang_focus";
+
+  const sendChatPayload = useCallback(
+    async (extraMessage: ChatMessage | null) => {
+      const baseMessages = extraMessage ? [...messages, extraMessage] : messages;
+      const apiMessages: ChatRequestMessage[] = baseMessages.map((m) => ({
+        id: m.id,
+        speaker: m.speaker,
+        content: m.content,
+        created_at: m.created_at,
+        ...(m.reaction ? { reaction: m.reaction } : {}),
+      }));
+
+      return postChat({
+        messages: apiMessages,
+        activeGangIds: gangIds,
+        userName: profile?.username ?? null,
+        chatMode,
+      });
+    },
+    [messages, gangIds, profile?.username, chatMode]
+  );
+
   const handleSend = useCallback(
     async (text: string) => {
       if (isWaiting) return;
@@ -135,21 +161,7 @@ export default function ChatScreen() {
       setMessages((prev) => [...prev, userMsg]);
       setIsWaiting(true);
 
-      const apiMessages: ChatRequestMessage[] = [...messages, userMsg].map(
-        (m) => ({
-          id: m.id,
-          speaker: m.speaker,
-          content: m.content,
-          created_at: m.created_at,
-        })
-      );
-
-      const result = await postChat({
-        messages: apiMessages,
-        activeGangIds: gangIds,
-        userName: profile?.username ?? null,
-        chatMode: "gang_focus",
-      });
+      const result = await sendChatPayload(userMsg);
 
       if (!result.ok) {
         if (result.status === 402 && result.cooldownSeconds) {
@@ -166,7 +178,21 @@ export default function ChatScreen() {
 
       scheduleEvents(result.data.events);
     },
-    [isWaiting, messages, gangIds, profile?.username, scheduleEvents]
+    [isWaiting, sendChatPayload, scheduleEvents]
+  );
+
+  const handleCopy = useCallback(async (msg: ChatMessage) => {
+    await Clipboard.setStringAsync(msg.content);
+  }, []);
+
+  const handleReact = useCallback(
+    async (msg: ChatMessage, emoji: string) => {
+      // Update the local message with the reaction
+      setMessages((prev) =>
+        prev.map((m) => (m.id === msg.id ? { ...m, reaction: emoji } : m))
+      );
+    },
+    []
   );
 
   // If we somehow got here without a gang, show a helpful state instead of an empty chat.
@@ -206,6 +232,7 @@ export default function ChatScreen() {
                 undefined
               }
               avatarStyle={avatarStyle}
+              onMessageLongPress={(m) => setActionMessage(m)}
             />
           )}
           {typingCharacterId
@@ -228,6 +255,18 @@ export default function ChatScreen() {
         <ChatInput onSend={handleSend} disabled={isWaiting} />
         <AiDisclaimer />
       </KeyboardAvoidingView>
+
+      <MessageActionsSheet
+        visible={actionMessage !== null}
+        onClose={() => setActionMessage(null)}
+        onCopy={() => {
+          if (actionMessage) void handleCopy(actionMessage);
+        }}
+        onReact={(emoji) => {
+          if (actionMessage) void handleReact(actionMessage, emoji);
+        }}
+        canReact={actionMessage !== null && actionMessage.speaker !== "user"}
+      />
     </SafeAreaView>
   );
 }

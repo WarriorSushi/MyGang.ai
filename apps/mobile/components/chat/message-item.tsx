@@ -1,4 +1,4 @@
-import { Image, Text, View } from "react-native";
+import { Image, Pressable, Text, View } from "react-native";
 import {
   resolveAvatarUrl,
   type AvatarStyle,
@@ -12,6 +12,7 @@ export type ChatMessage = {
   speaker: string;
   content: string;
   created_at: string;
+  reaction?: string;
 };
 
 type MessageItemProps = {
@@ -20,6 +21,7 @@ type MessageItemProps = {
   customName?: string | null;
   avatarStyle: AvatarStyle;
   isUser: boolean;
+  onLongPress?: () => void;
 };
 
 export function MessageItem({
@@ -28,14 +30,22 @@ export function MessageItem({
   customName,
   avatarStyle,
   isUser,
+  onLongPress,
 }: MessageItemProps) {
   const displayName = customName ?? character?.name;
   if (isUser) {
     return (
       <View className="my-1 flex-row justify-end px-3">
-        <View className="max-w-[80%] rounded-2xl rounded-br-md bg-blue-600 px-4 py-2">
+        <Pressable
+          onLongPress={onLongPress}
+          delayLongPress={350}
+          className="max-w-[80%] rounded-2xl rounded-br-md bg-blue-600 px-4 py-2 active:opacity-90"
+        >
           <Text className="text-base text-white">{message.content}</Text>
-        </View>
+          {message.reaction ? (
+            <Text className="mt-1 text-base">{message.reaction}</Text>
+          ) : null}
+        </Pressable>
       </View>
     );
   }
@@ -61,9 +71,16 @@ export function MessageItem({
             {displayName}
           </Text>
         ) : null}
-        <View className="rounded-2xl rounded-bl-md bg-zinc-800 px-4 py-2">
+        <Pressable
+          onLongPress={onLongPress}
+          delayLongPress={350}
+          className="rounded-2xl rounded-bl-md bg-zinc-800 px-4 py-2 active:opacity-90"
+        >
           <Text className="text-base text-white">{message.content}</Text>
-        </View>
+          {message.reaction ? (
+            <Text className="mt-1 text-base">{message.reaction}</Text>
+          ) : null}
+        </Pressable>
       </View>
     </View>
   );

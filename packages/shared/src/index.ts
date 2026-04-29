@@ -12,3 +12,4 @@ export * from "./characters-messages";
 export * from "./prompts/response-style";
 export * from "./prompts/character";
 export * from "./prompts/system";
+export * from "./wallpapers";
