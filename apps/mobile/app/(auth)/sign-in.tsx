@@ -1,14 +1,84 @@
-import { Text, View } from "react-native";
+import { useState } from "react";
+import { Text, View, Alert } from "react-native";
 import { Link } from "expo-router";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { signInInputSchema, type SignInInput } from "@mygang/shared";
+
+import { supabase } from "../../lib/supabase";
+import { FormField } from "../../components/form-field";
+import { PrimaryButton } from "../../components/primary-button";
 
 export default function SignInScreen() {
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const {
+    control,
+    handleSubmit,
+    formState: { errors },
+  } = useForm<SignInInput>({
+    resolver: zodResolver(signInInputSchema),
+    defaultValues: { email: "", password: "" },
+  });
+
+  async function onSubmit(values: SignInInput) {
+    setIsSubmitting(true);
+    const { error } = await supabase.auth.signInWithPassword({
+      email: values.email,
+      password: values.password,
+    });
+    setIsSubmitting(false);
+
+    if (error) {
+      Alert.alert("Sign in failed", error.message);
+      return;
+    }
+    // Route gate redirects on session change; nothing to do here.
+  }
+
   return (
-    <View className="flex-1 items-center justify-center bg-zinc-950 px-6">
-      <Text className="text-2xl font-bold text-white">Sign In (placeholder)</Text>
-      <Text className="mt-2 text-zinc-400">Real screen comes in Task 1.4.</Text>
-      <Link href="/(auth)/sign-up" className="mt-6 text-white underline">
-        Go to Sign Up →
+    <View className="flex-1 justify-center bg-zinc-950 px-6">
+      <Text className="mb-2 text-3xl font-bold text-white">Welcome back</Text>
+      <Text className="mb-6 text-zinc-400">Your gang's been waiting.</Text>
+
+      <FormField
+        control={control}
+        name="email"
+        label="Email"
+        autoCapitalize="none"
+        keyboardType="email-address"
+        autoComplete="email"
+        error={errors.email?.message}
+      />
+
+      <FormField
+        control={control}
+        name="password"
+        label="Password"
+        secureTextEntry
+        autoComplete="password"
+        error={errors.password?.message}
+      />
+
+      <PrimaryButton
+        label="Sign In"
+        onPress={handleSubmit(onSubmit)}
+        isLoading={isSubmitting}
+      />
+
+      <Link
+        href="/(auth)/forgot-password"
+        className="mt-4 self-center text-sm text-zinc-400 underline"
+      >
+        Forgot password?
       </Link>
+
+      <View className="mt-6 flex-row justify-center">
+        <Text className="text-zinc-400">No account yet? </Text>
+        <Link href="/(auth)/sign-up" className="text-white underline">
+          Sign up
+        </Link>
+      </View>
     </View>
   );
 }

@@ -1,21 +1,21 @@
-import { Text, View } from "react-native";
-import type { TokenUsage } from "@mygang/shared";
-
-const placeholderTokenUsage: TokenUsage = {
-  promptChars: 0,
-  responseChars: 0,
-  historyCount: 0,
-  provider: "none",
-};
+import { Pressable, Text, View } from "react-native";
+import { useAuth } from "../../lib/auth-context";
+import { supabase } from "../../lib/supabase";
 
 export default function HomeScreen() {
+  const { user } = useAuth();
+
   return (
     <View className="flex-1 items-center justify-center bg-zinc-950 px-6">
       <Text className="text-3xl font-bold text-white">MyGang</Text>
-      <Text className="mt-2 text-base text-zinc-400">Hello from the gang.</Text>
-      <Text className="mt-6 text-xs text-zinc-700">
-        shared:{placeholderTokenUsage.provider}
-      </Text>
+      <Text className="mt-2 text-zinc-400">Signed in as</Text>
+      <Text className="text-base text-white">{user?.email ?? "(unknown)"}</Text>
+      <Pressable
+        className="mt-8 rounded-lg bg-red-600 px-4 py-2 active:bg-red-700"
+        onPress={() => supabase.auth.signOut()}
+      >
+        <Text className="text-white">Sign out</Text>
+      </Pressable>
     </View>
   );
 }
