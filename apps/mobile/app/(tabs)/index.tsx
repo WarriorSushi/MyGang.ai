@@ -1,4 +1,4 @@
-import { StyleSheet, Text, View } from "react-native";
+import { Text, View } from "react-native";
 import type { TokenUsage } from "@mygang/shared";
 
 const placeholderTokenUsage: TokenUsage = {
@@ -10,35 +10,12 @@ const placeholderTokenUsage: TokenUsage = {
 
 export default function HomeScreen() {
   return (
-    <View style={styles.container}>
-      <Text style={styles.title}>MyGang</Text>
-      <Text style={styles.subtitle}>Hello from the gang.</Text>
-      <Text style={styles.debug}>shared:{placeholderTokenUsage.provider}</Text>
+    <View className="flex-1 items-center justify-center bg-zinc-950 px-6">
+      <Text className="text-3xl font-bold text-white">MyGang</Text>
+      <Text className="mt-2 text-base text-zinc-400">Hello from the gang.</Text>
+      <Text className="mt-6 text-xs text-zinc-700">
+        shared:{placeholderTokenUsage.provider}
+      </Text>
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    alignItems: "center",
-    justifyContent: "center",
-    backgroundColor: "#09090b",
-    padding: 24,
-  },
-  title: {
-    color: "#ffffff",
-    fontSize: 32,
-    fontWeight: "700",
-  },
-  subtitle: {
-    color: "#a1a1aa",
-    marginTop: 8,
-    fontSize: 16,
-  },
-  debug: {
-    color: "#52525b",
-    marginTop: 24,
-    fontSize: 12,
-  },
-});
