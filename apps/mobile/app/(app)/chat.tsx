@@ -24,6 +24,7 @@ import { ChatInput } from "../../components/chat/chat-input";
 import { ChatHeader } from "../../components/chat/chat-header";
 import { AiDisclaimer } from "../../components/chat/ai-disclaimer";
 import { EmptyState } from "../../components/chat/empty-state";
+import { TypingIndicator } from "../../components/chat/typing-indicator";
 import { type ChatMessage } from "../../components/chat/message-item";
 
 export default function ChatScreen() {
@@ -31,6 +32,7 @@ export default function ChatScreen() {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [isWaiting, setIsWaiting] = useState(false);
   const [hasHydrated, setHasHydrated] = useState(false);
+  const [typingCharacterId, setTypingCharacterId] = useState<string | null>(null);
   const userIdRef = useRef<string | null>(null);
 
   // Hydrate persisted chat history once we know the user
@@ -82,14 +84,24 @@ export default function ChatScreen() {
     [allCharacters, gangIds]
   );
 
-  // Render incoming events as messages with their delay timing
+  // Render incoming events with their delay timing.
+  // - "typing_ghost" events show "X is typing..." for `delay` ms.
+  // - "message" events append the message after `delay` ms.
+  // - other event types (reactions, status_update, nickname_update) deferred.
   const scheduleEvents = useCallback(
     (events: { type: string; character: string; content?: string; delay: number; message_id?: string }[]) => {
       let cumulative = 0;
       events.forEach((event) => {
-        cumulative += Math.max(0, event.delay);
-        if (event.type === "message" && event.content) {
+        const eventDelay = Math.max(0, event.delay);
+        const fireAt = cumulative;
+        cumulative += eventDelay;
+
+        if (event.type === "typing_ghost") {
+          // Show typing indicator at fireAt, hide it when the next event starts.
+          setTimeout(() => setTypingCharacterId(event.character), fireAt);
+        } else if (event.type === "message" && event.content) {
           setTimeout(() => {
+            setTypingCharacterId(null);
             setMessages((prev) => [
               ...prev,
               {
@@ -101,10 +113,12 @@ export default function ChatScreen() {
             ]);
           }, cumulative);
         }
-        // Reactions and other event types are deferred for now.
       });
       // Re-enable input after the last event lands
-      setTimeout(() => setIsWaiting(false), cumulative + 100);
+      setTimeout(() => {
+        setTypingCharacterId(null);
+        setIsWaiting(false);
+      }, cumulative + 100);
     },
     []
   );
@@ -194,6 +208,22 @@ export default function ChatScreen() {
               avatarStyle={avatarStyle}
             />
           )}
+          {typingCharacterId
+            ? (() => {
+                const c = allCharacters.find((x) => x.id === typingCharacterId);
+                if (!c) return null;
+                const customName =
+                  (profile?.custom_character_names as Record<string, string> | null)
+                    ?.[typingCharacterId] ?? undefined;
+                return (
+                  <TypingIndicator
+                    character={c}
+                    customName={customName}
+                    avatarStyle={avatarStyle}
+                  />
+                );
+              })()
+            : null}
         </View>
         <ChatInput onSend={handleSend} disabled={isWaiting} />
         <AiDisclaimer />
