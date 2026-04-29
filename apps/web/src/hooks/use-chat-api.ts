@@ -7,7 +7,7 @@ import { ensureAnalyticsSession, trackEvent } from '@/lib/analytics'
 import { getTierFromProfile } from '@/lib/billing'
 import { hasOpenFloorIntent } from '@/lib/chat-utils'
 import type { PendingArrivalContext } from '@/lib/chat-arrival'
-import type { TokenUsage } from '@/types/shared'
+import type { TokenUsage } from '@mygang/shared'
 
 /** Only live-chat messages (source='chat' or legacy/undefined) enter the payload window. */
 export function isLiveChatMessage(m: { source?: string }): boolean {

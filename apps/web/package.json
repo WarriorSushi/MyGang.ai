@@ -22,6 +22,7 @@
   },
   "dependencies": {
     "@ai-sdk/google": "^3.0.20",
+    "@mygang/shared": "workspace:*",
     "@dodopayments/nextjs": "^0.3.4",
     "@openrouter/ai-sdk-provider": "^2.2.3",
     "@sentry/nextjs": "10",

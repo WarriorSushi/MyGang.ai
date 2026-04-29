@@ -20,6 +20,9 @@ importers:
       '@dodopayments/nextjs':
         specifier: ^0.3.4
         version: 0.3.4(next@16.1.6(@babel/core@7.29.0)(@opentelemetry/api@1.9.0)(@playwright/test@1.58.2)(react-dom@19.2.3(react@19.2.3))(react@19.2.3))(zod@3.25.76)
+      '@mygang/shared':
+        specifier: workspace:*
+        version: link:../../packages/shared
       '@openrouter/ai-sdk-provider':
         specifier: ^2.2.3
         version: 2.2.3(ai@6.0.105(zod@3.25.76))(zod@3.25.76)
@@ -141,6 +144,8 @@ importers:
       typescript:
         specifier: ^5
         version: 5.9.3
+
+  packages/shared: {}
 
 packages:
 

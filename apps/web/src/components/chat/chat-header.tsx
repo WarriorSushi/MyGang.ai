@@ -9,7 +9,7 @@ import { useTheme } from 'next-themes'
 import { updateUserSettings } from '@/app/auth/actions'
 import Image from 'next/image'
 import { truncateText } from '@/lib/utils'
-import type { TokenUsage } from '@/types/shared'
+import type { TokenUsage } from '@mygang/shared'
 import type { SubscriptionTier } from '@/lib/billing'
 import { AvatarLightbox } from './avatar-lightbox'
 

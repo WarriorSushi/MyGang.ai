@@ -1,0 +1,17 @@
+{
+  "name": "@mygang/shared",
+  "version": "0.0.1",
+  "private": true,
+  "main": "./src/index.ts",
+  "types": "./src/index.ts",
+  "exports": {
+    ".": "./src/index.ts",
+    "./types": "./src/types/index.ts"
+  },
+  "scripts": {
+    "lint": "echo 'no lint configured for @mygang/shared yet'",
+    "test": "echo 'no tests configured for @mygang/shared yet'",
+    "test:fast": "echo 'no fast tests configured for @mygang/shared yet'",
+    "build": "echo 'no build step needed; @mygang/shared is consumed as TS source'"
+  }
+}
