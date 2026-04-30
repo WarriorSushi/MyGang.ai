@@ -1,6 +1,6 @@
 import { supabase } from "./supabase";
 
-const CHAT_API_URL = "https://mygang.ai/api/chat";
+const CHAT_API_URL = "https://www.mygang.ai/api/chat";
 
 export type ChatEvent = {
   type: "message" | "reaction" | "status_update" | "nickname_update" | "typing_ghost";
