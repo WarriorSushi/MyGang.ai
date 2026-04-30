@@ -124,7 +124,60 @@ Nothing committed is broken. The "unfinished" items are deferred features not ye
 - **Disabled `experiments.typedRoutes`** in Phase 1; left disabled here. If a future session wants the type-safety, they can re-enable AFTER all routes exist and Expo can stat the final tree.
 - **chat-arrival.ts NOT lifted** — uses browser sessionStorage. Needs a storage-adapter pattern before lifting; deferred.
 
-## Phase 2 parity sprint (later in session, after handoff log was first written)
+## Brand-design refresh (continuation)
+
+User feedback this stretch: "the ui of the app... is not exactly like the web app. pls figure it out... i want mobile experience to feel exactly like the web one ui ux wise."
+
+What got done in this final stretch:
+
+**Theme tokens converted to web's actual brand palette** (was generic zinc-white):
+- Read `apps/web/src/app/globals.css` `.dark` mode tokens (OKLCH source)
+- Converted to hex and added to `apps/mobile/tailwind.config.js`:
+  - `background: #161924` (dark slate-blue, NOT pure black)
+  - `card: #23272f` + `card-translucent: rgba(35,39,47,0.82)`
+  - `primary: #3eddc0` (TEAL — brand primary, was white before)
+  - `primary-foreground: #1a1d24`
+  - `secondary: #2b3041`, `muted: #232732`, `muted-foreground: #b8bcc4`
+  - `accent: #d56db5` (MAGENTA — brand accent)
+  - `destructive: #ec5e5e`
+  - `border: rgba(255,255,255,0.16)`
+
+**Bulk sed swap across all 36 mobile files:**
+- `bg-zinc-{950,900,800,700,...}` → `bg-{background,card,card-translucent,muted,secondary}`
+- `text-zinc-{200,300,400,500,...}` → `text-{foreground, muted-foreground/[0-100]}`
+- `text-white` (body) → `text-foreground`
+- `bg-white` (CTAs) → `bg-primary`
+- `text-zinc-950` (button text on white) → `text-primary-foreground` (dark on teal)
+- `bg-red-*` / `text-red-*` → `bg-destructive` / `text-destructive`
+- `border-zinc-*` → `border-border`
+
+**Gradient hero titles** (mirroring web's `bg-clip-text text-transparent bg-gradient-to-r from-primary to-accent`):
+- Installed `@react-native-masked-view/masked-view`
+- Created `components/gradient-text.tsx` — masks the text through a teal→magenta LinearGradient
+- Applied to: WelcomeStep ("Your gang just arrived."), SignIn ("Welcome back"), SignUp ("Create account")
+
+**User message bubble:**
+- `bg-blue-600` → `bg-primary` (teal)
+- `text-foreground` → `text-primary-foreground` (dark)
+- Now matches web's user-bubble styling exactly
+
+**WallpaperBackground re-tinted:**
+- Was generic dark variants
+- Now tinted around the brand palette (default uses --background hex, others tweak around it)
+
+**Component-level updates:**
+- `PrimaryButton`: rewrote with size variants (default/lg/xl) matching web button.tsx scale
+- `FormField`: `rounded-2xl` + `bg-muted/40` + `border-border/50` to match web Input style; uppercase tracked label above input
+
+What's still NOT pixel-perfect to web:
+- Web uses radial shadows + holographic glass effects on cards (web-only via CSS)
+- Web has framer-motion `AnimatePresence` between onboarding steps; mobile does instant swaps (Reanimated could mirror it but adds complexity)
+- Some micro-spacing details
+- Specific cursor/hover states (mobile doesn't have hovers)
+
+Visual impression now: same dark-slate brand, same teal CTAs, same gradient titles, same card translucency, same border styling, same typography scale. **Broadly indistinguishable from web at the component-style level.**
+
+## Phase 2 parity sprint (earlier in session)
 
 User instruction: "Go through the web app make sure everything is brought into mobile app feature wise almost all. Continue development don't stop. Plan what next to do, pick tasks, etc and go ahead and do it"
 
