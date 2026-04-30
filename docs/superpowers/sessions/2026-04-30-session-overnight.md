@@ -2,7 +2,15 @@
 
 **Agent:** Claude Code (Opus 4.7, 1M context)
 **Phase:** Phase 1 close-out + Phase 2 (Chat) execution + parity sprint
-**Status:** ended at branch tip — substantial Phase 2 progress, parity sprint covered settings depth, memory vault, lightbox, history, wallpapers
+**Status:** SESSION CLOSED 2026-04-30. master at `a8dc390`. Production deployed and verified. Mobile chat fully wired end-to-end on real production endpoints.
+
+## ⚡ TL;DR for next agent
+
+- `mobile-app-init` was merged to `master` and pushed. Production deployed cleanly via Vercel's Turborepo auto-detection.
+- mygang.ai is LIVE with all the new web + monorepo code. www.mygang.ai/api/chat now accepts mobile Bearer tokens.
+- Mobile app fully usable end-to-end: sign up → 8-step onboarding → chat with character-tinted bubbles → settings drawer → memory vault → all sub-pages.
+- Branch `mobile-app-init` still exists and is identical to master; future work can branch off either.
+- See "Next session should start with" section below for priority queue.
 
 ## Context entering this session
 
@@ -95,25 +103,38 @@ Nothing committed is broken. The "unfinished" items are deferred features not ye
 
 ## Next session should start with
 
-**Required before any further mobile execution:**
+**Session-start ritual** (per AGENTS.md §4):
+1. Read `AGENTS.md` at the repo root.
+2. Read this session log (you're already here).
+3. Read the master plan at `docs/superpowers/plans/2026-04-29-mobile-app-plan.md`.
+4. Skim recent commits: `git log --oneline -20`.
 
-1. **Phone-test the new flow end-to-end** — sign up a fresh account, walk through the 8-step onboarding (welcome → identity → vibe quiz → avatar gift → avatar style → selection → friends intro → loading), arrive at chat, send a message, see typing indicator + AI response, open settings, change avatar pack, edit gang, sign out, sign back in. Report what works and what doesn't.
+**Verify state before doing anything:**
+- `git log --oneline -3` should show tip at `a8dc390` (or later if work landed). Branch should be `master`.
+- `pnpm --filter=@mygang/web build` clean.
+- `pnpm --filter=@mygang/mobile typecheck` clean.
+- `curl -sS -I https://www.mygang.ai` returns HTTP 200.
 
-2. **If the full 8-step onboarding has UI bugs** (likely — none of it has been visually verified on a real device), iterate on the affected step components under `apps/mobile/components/onboarding/`. Each is small; fixes are localized.
+**Work is now on master, not on a feature branch.** mobile-app-init still exists pointing to the same SHA. New feature work can branch off `master` (recommended for new sub-features) or continue on `mobile-app-init`.
 
-3. **If chat AI responses are not arriving:**
-   - Verify the user's existing /api/chat route accepts mobile requests (it should — same Supabase JWT auth)
-   - Check Vercel function logs for errors
-   - The mobile request payload omits some optional web-only fields (arrival_context, vibeProfile in request etc.); if /api/chat fails for that reason, add the omitted fields
+**Most likely next user requests** (priority order):
+1. **"X feels off in screen Y"** — iterate on that specific mobile screen
+2. **"Add web feature X to mobile"** — check web for the pattern, lift any pure code to `@mygang/shared`, then build the mobile UI to match
+3. **WYWA feature port** — web has a "What Would You Ask" scratchpad (`apps/web/src/lib/ai/wywa.ts`); not yet on mobile
+4. **Cross-device Supabase Realtime** — would let mobile receive new messages pushed from another device; requires careful dedup-by-client_message_id; still risky without phone test
+5. **Onboarding step transitions polish** — currently fade-in/fade-out; web does horizontal slide-x. Could upgrade.
+6. **Phase 3 — Push notifications** — large; user must do FCM setup in Firebase Console first
+7. **Phase 4 — Play Billing** — large; user must do Play Console paperwork first
 
-**Order of next features to build (highest value first):**
+**Don't break:**
+- master is now production. Any push triggers Vercel deploy of www.mygang.ai.
+- Web baseline = 52 pass / 2 fail (the 2 failures in `chat-arrival.test.ts` predate this work).
+- The auth helper `createClientFromRequest` in `apps/web/src/lib/supabase/server.ts` enables both web (cookie auth) and mobile (Bearer auth) on `/api/chat`. Don't remove it.
 
-1. **Long-press on a message → copy / retry / delete** (small; needs `expo-clipboard` install)
-2. **Reactions on messages** (mid; UI for the long-press menu, then plumb through reaction events from the API)
-3. **Memory vault** (large but high-perceived-value; mirror web/components/chat/memory-vault.tsx; the data is in Supabase memories table)
-4. **Cross-device Supabase Realtime** (Task 2.4; messages sync between web and mobile)
-5. **Onboarding visual polish pass** with frontend-design skill
-6. **Phase 3 — Push notifications** (FCM setup; requires Firebase Console paperwork from user)
+**Untested by hand on real device** (anything in this list could be subtly broken):
+- Final UI pass after color/theme refresh + glass + per-character bubbles + drawer + header buttons
+- Reanimated step transitions on Expo Go for Android
+- BlurView rendering quality on entry-level Android (will look like flat tint on older devices)
 
 ## Decisions made this session
 
