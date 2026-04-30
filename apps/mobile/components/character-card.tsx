@@ -22,22 +22,22 @@ export function CharacterCard({
     <Pressable
       onPress={onPress}
       className={`mb-3 flex-row items-center rounded-xl border-2 p-3 ${
-        selected ? "border-white bg-zinc-900" : "border-zinc-800 bg-zinc-950"
+        selected ? "border-primary bg-card" : "border-border bg-background"
       }`}
     >
       <Image
         source={{ uri: avatarUrl }}
-        className="h-14 w-14 rounded-full bg-zinc-800"
+        className="h-14 w-14 rounded-full bg-muted"
       />
       <View className="ml-3 flex-1">
-        <Text className="text-base font-semibold text-white">
+        <Text className="text-base font-semibold text-foreground">
           {character.name}
         </Text>
-        <Text className="text-sm text-zinc-400">{character.vibe}</Text>
+        <Text className="text-sm text-muted-foreground">{character.vibe}</Text>
       </View>
       {selected ? (
-        <View className="h-6 w-6 items-center justify-center rounded-full bg-white">
-          <Text className="text-xs font-bold text-zinc-950">✓</Text>
+        <View className="h-6 w-6 items-center justify-center rounded-full bg-primary">
+          <Text className="text-xs font-bold text-primary-foreground">✓</Text>
         </View>
       ) : null}
     </Pressable>

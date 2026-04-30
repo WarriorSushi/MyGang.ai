@@ -42,14 +42,14 @@ export default function ForgotPasswordScreen() {
 
   if (submitted) {
     return (
-      <View className="flex-1 items-center justify-center bg-zinc-950 px-6">
-        <Text className="text-2xl font-bold text-white">Check your email</Text>
-        <Text className="mt-2 text-center text-zinc-400">
+      <View className="flex-1 items-center justify-center bg-background px-6">
+        <Text className="text-2xl font-bold text-foreground">Check your email</Text>
+        <Text className="mt-2 text-center text-muted-foreground">
           We sent a password reset link. Tap it to set a new password.
         </Text>
         <Link
           href="/(auth)/sign-in"
-          className="mt-6 text-white underline"
+          className="mt-6 text-foreground underline"
         >
           Back to Sign In
         </Link>
@@ -58,9 +58,9 @@ export default function ForgotPasswordScreen() {
   }
 
   return (
-    <View className="flex-1 justify-center bg-zinc-950 px-6">
-      <Text className="mb-2 text-3xl font-bold text-white">Reset password</Text>
-      <Text className="mb-6 text-zinc-400">
+    <View className="flex-1 justify-center bg-background px-6">
+      <Text className="mb-2 text-3xl font-bold text-foreground">Reset password</Text>
+      <Text className="mb-6 text-muted-foreground">
         Enter your email and we'll send a reset link.
       </Text>
 
@@ -82,7 +82,7 @@ export default function ForgotPasswordScreen() {
 
       <Link
         href="/(auth)/sign-in"
-        className="mt-6 self-center text-sm text-zinc-400 underline"
+        className="mt-6 self-center text-sm text-muted-foreground underline"
       >
         Back to Sign In
       </Link>

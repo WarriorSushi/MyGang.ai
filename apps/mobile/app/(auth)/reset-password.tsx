@@ -88,14 +88,14 @@ export default function ResetPasswordScreen() {
 
   if (done) {
     return (
-      <View className="flex-1 items-center justify-center bg-zinc-950 px-6">
-        <Text className="text-2xl font-bold text-white">Password updated</Text>
-        <Text className="mt-2 text-center text-zinc-400">
+      <View className="flex-1 items-center justify-center bg-background px-6">
+        <Text className="text-2xl font-bold text-foreground">Password updated</Text>
+        <Text className="mt-2 text-center text-muted-foreground">
           You can sign in with your new password.
         </Text>
         <Link
           href="/(auth)/sign-in"
-          className="mt-6 text-white underline"
+          className="mt-6 text-foreground underline"
         >
           Sign In
         </Link>
@@ -105,16 +105,16 @@ export default function ResetPasswordScreen() {
 
   if (!hasSession) {
     return (
-      <View className="flex-1 items-center justify-center bg-zinc-950 px-6">
-        <Text className="text-zinc-400">Verifying reset link…</Text>
+      <View className="flex-1 items-center justify-center bg-background px-6">
+        <Text className="text-muted-foreground">Verifying reset link…</Text>
       </View>
     );
   }
 
   return (
-    <View className="flex-1 justify-center bg-zinc-950 px-6">
-      <Text className="mb-2 text-3xl font-bold text-white">New password</Text>
-      <Text className="mb-6 text-zinc-400">Pick something you'll remember.</Text>
+    <View className="flex-1 justify-center bg-background px-6">
+      <Text className="mb-2 text-3xl font-bold text-foreground">New password</Text>
+      <Text className="mb-6 text-muted-foreground">Pick something you'll remember.</Text>
 
       <FormField
         control={control}

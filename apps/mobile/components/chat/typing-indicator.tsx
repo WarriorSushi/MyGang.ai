@@ -38,7 +38,7 @@ function Dot({ delay }: { delay: number }) {
   return (
     <Animated.View
       style={{ opacity }}
-      className="h-1.5 w-1.5 rounded-full bg-zinc-400"
+      className="h-1.5 w-1.5 rounded-full bg-muted-foreground"
     />
   );
 }
@@ -53,12 +53,12 @@ export function TypingIndicator({
 
   return (
     <View className="my-1 flex-row items-end gap-2 px-3">
-      <View className="h-8 w-8 overflow-hidden rounded-full border border-zinc-700 bg-zinc-800">
+      <View className="h-8 w-8 overflow-hidden rounded-full border border-border bg-muted">
         <Image source={{ uri: avatarUrl }} className="h-full w-full" resizeMode="cover" />
       </View>
       <View>
-        <Text className="mb-0.5 text-[11px] font-semibold text-zinc-500">{name}</Text>
-        <View className="flex-row items-center gap-1 rounded-2xl rounded-bl-md bg-zinc-800 px-4 py-3">
+        <Text className="mb-0.5 text-[11px] font-semibold text-muted-foreground/70">{name}</Text>
+        <View className="flex-row items-center gap-1 rounded-2xl rounded-bl-md bg-muted px-4 py-3">
           <Dot delay={0} />
           <Dot delay={200} />
           <Dot delay={400} />

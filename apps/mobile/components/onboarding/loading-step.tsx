@@ -27,7 +27,7 @@ export function LoadingStep({ states, onComplete }: LoadingStepProps) {
   }, [index, states.length, onComplete]);
 
   return (
-    <View className="flex-1 items-center justify-center bg-zinc-950 px-6">
+    <View className="flex-1 items-center justify-center bg-background px-6">
       <ActivityIndicator color="#ffffff" size="large" />
       <View className="mt-8 max-w-xs">
         {states.map((state, i) => {
@@ -38,7 +38,7 @@ export function LoadingStep({ states, onComplete }: LoadingStepProps) {
             <Text
               key={i}
               className={`mb-2 text-center text-base ${
-                isCurrent ? "text-white font-semibold" : "text-zinc-600"
+                isCurrent ? "text-foreground font-semibold" : "text-muted-foreground/50"
               }`}
             >
               {isPast ? "✓ " : ""}

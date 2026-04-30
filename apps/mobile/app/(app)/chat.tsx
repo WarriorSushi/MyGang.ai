@@ -219,7 +219,7 @@ export default function ChatScreen() {
   // If we somehow got here without a gang, show a helpful state instead of an empty chat.
   if (gang.length === 0) {
     return (
-      <SafeAreaView className="flex-1 bg-zinc-950">
+      <SafeAreaView className="flex-1 bg-background">
         <ChatHeader characters={[]} avatarStyle={avatarStyle} />
         <EmptyState
           gang={[]}
@@ -231,7 +231,7 @@ export default function ChatScreen() {
   }
 
   return (
-    <SafeAreaView className="flex-1 bg-zinc-950" edges={["top", "left", "right"]}>
+    <SafeAreaView className="flex-1 bg-background" edges={["top", "left", "right"]}>
       <WallpaperBackground wallpaper={wallpaper}>
         <KeyboardAvoidingView
           className="flex-1"

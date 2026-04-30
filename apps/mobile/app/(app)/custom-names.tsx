@@ -86,25 +86,25 @@ export default function CustomNamesScreen() {
   }
 
   return (
-    <SafeAreaView className="flex-1 bg-zinc-950" edges={["top", "left", "right"]}>
-      <View className="flex-row items-center justify-between border-b border-zinc-800 px-4 py-3">
+    <SafeAreaView className="flex-1 bg-background" edges={["top", "left", "right"]}>
+      <View className="flex-row items-center justify-between border-b border-border px-4 py-3">
         <Pressable
           onPress={() => router.back()}
-          className="rounded-full border border-zinc-700 bg-zinc-900 px-3 py-1.5"
+          className="rounded-full border border-border bg-card px-3 py-1.5"
         >
-          <Text className="text-xs font-semibold text-zinc-400">← Back</Text>
+          <Text className="text-xs font-semibold text-muted-foreground">← Back</Text>
         </Pressable>
-        <Text className="text-base font-bold text-white">Custom names</Text>
+        <Text className="text-base font-bold text-foreground">Custom names</Text>
         <Pressable
           onPress={() => void save()}
           disabled={isSaving}
           className={`rounded-full px-3 py-1.5 ${
-            isSaving ? "bg-zinc-800" : "bg-white"
+            isSaving ? "bg-muted" : "bg-primary"
           }`}
         >
           <Text
             className={`text-xs font-semibold ${
-              isSaving ? "text-zinc-500" : "text-zinc-950"
+              isSaving ? "text-muted-foreground/70" : "text-primary-foreground"
             }`}
           >
             Save
@@ -113,7 +113,7 @@ export default function CustomNamesScreen() {
       </View>
 
       <ScrollView contentContainerClassName="px-4 py-4 pb-12">
-        <Text className="mb-3 text-xs text-zinc-500">
+        <Text className="mb-3 text-xs text-muted-foreground/70">
           Leave blank to keep the default name. Custom names show in the chat
           and across devices.
         </Text>
@@ -124,10 +124,10 @@ export default function CustomNamesScreen() {
             return (
               <View
                 key={c.id}
-                className="rounded-xl border border-zinc-800 bg-zinc-900/60 p-3"
+                className="rounded-xl border border-border bg-card-translucent p-3"
               >
                 <View className="flex-row items-center gap-3">
-                  <View className="h-12 w-12 overflow-hidden rounded-xl border border-zinc-700 bg-zinc-800">
+                  <View className="h-12 w-12 overflow-hidden rounded-xl border border-border bg-muted">
                     <Image
                       source={{ uri: url }}
                       className="h-full w-full"
@@ -135,11 +135,11 @@ export default function CustomNamesScreen() {
                     />
                   </View>
                   <View className="flex-1">
-                    <Text className="text-sm font-bold text-white">
+                    <Text className="text-sm font-bold text-foreground">
                       {c.name}
                     </Text>
                     {c.archetype ? (
-                      <Text className="text-[10px] uppercase tracking-wider text-zinc-500">
+                      <Text className="text-[10px] uppercase tracking-wider text-muted-foreground/70">
                         {c.archetype}
                       </Text>
                     ) : null}
@@ -151,7 +151,7 @@ export default function CustomNamesScreen() {
                   placeholder={c.name}
                   placeholderTextColor="#71717a"
                   maxLength={30}
-                  className="mt-2 h-10 rounded-lg border border-zinc-700 bg-zinc-800 px-3 text-sm text-white"
+                  className="mt-2 h-10 rounded-lg border border-border bg-muted px-3 text-sm text-foreground"
                 />
               </View>
             );
@@ -159,8 +159,8 @@ export default function CustomNamesScreen() {
         </View>
 
         {gang.length === 0 ? (
-          <View className="mt-6 rounded-xl border border-zinc-800 bg-zinc-900/60 p-4">
-            <Text className="text-center text-sm text-zinc-400">
+          <View className="mt-6 rounded-xl border border-border bg-card-translucent p-4">
+            <Text className="text-center text-sm text-muted-foreground">
               Pick a gang first to set custom names.
             </Text>
           </View>

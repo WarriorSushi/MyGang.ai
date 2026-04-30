@@ -157,14 +157,14 @@ export default function OnboardingScreen() {
   const showBack = Boolean(BACK_MAP[step]) && step !== "LOADING";
 
   return (
-    <SafeAreaView className="flex-1 bg-zinc-950" edges={["top", "left", "right"]}>
+    <SafeAreaView className="flex-1 bg-background" edges={["top", "left", "right"]}>
       {showBack ? (
         <View className="absolute left-4 top-12 z-50">
           <Pressable
             onPress={goBack}
-            className="rounded-full border border-zinc-700 bg-zinc-900 px-3 py-1.5"
+            className="rounded-full border border-border bg-card px-3 py-1.5"
           >
-            <Text className="text-xs font-semibold text-zinc-400">← Back</Text>
+            <Text className="text-xs font-semibold text-muted-foreground">← Back</Text>
           </Pressable>
         </View>
       ) : null}

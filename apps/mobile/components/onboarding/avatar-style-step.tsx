@@ -45,7 +45,7 @@ function PackPreview({ style }: { style: AvatarStyle }) {
 
   return (
     <View className="gap-2">
-      <View className="aspect-[1.15/1] overflow-hidden rounded-2xl bg-zinc-800">
+      <View className="aspect-[1.15/1] overflow-hidden rounded-2xl bg-muted">
         <Image source={{ uri: heroUrl }} className="h-full w-full" resizeMode="cover" />
       </View>
       <View className="flex-row gap-2">
@@ -54,7 +54,7 @@ function PackPreview({ style }: { style: AvatarStyle }) {
           return (
             <View
               key={c.id}
-              className="flex-1 aspect-square overflow-hidden rounded-xl border border-white/10 bg-zinc-800"
+              className="flex-1 aspect-square overflow-hidden rounded-xl border border-primary/10 bg-muted"
             >
               <Image source={{ uri: url }} className="h-full w-full" resizeMode="cover" />
             </View>
@@ -73,10 +73,10 @@ export function AvatarStyleStep({
   return (
     <View className="flex-1">
       <ScrollView contentContainerClassName="px-6 pb-32">
-        <Text className="mt-4 text-center text-2xl font-black text-white">
+        <Text className="mt-4 text-center text-2xl font-black text-foreground">
           Pick your gang's look
         </Text>
-        <Text className="mb-4 text-center text-sm text-zinc-400">
+        <Text className="mb-4 text-center text-sm text-muted-foreground">
           Choose one avatar pack for the whole app.
         </Text>
 
@@ -88,32 +88,32 @@ export function AvatarStyleStep({
               <Pressable
                 key={style}
                 onPress={() => onSelectStyle(style)}
-                className={`overflow-hidden rounded-3xl border-2 bg-zinc-900/60 p-3 ${
-                  isSelected ? "border-white" : "border-zinc-800"
+                className={`overflow-hidden rounded-3xl border-2 bg-card-translucent p-3 ${
+                  isSelected ? "border-primary" : "border-border"
                 }`}
               >
                 {meta.isGift ? (
                   <View className="absolute right-0 top-0 z-10 -translate-y-2 translate-x-4 rotate-45 bg-red-500 px-8 py-1">
-                    <Text className="text-[10px] font-extrabold uppercase tracking-wider text-white">
+                    <Text className="text-[10px] font-extrabold uppercase tracking-wider text-foreground">
                       Free Gift
                     </Text>
                   </View>
                 ) : null}
-                <View className="rounded-2xl bg-zinc-800/80 p-2">
+                <View className="rounded-2xl bg-muted/80 p-2">
                   <PackPreview style={style} />
                 </View>
                 <View className="mt-3 flex-row items-start justify-between gap-3 px-1">
                   <View className="flex-1">
-                    <Text className="text-xl font-semibold text-white">
+                    <Text className="text-xl font-semibold text-foreground">
                       {meta.title}
                     </Text>
-                    <Text className="mt-0.5 text-xs text-zinc-400">
+                    <Text className="mt-0.5 text-xs text-muted-foreground">
                       {meta.description}
                     </Text>
                   </View>
                   {isSelected ? (
-                    <View className="h-7 w-7 items-center justify-center rounded-full bg-white">
-                      <Text className="text-xs font-bold text-zinc-950">✓</Text>
+                    <View className="h-7 w-7 items-center justify-center rounded-full bg-primary">
+                      <Text className="text-xs font-bold text-primary-foreground">✓</Text>
                     </View>
                   ) : null}
                 </View>
@@ -123,7 +123,7 @@ export function AvatarStyleStep({
         </View>
       </ScrollView>
 
-      <View className="absolute inset-x-0 bottom-0 border-t border-zinc-800 bg-zinc-950/95 px-6 py-3 pb-6">
+      <View className="absolute inset-x-0 bottom-0 border-t border-border bg-background/95 px-6 py-3 pb-6">
         <PrimaryButton
           label={`Continue with ${PACK_META[selectedStyle].title}`}
           onPress={onNext}

@@ -86,29 +86,29 @@ export default function EditGangScreen() {
   }
 
   return (
-    <SafeAreaView className="flex-1 bg-zinc-950" edges={["top", "left", "right"]}>
-      <View className="flex-row items-center justify-between border-b border-zinc-800 px-4 py-3">
+    <SafeAreaView className="flex-1 bg-background" edges={["top", "left", "right"]}>
+      <View className="flex-row items-center justify-between border-b border-border px-4 py-3">
         <Pressable
           onPress={() => router.back()}
-          className="rounded-full border border-zinc-700 bg-zinc-900 px-3 py-1.5"
+          className="rounded-full border border-border bg-card px-3 py-1.5"
         >
-          <Text className="text-xs font-semibold text-zinc-400">← Back</Text>
+          <Text className="text-xs font-semibold text-muted-foreground">← Back</Text>
         </Pressable>
-        <Text className="text-base font-bold text-white">Edit gang</Text>
+        <Text className="text-base font-bold text-foreground">Edit gang</Text>
         <Pressable
           onPress={() => void save()}
           disabled={isSaving || selectedIds.length < 2}
           className={`rounded-full px-3 py-1.5 ${
             isSaving || selectedIds.length < 2
-              ? "bg-zinc-800"
-              : "bg-white"
+              ? "bg-muted"
+              : "bg-primary"
           }`}
         >
           <Text
             className={`text-xs font-semibold ${
               isSaving || selectedIds.length < 2
-                ? "text-zinc-500"
-                : "text-zinc-950"
+                ? "text-muted-foreground/70"
+                : "text-primary-foreground"
             }`}
           >
             Save

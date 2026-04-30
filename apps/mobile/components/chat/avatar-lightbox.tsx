@@ -43,8 +43,8 @@ export function AvatarLightbox({
         onPress={onClose}
         className="flex-1 items-center justify-center bg-black/85 px-6"
       >
-        <View className="w-full max-w-sm overflow-hidden rounded-3xl border border-zinc-800 bg-zinc-900">
-          <View className="aspect-square w-full bg-zinc-800">
+        <View className="w-full max-w-sm overflow-hidden rounded-3xl border border-border bg-card">
+          <View className="aspect-square w-full bg-muted">
             <Image
               source={{ uri: url }}
               className="h-full w-full"
@@ -52,38 +52,38 @@ export function AvatarLightbox({
             />
           </View>
           <View className="p-4">
-            <Text className="text-2xl font-black text-white">{name}</Text>
+            <Text className="text-2xl font-black text-foreground">{name}</Text>
             {character.archetype ? (
-              <Text className="mt-0.5 text-sm font-semibold uppercase tracking-wider text-zinc-500">
+              <Text className="mt-0.5 text-sm font-semibold uppercase tracking-wider text-muted-foreground/70">
                 {character.archetype}
               </Text>
             ) : null}
             {character.vibe ? (
               <View className="mt-3">
-                <Text className="text-[10px] uppercase tracking-widest text-zinc-500">
+                <Text className="text-[10px] uppercase tracking-widest text-muted-foreground/70">
                   Vibe
                 </Text>
-                <Text className="mt-0.5 text-sm text-zinc-200">
+                <Text className="mt-0.5 text-sm text-foreground">
                   {character.vibe}
                 </Text>
               </View>
             ) : null}
             {character.voice ? (
               <View className="mt-3">
-                <Text className="text-[10px] uppercase tracking-widest text-zinc-500">
+                <Text className="text-[10px] uppercase tracking-widest text-muted-foreground/70">
                   Voice
                 </Text>
-                <Text className="mt-0.5 text-sm text-zinc-200">
+                <Text className="mt-0.5 text-sm text-foreground">
                   {character.voice}
                 </Text>
               </View>
             ) : null}
             {character.sample ? (
               <View className="mt-3">
-                <Text className="text-[10px] uppercase tracking-widest text-zinc-500">
+                <Text className="text-[10px] uppercase tracking-widest text-muted-foreground/70">
                   Sample
                 </Text>
-                <Text className="mt-0.5 text-sm italic text-zinc-300">
+                <Text className="mt-0.5 text-sm italic text-foreground/85">
                   "{character.sample}"
                 </Text>
               </View>
@@ -93,9 +93,9 @@ export function AvatarLightbox({
                 {character.tags.map((tag) => (
                   <View
                     key={tag}
-                    className="rounded-full border border-zinc-700 bg-zinc-800 px-2.5 py-0.5"
+                    className="rounded-full border border-border bg-muted px-2.5 py-0.5"
                   >
-                    <Text className="text-[10px] font-medium text-zinc-300">
+                    <Text className="text-[10px] font-medium text-foreground/85">
                       {tag}
                     </Text>
                   </View>
@@ -105,9 +105,9 @@ export function AvatarLightbox({
           </View>
           <Pressable
             onPress={onClose}
-            className="border-t border-zinc-800 px-4 py-3 active:bg-zinc-800"
+            className="border-t border-border px-4 py-3 active:bg-muted"
           >
-            <Text className="text-center text-sm font-semibold text-zinc-300">
+            <Text className="text-center text-sm font-semibold text-foreground/85">
               Close
             </Text>
           </Pressable>

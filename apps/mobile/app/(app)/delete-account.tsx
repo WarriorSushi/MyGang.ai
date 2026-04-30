@@ -80,30 +80,30 @@ export default function DeleteAccountScreen() {
   }
 
   return (
-    <SafeAreaView className="flex-1 bg-zinc-950" edges={["top", "left", "right"]}>
-      <View className="flex-row items-center justify-between border-b border-zinc-800 px-4 py-3">
+    <SafeAreaView className="flex-1 bg-background" edges={["top", "left", "right"]}>
+      <View className="flex-row items-center justify-between border-b border-border px-4 py-3">
         <Pressable
           onPress={() => router.back()}
-          className="rounded-full border border-zinc-700 bg-zinc-900 px-3 py-1.5"
+          className="rounded-full border border-border bg-card px-3 py-1.5"
         >
-          <Text className="text-xs font-semibold text-zinc-400">← Back</Text>
+          <Text className="text-xs font-semibold text-muted-foreground">← Back</Text>
         </Pressable>
-        <Text className="text-base font-bold text-white">Delete account</Text>
+        <Text className="text-base font-bold text-foreground">Delete account</Text>
         <View className="w-16" />
       </View>
 
       <ScrollView contentContainerClassName="px-6 pt-6 pb-12">
-        <Text className="text-2xl font-bold text-white">This is permanent.</Text>
-        <Text className="mt-2 text-sm text-zinc-400">
+        <Text className="text-2xl font-bold text-foreground">This is permanent.</Text>
+        <Text className="mt-2 text-sm text-muted-foreground">
           Deleting your account will remove your gang, chat history, memories,
           and any active subscription. We can't recover any of it.
         </Text>
 
-        <View className="mt-6 rounded-xl border border-red-500/30 bg-red-500/5 p-4">
-          <Text className="text-xs font-semibold uppercase tracking-wider text-red-400">
+        <View className="mt-6 rounded-xl border border-destructive/30 bg-red-500/5 p-4">
+          <Text className="text-xs font-semibold uppercase tracking-wider text-destructive">
             Type your email to continue
           </Text>
-          <Text className="mt-1 text-xs text-zinc-500">{user?.email}</Text>
+          <Text className="mt-1 text-xs text-muted-foreground/70">{user?.email}</Text>
           <TextInput
             value={confirmEmail}
             onChangeText={setConfirmEmail}
@@ -111,7 +111,7 @@ export default function DeleteAccountScreen() {
             placeholderTextColor="#71717a"
             autoCapitalize="none"
             keyboardType="email-address"
-            className="mt-3 rounded-lg border border-zinc-700 bg-zinc-900 px-3 py-3 text-base text-white"
+            className="mt-3 rounded-lg border border-border bg-card px-3 py-3 text-base text-foreground"
           />
         </View>
 
@@ -119,19 +119,19 @@ export default function DeleteAccountScreen() {
           onPress={confirmDelete}
           disabled={!matches || isDeleting}
           className={`mt-6 rounded-xl px-4 py-3 ${
-            matches && !isDeleting ? "bg-red-600" : "bg-zinc-800"
+            matches && !isDeleting ? "bg-destructive" : "bg-muted"
           }`}
         >
           <Text
             className={`text-center text-sm font-semibold ${
-              matches && !isDeleting ? "text-white" : "text-zinc-500"
+              matches && !isDeleting ? "text-foreground" : "text-muted-foreground/70"
             }`}
           >
             {isDeleting ? "Deleting…" : "Delete my account"}
           </Text>
         </Pressable>
 
-        <Text className="mt-4 text-center text-xs text-zinc-600">
+        <Text className="mt-4 text-center text-xs text-muted-foreground/50">
           Note: full data deletion currently requires a backend job. This action
           marks the account for deletion and signs you out; complete server-side
           removal happens within 24 hours.

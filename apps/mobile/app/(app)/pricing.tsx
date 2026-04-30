@@ -48,23 +48,23 @@ export default function PricingScreen() {
   }
 
   return (
-    <SafeAreaView className="flex-1 bg-zinc-950" edges={["top", "left", "right"]}>
-      <View className="flex-row items-center justify-between border-b border-zinc-800 px-4 py-3">
+    <SafeAreaView className="flex-1 bg-background" edges={["top", "left", "right"]}>
+      <View className="flex-row items-center justify-between border-b border-border px-4 py-3">
         <Pressable
           onPress={() => router.back()}
-          className="rounded-full border border-zinc-700 bg-zinc-900 px-3 py-1.5"
+          className="rounded-full border border-border bg-card px-3 py-1.5"
         >
-          <Text className="text-xs font-semibold text-zinc-400">← Back</Text>
+          <Text className="text-xs font-semibold text-muted-foreground">← Back</Text>
         </Pressable>
-        <Text className="text-base font-bold text-white">Plans</Text>
+        <Text className="text-base font-bold text-foreground">Plans</Text>
         <View className="w-16" />
       </View>
 
       <ScrollView contentContainerClassName="px-4 pt-4 pb-12">
-        <Text className="text-center text-3xl font-black text-white">
+        <Text className="text-center text-3xl font-black text-foreground">
           Pick your plan
         </Text>
-        <Text className="mt-1 text-center text-sm text-zinc-400">
+        <Text className="mt-1 text-center text-sm text-muted-foreground">
           Upgrade any time. Cancel any time.
         </Text>
 
@@ -79,29 +79,29 @@ export default function PricingScreen() {
                 key={tier}
                 className={`overflow-hidden rounded-2xl border p-4 ${
                   isCurrent
-                    ? "border-white bg-zinc-900"
-                    : "border-zinc-800 bg-zinc-900/60"
+                    ? "border-primary bg-card"
+                    : "border-border bg-card-translucent"
                 }`}
               >
                 <View className="flex-row items-start justify-between">
                   <View>
-                    <Text className="text-2xl font-black text-white">
+                    <Text className="text-2xl font-black text-foreground">
                       {copy.label}
                     </Text>
-                    <Text className="mt-1 text-base text-zinc-400">
+                    <Text className="mt-1 text-base text-muted-foreground">
                       {copy.priceLabel}
                     </Text>
                   </View>
                   {isCurrent ? (
-                    <View className="rounded-full bg-white px-3 py-1">
-                      <Text className="text-[10px] font-bold uppercase tracking-wider text-zinc-950">
+                    <View className="rounded-full bg-primary px-3 py-1">
+                      <Text className="text-[10px] font-bold uppercase tracking-wider text-primary-foreground">
                         Current
                       </Text>
                     </View>
                   ) : null}
                 </View>
 
-                <Text className="mt-2 text-sm text-zinc-300">
+                <Text className="mt-2 text-sm text-foreground/85">
                   {copy.usageDescription}
                 </Text>
 
@@ -109,7 +109,7 @@ export default function PricingScreen() {
                   {features.map((feature) => (
                     <View key={feature} className="flex-row items-center gap-2">
                       <Text className="text-xs text-emerald-400">✓</Text>
-                      <Text className="flex-1 text-sm text-zinc-300">
+                      <Text className="flex-1 text-sm text-foreground/85">
                         {feature}
                       </Text>
                     </View>
@@ -119,9 +119,9 @@ export default function PricingScreen() {
                 {tier !== "free" && tier !== currentTier ? (
                   <Pressable
                     onPress={openCheckout}
-                    className="mt-4 rounded-xl bg-white px-4 py-3 active:bg-zinc-200"
+                    className="mt-4 rounded-xl bg-primary px-4 py-3 active:opacity-90"
                   >
-                    <Text className="text-center text-sm font-semibold text-zinc-950">
+                    <Text className="text-center text-sm font-semibold text-primary-foreground">
                       Upgrade to {copy.label}
                     </Text>
                   </Pressable>
@@ -132,7 +132,7 @@ export default function PricingScreen() {
         </View>
 
         <View className="mt-6 px-1">
-          <Text className="text-center text-xs text-zinc-500">
+          <Text className="text-center text-xs text-muted-foreground/70">
             Subscriptions are managed via mygang.ai for now. Native in-app
             billing is coming soon.
           </Text>

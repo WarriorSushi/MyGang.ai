@@ -123,23 +123,23 @@ export default function MemoryVaultScreen() {
   const lockedCount = isPreview ? Math.max(0, totalCount - memories.length) : 0;
 
   return (
-    <SafeAreaView className="flex-1 bg-zinc-950" edges={["top", "left", "right"]}>
-      <View className="flex-row items-center justify-between border-b border-zinc-800 px-4 py-3">
+    <SafeAreaView className="flex-1 bg-background" edges={["top", "left", "right"]}>
+      <View className="flex-row items-center justify-between border-b border-border px-4 py-3">
         <Pressable
           onPress={() => router.back()}
-          className="rounded-full border border-zinc-700 bg-zinc-900 px-3 py-1.5"
+          className="rounded-full border border-border bg-card px-3 py-1.5"
         >
-          <Text className="text-xs font-semibold text-zinc-400">← Back</Text>
+          <Text className="text-xs font-semibold text-muted-foreground">← Back</Text>
         </Pressable>
-        <Text className="text-base font-bold text-white">Memory vault</Text>
+        <Text className="text-base font-bold text-foreground">Memory vault</Text>
         <View className="w-16" />
       </View>
 
-      <View className="border-b border-zinc-800 px-4 py-3">
-        <Text className="text-xs text-zinc-400">
+      <View className="border-b border-border px-4 py-3">
+        <Text className="text-xs text-muted-foreground">
           What your gang remembers about you.
         </Text>
-        <Text className="mt-0.5 text-[10px] uppercase tracking-wider text-zinc-600">
+        <Text className="mt-0.5 text-[10px] uppercase tracking-wider text-muted-foreground/50">
           {totalCount} {totalCount === 1 ? "memory" : "memories"}
           {isPreview ? ` · showing ${memories.length}` : ""}
         </Text>
@@ -151,7 +151,7 @@ export default function MemoryVaultScreen() {
         </View>
       ) : memories.length === 0 ? (
         <View className="flex-1 items-center justify-center px-6">
-          <Text className="text-center text-base text-zinc-400">
+          <Text className="text-center text-base text-muted-foreground">
             No memories yet. Keep chatting and your gang will start remembering.
           </Text>
         </View>
@@ -162,17 +162,17 @@ export default function MemoryVaultScreen() {
           contentContainerClassName="px-4 py-3 pb-12"
           ItemSeparatorComponent={() => <View className="h-2" />}
           renderItem={({ item }) => (
-            <View className="rounded-xl border border-zinc-800 bg-zinc-900/60 p-3">
-              <Text className="text-sm text-white">{item.content}</Text>
+            <View className="rounded-xl border border-border bg-card-translucent p-3">
+              <Text className="text-sm text-foreground">{item.content}</Text>
               <View className="mt-2 flex-row items-center justify-between">
-                <Text className="text-[10px] text-zinc-500">
+                <Text className="text-[10px] text-muted-foreground/70">
                   {relativeTime(item.created_at)}
                 </Text>
                 <Pressable
                   onPress={() => void deleteMemory(item.id)}
-                  className="rounded-full px-2 py-1 active:bg-red-500/20"
+                  className="rounded-full px-2 py-1 active:bg-destructive/20"
                 >
-                  <Text className="text-[10px] font-semibold text-red-400">
+                  <Text className="text-[10px] font-semibold text-destructive">
                     Delete
                   </Text>
                 </Pressable>
@@ -185,15 +185,15 @@ export default function MemoryVaultScreen() {
                 <Text className="text-center text-sm font-semibold text-amber-300">
                   {lockedCount} more memor{lockedCount === 1 ? "y" : "ies"} locked
                 </Text>
-                <Text className="mt-1 text-center text-xs text-zinc-400">
+                <Text className="mt-1 text-center text-xs text-muted-foreground">
                   Free plan shows up to {FREE_MEMORY_VAULT_PREVIEW_LIMIT}.
                   Upgrade to see all of them.
                 </Text>
                 <Pressable
                   onPress={() => router.push("/(app)/pricing")}
-                  className="mt-3 rounded-xl bg-white px-4 py-2"
+                  className="mt-3 rounded-xl bg-primary px-4 py-2"
                 >
-                  <Text className="text-center text-sm font-semibold text-zinc-950">
+                  <Text className="text-center text-sm font-semibold text-primary-foreground">
                     See plans
                   </Text>
                 </Pressable>

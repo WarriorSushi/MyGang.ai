@@ -37,9 +37,9 @@ export default function SignInScreen() {
   }
 
   return (
-    <View className="flex-1 justify-center bg-zinc-950 px-6">
-      <Text className="mb-2 text-3xl font-bold text-white">Welcome back</Text>
-      <Text className="mb-6 text-zinc-400">Your gang's been waiting.</Text>
+    <View className="flex-1 justify-center bg-background px-6">
+      <Text className="mb-2 text-3xl font-bold text-foreground">Welcome back</Text>
+      <Text className="mb-6 text-muted-foreground">Your gang's been waiting.</Text>
 
       <FormField
         control={control}
@@ -68,14 +68,14 @@ export default function SignInScreen() {
 
       <Link
         href="/(auth)/forgot-password"
-        className="mt-4 self-center text-sm text-zinc-400 underline"
+        className="mt-4 self-center text-sm text-muted-foreground underline"
       >
         Forgot password?
       </Link>
 
       <View className="mt-6 flex-row justify-center">
-        <Text className="text-zinc-400">No account yet? </Text>
-        <Link href="/(auth)/sign-up" className="text-white underline">
+        <Text className="text-muted-foreground">No account yet? </Text>
+        <Link href="/(auth)/sign-up" className="text-foreground underline">
           Sign up
         </Link>
       </View>

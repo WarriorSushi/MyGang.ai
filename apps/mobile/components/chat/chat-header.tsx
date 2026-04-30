@@ -17,7 +17,7 @@ export function ChatHeader({
 }: ChatHeaderProps) {
   const router = useRouter();
   return (
-    <View className="flex-row items-center justify-between border-b border-zinc-800 bg-zinc-950 px-4 py-3">
+    <View className="flex-row items-center justify-between border-b border-border bg-background px-4 py-3">
       <View className="flex-row -space-x-2">
         {characters.slice(0, 6).map((c) => {
           const url = `${SITE_URL}${resolveAvatarUrl(c.id, avatarStyle)}`;
@@ -25,7 +25,7 @@ export function ChatHeader({
             <Pressable
               key={c.id}
               onPress={() => onAvatarPress?.(c)}
-              className="h-8 w-8 overflow-hidden rounded-full border-2 border-zinc-950 bg-zinc-800"
+              className="h-8 w-8 overflow-hidden rounded-full border-2 border-background bg-muted"
             >
               <Image
                 source={{ uri: url }}
@@ -37,16 +37,16 @@ export function ChatHeader({
         })}
       </View>
       <View className="flex-1 px-3">
-        <Text className="text-sm font-bold text-white">Your gang</Text>
-        <Text className="text-[10px] text-zinc-500">
+        <Text className="text-sm font-bold text-foreground">Your gang</Text>
+        <Text className="text-[10px] text-muted-foreground/70">
           {characters.length} online
         </Text>
       </View>
       <Pressable
         onPress={() => router.push("/(app)/settings")}
-        className="h-9 w-9 items-center justify-center rounded-full border border-zinc-700 bg-zinc-900"
+        className="h-9 w-9 items-center justify-center rounded-full border border-border bg-card"
       >
-        <Text className="text-base text-zinc-400">⚙</Text>
+        <Text className="text-base text-muted-foreground">⚙</Text>
       </Pressable>
     </View>
   );

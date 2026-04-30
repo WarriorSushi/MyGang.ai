@@ -39,9 +39,9 @@ export default function SignUpScreen() {
 
   if (submitted) {
     return (
-      <View className="flex-1 items-center justify-center bg-zinc-950 px-6">
-        <Text className="text-2xl font-bold text-white">Check your email</Text>
-        <Text className="mt-2 text-center text-zinc-400">
+      <View className="flex-1 items-center justify-center bg-background px-6">
+        <Text className="text-2xl font-bold text-foreground">Check your email</Text>
+        <Text className="mt-2 text-center text-muted-foreground">
           We sent a verification link. Tap it to finish creating your account.
         </Text>
       </View>
@@ -49,9 +49,9 @@ export default function SignUpScreen() {
   }
 
   return (
-    <View className="flex-1 justify-center bg-zinc-950 px-6">
-      <Text className="mb-2 text-3xl font-bold text-white">Create account</Text>
-      <Text className="mb-6 text-zinc-400">Join the gang.</Text>
+    <View className="flex-1 justify-center bg-background px-6">
+      <Text className="mb-2 text-3xl font-bold text-foreground">Create account</Text>
+      <Text className="mb-6 text-muted-foreground">Join the gang.</Text>
 
       <FormField
         control={control}
@@ -79,8 +79,8 @@ export default function SignUpScreen() {
       />
 
       <View className="mt-6 flex-row justify-center">
-        <Text className="text-zinc-400">Already have an account? </Text>
-        <Link href="/(auth)/sign-in" className="text-white underline">
+        <Text className="text-muted-foreground">Already have an account? </Text>
+        <Link href="/(auth)/sign-in" className="text-foreground underline">
           Sign in
         </Link>
       </View>

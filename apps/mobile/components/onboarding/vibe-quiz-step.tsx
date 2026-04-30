@@ -80,31 +80,31 @@ export function VibeQuizStep({ onNext }: VibeQuizStepProps) {
   if (isReview) {
     return (
       <ScrollView className="flex-1" contentContainerClassName="px-6 pb-8">
-        <Text className="mt-6 text-center text-2xl font-black text-white">
+        <Text className="mt-6 text-center text-2xl font-black text-foreground">
           Set the vibe
         </Text>
-        <Text className="mb-6 text-center text-sm text-zinc-400">
+        <Text className="mb-6 text-center text-sm text-muted-foreground">
           Three quick picks.
         </Text>
 
-        <View className="rounded-3xl border border-zinc-800 bg-zinc-900/60 p-5">
+        <View className="rounded-3xl border border-border bg-card-translucent p-5">
           <View className="flex-row items-start justify-between">
             <View className="flex-1">
-              <Text className="text-[11px] font-semibold uppercase tracking-widest text-zinc-500">
+              <Text className="text-[11px] font-semibold uppercase tracking-widest text-muted-foreground/70">
                 Review
               </Text>
-              <Text className="mt-1.5 text-2xl font-black text-white">
+              <Text className="mt-1.5 text-2xl font-black text-foreground">
                 You're all set
               </Text>
-              <Text className="mt-1 text-sm text-zinc-400">
+              <Text className="mt-1 text-sm text-muted-foreground">
                 We'll use these answers to build your first crew.
               </Text>
             </View>
             <Pressable
               onPress={() => jumpTo(QUESTIONS.length - 1)}
-              className="rounded-full border border-zinc-700 bg-zinc-900 px-3 py-1.5"
+              className="rounded-full border border-border bg-card px-3 py-1.5"
             >
-              <Text className="text-xs font-semibold text-zinc-400">← Back</Text>
+              <Text className="text-xs font-semibold text-muted-foreground">← Back</Text>
             </Pressable>
           </View>
 
@@ -119,22 +119,22 @@ export function VibeQuizStep({ onNext }: VibeQuizStepProps) {
                   key={question.key}
                   className="flex-row items-center gap-3 rounded-2xl border border-emerald-500/20 bg-emerald-500/[0.06] px-4 py-3"
                 >
-                  <View className="h-9 w-9 items-center justify-center rounded-xl bg-zinc-800">
+                  <View className="h-9 w-9 items-center justify-center rounded-xl bg-muted">
                     <Text className="text-lg">{selected.emoji}</Text>
                   </View>
                   <View className="flex-1">
-                    <Text className="text-[10px] font-semibold uppercase tracking-widest text-zinc-500">
+                    <Text className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground/70">
                       {question.reviewLabel}
                     </Text>
-                    <Text className="mt-0.5 text-base font-semibold text-white">
+                    <Text className="mt-0.5 text-base font-semibold text-foreground">
                       {selected.label}
                     </Text>
                   </View>
                   <Pressable
                     onPress={() => jumpTo(index)}
-                    className="rounded-full border border-zinc-700 bg-zinc-900 px-3 py-1.5"
+                    className="rounded-full border border-border bg-card px-3 py-1.5"
                   >
-                    <Text className="text-xs font-semibold text-zinc-400">
+                    <Text className="text-xs font-semibold text-muted-foreground">
                       Edit
                     </Text>
                   </Pressable>
@@ -157,30 +157,30 @@ export function VibeQuizStep({ onNext }: VibeQuizStepProps) {
 
   return (
     <ScrollView className="flex-1" contentContainerClassName="px-6 pb-8">
-      <Text className="mt-6 text-center text-2xl font-black text-white">
+      <Text className="mt-6 text-center text-2xl font-black text-foreground">
         Set the vibe
       </Text>
-      <Text className="mb-6 text-center text-sm text-zinc-400">
+      <Text className="mb-6 text-center text-sm text-muted-foreground">
         Three quick picks.
       </Text>
 
-      <View className="rounded-3xl border border-zinc-800 bg-zinc-900/60 p-5">
+      <View className="rounded-3xl border border-border bg-card-translucent p-5">
         <View className="flex-row items-start justify-between">
           <View className="flex-1">
-            <Text className="text-[11px] font-semibold uppercase tracking-widest text-zinc-500">
+            <Text className="text-[11px] font-semibold uppercase tracking-widest text-muted-foreground/70">
               Question {currentIndex + 1} of {QUESTIONS.length}
             </Text>
-            <Text className="mt-1.5 text-xl font-black text-white">
+            <Text className="mt-1.5 text-xl font-black text-foreground">
               {currentQuestion.title}
             </Text>
-            <Text className="mt-1 text-[11px] text-zinc-500">Select one</Text>
+            <Text className="mt-1 text-[11px] text-muted-foreground/70">Select one</Text>
           </View>
           {currentIndex > 0 ? (
             <Pressable
               onPress={() => jumpTo(currentIndex - 1)}
-              className="rounded-full border border-zinc-700 bg-zinc-900 px-3 py-1.5"
+              className="rounded-full border border-border bg-card px-3 py-1.5"
             >
-              <Text className="text-xs font-semibold text-zinc-400">← Back</Text>
+              <Text className="text-xs font-semibold text-muted-foreground">← Back</Text>
             </Pressable>
           ) : null}
         </View>
@@ -194,21 +194,21 @@ export function VibeQuizStep({ onNext }: VibeQuizStepProps) {
                 onPress={() => handleSelect(currentQuestion.key, option.value)}
                 className={`flex-row items-center gap-3 rounded-2xl border px-4 py-3 ${
                   isSelected
-                    ? "border-white/40 bg-white/5"
-                    : "border-zinc-800 bg-zinc-900"
+                    ? "border-primary/40 bg-white/5"
+                    : "border-border bg-card"
                 }`}
               >
-                <View className="h-9 w-9 items-center justify-center rounded-xl bg-zinc-800">
+                <View className="h-9 w-9 items-center justify-center rounded-xl bg-muted">
                   <Text className="text-lg">{option.emoji}</Text>
                 </View>
                 <View className="flex-1">
-                  <Text className="text-base font-semibold text-white">
+                  <Text className="text-base font-semibold text-foreground">
                     {option.label}
                   </Text>
                 </View>
                 {isSelected ? (
-                  <View className="h-7 w-7 items-center justify-center rounded-full bg-white">
-                    <Text className="text-xs font-bold text-zinc-950">✓</Text>
+                  <View className="h-7 w-7 items-center justify-center rounded-full bg-primary">
+                    <Text className="text-xs font-bold text-primary-foreground">✓</Text>
                   </View>
                 ) : null}
               </Pressable>

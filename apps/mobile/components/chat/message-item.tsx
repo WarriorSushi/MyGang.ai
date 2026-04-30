@@ -41,7 +41,7 @@ export function MessageItem({
           delayLongPress={350}
           className="max-w-[80%] rounded-2xl rounded-br-md bg-blue-600 px-4 py-2 active:opacity-90"
         >
-          <Text className="text-base text-white">{message.content}</Text>
+          <Text className="text-base text-foreground">{message.content}</Text>
           {message.reaction ? (
             <Text className="mt-1 text-base">{message.reaction}</Text>
           ) : null}
@@ -56,7 +56,7 @@ export function MessageItem({
 
   return (
     <View className="my-1 flex-row items-end gap-2 px-3">
-      <View className="h-8 w-8 overflow-hidden rounded-full border border-zinc-700 bg-zinc-800">
+      <View className="h-8 w-8 overflow-hidden rounded-full border border-border bg-muted">
         {avatarUrl ? (
           <Image
             source={{ uri: avatarUrl }}
@@ -67,16 +67,16 @@ export function MessageItem({
       </View>
       <View className="max-w-[78%]">
         {displayName ? (
-          <Text className="mb-0.5 text-[11px] font-semibold text-zinc-500">
+          <Text className="mb-0.5 text-[11px] font-semibold text-muted-foreground/70">
             {displayName}
           </Text>
         ) : null}
         <Pressable
           onLongPress={onLongPress}
           delayLongPress={350}
-          className="rounded-2xl rounded-bl-md bg-zinc-800 px-4 py-2 active:opacity-90"
+          className="rounded-2xl rounded-bl-md bg-muted px-4 py-2 active:opacity-90"
         >
-          <Text className="text-base text-white">{message.content}</Text>
+          <Text className="text-base text-foreground">{message.content}</Text>
           {message.reaction ? (
             <Text className="mt-1 text-base">{message.reaction}</Text>
           ) : null}

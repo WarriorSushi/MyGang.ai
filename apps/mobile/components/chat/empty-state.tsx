@@ -25,7 +25,7 @@ export function EmptyState({ gang, avatarStyle, username }: EmptyStateProps) {
             return (
               <View
                 key={c.id}
-                className="h-14 w-14 overflow-hidden rounded-full border-2 border-zinc-950 bg-zinc-800"
+                className="h-14 w-14 overflow-hidden rounded-full border-2 border-background bg-muted"
               >
                 <Image
                   source={{ uri: url }}
@@ -37,10 +37,10 @@ export function EmptyState({ gang, avatarStyle, username }: EmptyStateProps) {
           })}
         </View>
       ) : null}
-      <Text className="text-center text-2xl font-bold text-white">
+      <Text className="text-center text-2xl font-bold text-foreground">
         {greeting}
       </Text>
-      <Text className="mt-2 text-center text-zinc-400">
+      <Text className="mt-2 text-center text-muted-foreground">
         Your gang's online. Send a message to get going.
       </Text>
     </View>

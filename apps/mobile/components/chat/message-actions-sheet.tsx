@@ -30,12 +30,12 @@ export function MessageActionsSheet({
       >
         <Pressable
           onPress={(e) => e.stopPropagation()}
-          className="rounded-t-3xl border-t border-zinc-800 bg-zinc-900 px-4 pb-8 pt-3"
+          className="rounded-t-3xl border-t border-border bg-card px-4 pb-8 pt-3"
         >
-          <View className="mb-3 self-center h-1 w-10 rounded-full bg-zinc-700" />
+          <View className="mb-3 self-center h-1 w-10 rounded-full bg-secondary" />
 
           {canReact ? (
-            <View className="mb-3 flex-row justify-between rounded-2xl bg-zinc-800 p-3">
+            <View className="mb-3 flex-row justify-between rounded-2xl bg-muted p-3">
               {QUICK_REACTIONS.map((emoji) => (
                 <Pressable
                   key={emoji}
@@ -43,7 +43,7 @@ export function MessageActionsSheet({
                     onReact(emoji);
                     onClose();
                   }}
-                  className="h-12 w-12 items-center justify-center rounded-full active:bg-zinc-700"
+                  className="h-12 w-12 items-center justify-center rounded-full active:bg-secondary"
                 >
                   <Text className="text-2xl">{emoji}</Text>
                 </Pressable>
@@ -56,16 +56,16 @@ export function MessageActionsSheet({
               onCopy();
               onClose();
             }}
-            className="rounded-2xl bg-zinc-800 px-4 py-3 active:bg-zinc-700"
+            className="rounded-2xl bg-muted px-4 py-3 active:bg-secondary"
           >
-            <Text className="text-base text-white">Copy</Text>
+            <Text className="text-base text-foreground">Copy</Text>
           </Pressable>
 
           <Pressable
             onPress={onClose}
-            className="mt-2 rounded-2xl bg-zinc-800 px-4 py-3 active:bg-zinc-700"
+            className="mt-2 rounded-2xl bg-muted px-4 py-3 active:bg-secondary"
           >
-            <Text className="text-center text-base text-zinc-400">Cancel</Text>
+            <Text className="text-center text-base text-muted-foreground">Cancel</Text>
           </Pressable>
         </Pressable>
       </Pressable>

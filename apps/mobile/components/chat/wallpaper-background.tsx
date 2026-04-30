@@ -3,14 +3,16 @@ import { type ReactNode } from "react";
 import { View } from "react-native";
 import { type ChatWallpaper } from "@mygang/shared";
 
+// Wallpapers tinted around the brand palette: dark slate-blue base with
+// hints of teal (--primary) and magenta (--accent) per pack.
 const WALLPAPER_COLORS: Record<ChatWallpaper, [string, string, string]> = {
-  default: ["#0a0a0f", "#1a0f1a", "#0a0f1a"],
-  neon: ["#0a0a1a", "#1f0a2a", "#0a1f2a"],
-  soft: ["#1a1620", "#1f1a25", "#15151a"],
-  aurora: ["#0a1620", "#0f1f2a", "#0a2a25"],
-  sunset: ["#1a0a0a", "#2a1a0a", "#1f1a0a"],
-  graphite: ["#0a0a0a", "#1a1a1a", "#141414"],
-  midnight: ["#000000", "#0a0a0a", "#000000"],
+  default: ["#161924", "#1a1f2c", "#1a1d2a"],
+  neon: ["#0c1a23", "#1c1330", "#0c1c1d"],
+  soft: ["#1c1924", "#231f2a", "#181a25"],
+  aurora: ["#101e2a", "#0c2027", "#0e2b2a"],
+  sunset: ["#1f1a18", "#2c1f17", "#221c14"],
+  graphite: ["#161924", "#1c1f29", "#15171f"],
+  midnight: ["#0a0c14", "#0d0f17", "#070811"],
 };
 
 type WallpaperBackgroundProps = {

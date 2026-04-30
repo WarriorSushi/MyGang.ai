@@ -5,8 +5,9 @@ import { Controller } from "react-hook-form";
 type FormFieldProps<T extends FieldValues> = {
   control: Control<T>;
   name: FieldPath<T>;
-  label: string;
+  label?: string;
   error?: string;
+  hint?: string;
 } & Omit<TextInputProps, "value" | "onChangeText" | "onBlur">;
 
 export function FormField<T extends FieldValues>({
@@ -14,11 +15,16 @@ export function FormField<T extends FieldValues>({
   name,
   label,
   error,
+  hint,
   ...textInputProps
 }: FormFieldProps<T>) {
   return (
     <View className="mb-4">
-      <Text className="mb-1 text-sm text-zinc-300">{label}</Text>
+      {label ? (
+        <Text className="mb-2 text-[11px] font-semibold uppercase tracking-widest text-muted-foreground/70">
+          {label}
+        </Text>
+      ) : null}
       <Controller
         control={control}
         name={name}
@@ -28,12 +34,18 @@ export function FormField<T extends FieldValues>({
             value={(value as string) ?? ""}
             onChangeText={onChange}
             onBlur={onBlur}
-            placeholderTextColor="#52525b"
-            className="rounded-lg border border-zinc-800 bg-zinc-900 px-3 py-3 text-base text-white"
+            placeholderTextColor="#6b6f7a"
+            className="rounded-2xl border border-border bg-muted/40 px-5 py-4 text-base text-foreground"
           />
         )}
       />
-      {error ? <Text className="mt-1 text-xs text-red-400">{error}</Text> : null}
+      {error ? (
+        <Text className="mt-1.5 px-1 text-xs text-destructive">{error}</Text>
+      ) : hint ? (
+        <Text className="mt-1.5 px-1 text-[10px] text-muted-foreground/60">
+          {hint}
+        </Text>
+      ) : null}
     </View>
   );
 }

@@ -39,10 +39,10 @@ export function SelectionStep({
   return (
     <View className="flex-1">
       <View className="px-6 pt-4 pb-2">
-        <Text className="text-center text-3xl font-black text-white">
+        <Text className="text-center text-3xl font-black text-foreground">
           Pick your gang
         </Text>
-        <Text className="mt-1 text-center text-sm text-zinc-400">
+        <Text className="mt-1 text-center text-sm text-muted-foreground">
           Choose 2–{maxMembers} friends.
         </Text>
       </View>
@@ -61,23 +61,23 @@ export function SelectionStep({
           return (
             <Pressable
               onPress={() => toggleCharacter(item.id)}
-              className={`flex-1 overflow-hidden rounded-xl border bg-zinc-900 ${
-                isSelected ? "border-2 border-white" : "border-zinc-800"
+              className={`flex-1 overflow-hidden rounded-xl border bg-card ${
+                isSelected ? "border-2 border-primary" : "border-border"
               }`}
             >
               {isSelected ? (
-                <View className="absolute right-1.5 top-1.5 z-10 h-5 w-5 items-center justify-center rounded-full bg-white">
-                  <Text className="text-[10px] font-bold text-zinc-950">✓</Text>
+                <View className="absolute right-1.5 top-1.5 z-10 h-5 w-5 items-center justify-center rounded-full bg-primary">
+                  <Text className="text-[10px] font-bold text-primary-foreground">✓</Text>
                 </View>
               ) : null}
               {isRecommended && !isSelected ? (
                 <View className="absolute left-1.5 right-1.5 top-1.5 z-10 rounded-full bg-amber-400 px-1 py-0.5">
-                  <Text className="text-center text-[8px] font-bold uppercase tracking-wider text-zinc-950">
+                  <Text className="text-center text-[8px] font-bold uppercase tracking-wider text-primary-foreground">
                     Recommended
                   </Text>
                 </View>
               ) : null}
-              <View className="aspect-[4/5] bg-zinc-800">
+              <View className="aspect-[4/5] bg-muted">
                 <Image
                   source={{ uri: url }}
                   className="h-full w-full"
@@ -85,12 +85,12 @@ export function SelectionStep({
                 />
               </View>
               <View className="absolute bottom-0 left-0 right-0 bg-black/70 p-2">
-                <Text className="text-xs font-bold text-white" numberOfLines={1}>
+                <Text className="text-xs font-bold text-foreground" numberOfLines={1}>
                   {item.name}
                 </Text>
                 {item.archetype ? (
                   <Text
-                    className="text-[8px] font-semibold uppercase tracking-wider text-white/70"
+                    className="text-[8px] font-semibold uppercase tracking-wider text-foreground/70"
                     numberOfLines={1}
                   >
                     {item.archetype}
@@ -102,9 +102,9 @@ export function SelectionStep({
         }}
       />
 
-      <View className="absolute inset-x-0 bottom-0 border-t border-zinc-800 bg-zinc-950/95 px-6 py-3 pb-6">
+      <View className="absolute inset-x-0 bottom-0 border-t border-border bg-background/95 px-6 py-3 pb-6">
         <View className="mb-2 flex-row items-center">
-          <Text className="text-xs text-zinc-400">
+          <Text className="text-xs text-muted-foreground">
             {selectedIds.length === 0
               ? `Pick 2–${maxMembers}`
               : selectedIds.length < 2
