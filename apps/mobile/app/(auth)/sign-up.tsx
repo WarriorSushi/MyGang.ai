@@ -8,6 +8,7 @@ import { signUpInputSchema, type SignUpInput } from "@mygang/shared";
 import { supabase } from "../../lib/supabase";
 import { FormField } from "../../components/form-field";
 import { PrimaryButton } from "../../components/primary-button";
+import { GradientText } from "../../components/gradient-text";
 
 export default function SignUpScreen() {
   const [submitted, setSubmitted] = useState(false);
@@ -50,7 +51,9 @@ export default function SignUpScreen() {
 
   return (
     <View className="flex-1 justify-center bg-background px-6">
-      <Text className="mb-2 text-3xl font-bold text-foreground">Create account</Text>
+      <GradientText textClassName="mb-2 text-3xl font-bold tracking-tight">
+        Create account
+      </GradientText>
       <Text className="mb-6 text-muted-foreground">Join the gang.</Text>
 
       <FormField

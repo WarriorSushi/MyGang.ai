@@ -39,9 +39,9 @@ export function MessageItem({
         <Pressable
           onLongPress={onLongPress}
           delayLongPress={350}
-          className="max-w-[80%] rounded-2xl rounded-br-md bg-blue-600 px-4 py-2 active:opacity-90"
+          className="max-w-[80%] rounded-2xl rounded-br-md bg-primary px-4 py-2 active:opacity-90"
         >
-          <Text className="text-base text-foreground">{message.content}</Text>
+          <Text className="text-base text-primary-foreground">{message.content}</Text>
           {message.reaction ? (
             <Text className="mt-1 text-base">{message.reaction}</Text>
           ) : null}

@@ -8,6 +8,7 @@ import { signInInputSchema, type SignInInput } from "@mygang/shared";
 import { supabase } from "../../lib/supabase";
 import { FormField } from "../../components/form-field";
 import { PrimaryButton } from "../../components/primary-button";
+import { GradientText } from "../../components/gradient-text";
 
 export default function SignInScreen() {
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -38,7 +39,9 @@ export default function SignInScreen() {
 
   return (
     <View className="flex-1 justify-center bg-background px-6">
-      <Text className="mb-2 text-3xl font-bold text-foreground">Welcome back</Text>
+      <GradientText textClassName="mb-2 text-3xl font-bold tracking-tight">
+        Welcome back
+      </GradientText>
       <Text className="mb-6 text-muted-foreground">Your gang's been waiting.</Text>
 
       <FormField

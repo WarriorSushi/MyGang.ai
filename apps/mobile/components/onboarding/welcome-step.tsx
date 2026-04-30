@@ -1,5 +1,6 @@
 import { Pressable, Text, View } from "react-native";
 import { PrimaryButton } from "../primary-button";
+import { GradientText } from "../gradient-text";
 
 type WelcomeStepProps = {
   onNext: () => void;
@@ -9,10 +10,12 @@ type WelcomeStepProps = {
 export function WelcomeStep({ onNext, onLogin }: WelcomeStepProps) {
   return (
     <View className="flex-1 items-center justify-center px-6">
-      <Text className="mb-4 text-center text-4xl font-bold leading-[1.1] tracking-tight text-primary">
+      <GradientText
+        textClassName="text-center text-4xl font-bold leading-[1.1] tracking-tight"
+      >
         Your gang just arrived.
-      </Text>
-      <Text className="mb-8 max-w-md text-center text-base text-muted-foreground">
+      </GradientText>
+      <Text className="mb-8 mt-4 max-w-md text-center text-base text-muted-foreground">
         Your friends are waiting. 24/7, no drama (mostly), just vibes.
       </Text>
       <View className="w-full max-w-xs">
