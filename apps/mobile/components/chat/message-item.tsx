@@ -5,6 +5,8 @@ import {
   type Character,
 } from "@mygang/shared";
 
+import { bubbleBgForCharacter, personaNameColor } from "../../lib/bubble-colors";
+
 const SITE_URL = "https://mygang.ai";
 
 export type ChatMessage = {
@@ -53,10 +55,16 @@ export function MessageItem({
   const avatarUrl = character
     ? `${SITE_URL}${resolveAvatarUrl(character.id, avatarStyle)}`
     : undefined;
+  const bubbleBg = bubbleBgForCharacter(character?.color);
+  const nameColor = personaNameColor(character?.color);
+  const avatarBgColor = character?.color ?? "#555";
 
   return (
     <View className="my-1 flex-row items-end gap-2 px-3">
-      <View className="h-8 w-8 overflow-hidden rounded-full border border-border bg-muted">
+      <View
+        className="h-8 w-8 overflow-hidden rounded-full"
+        style={{ backgroundColor: avatarBgColor }}
+      >
         {avatarUrl ? (
           <Image
             source={{ uri: avatarUrl }}
@@ -67,14 +75,18 @@ export function MessageItem({
       </View>
       <View className="max-w-[78%]">
         {displayName ? (
-          <Text className="mb-0.5 text-[11px] font-semibold text-muted-foreground/70">
+          <Text
+            className="mb-0.5 text-[12px] font-semibold tracking-wide"
+            style={{ color: nameColor }}
+          >
             {displayName}
           </Text>
         ) : null}
         <Pressable
           onLongPress={onLongPress}
           delayLongPress={350}
-          className="rounded-2xl rounded-bl-md bg-muted px-4 py-2 active:opacity-90"
+          style={{ backgroundColor: bubbleBg }}
+          className="rounded-2xl rounded-bl-md px-4 py-2 active:opacity-90"
         >
           <Text className="text-base text-foreground">{message.content}</Text>
           {message.reaction ? (

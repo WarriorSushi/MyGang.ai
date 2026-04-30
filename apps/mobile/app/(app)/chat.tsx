@@ -31,6 +31,7 @@ import { TypingIndicator } from "../../components/chat/typing-indicator";
 import { MessageActionsSheet } from "../../components/chat/message-actions-sheet";
 import { AvatarLightbox } from "../../components/chat/avatar-lightbox";
 import { WallpaperBackground } from "../../components/chat/wallpaper-background";
+import { SettingsDrawer } from "../../components/chat/settings-drawer";
 import { type ChatMessage } from "../../components/chat/message-item";
 
 export default function ChatScreen() {
@@ -42,6 +43,7 @@ export default function ChatScreen() {
   const [actionMessage, setActionMessage] = useState<ChatMessage | null>(null);
   const [lightboxCharacter, setLightboxCharacter] =
     useState<CharacterCatalogEntry | null>(null);
+  const [settingsOpen, setSettingsOpen] = useState(false);
   const userIdRef = useRef<string | null>(null);
 
   // Hydrate persisted chat history once we know the user.
@@ -220,11 +222,19 @@ export default function ChatScreen() {
   if (gang.length === 0) {
     return (
       <SafeAreaView className="flex-1 bg-background">
-        <ChatHeader characters={[]} avatarStyle={avatarStyle} />
+        <ChatHeader
+          characters={[]}
+          avatarStyle={avatarStyle}
+          onOpenSettings={() => setSettingsOpen(true)}
+        />
         <EmptyState
           gang={[]}
           avatarStyle={avatarStyle}
           username={profile?.username ?? null}
+        />
+        <SettingsDrawer
+          visible={settingsOpen}
+          onClose={() => setSettingsOpen(false)}
         />
       </SafeAreaView>
     );
@@ -241,6 +251,12 @@ export default function ChatScreen() {
             characters={gang}
             avatarStyle={avatarStyle}
             onAvatarPress={(c) => setLightboxCharacter(c)}
+            onOpenSettings={() => setSettingsOpen(true)}
+            onRefresh={async () => {
+              if (!user?.id) return;
+              const server = await fetchRecentChatHistory(user.id);
+              if (server.length > 0) setMessages(server);
+            }}
           />
         <View className="flex-1">
           {messages.length === 0 && hasHydrated ? (
@@ -306,6 +322,11 @@ export default function ChatScreen() {
         }
         avatarStyle={avatarStyle}
         onClose={() => setLightboxCharacter(null)}
+      />
+
+      <SettingsDrawer
+        visible={settingsOpen}
+        onClose={() => setSettingsOpen(false)}
       />
     </SafeAreaView>
   );

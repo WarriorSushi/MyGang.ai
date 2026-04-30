@@ -3,7 +3,7 @@ import { z } from 'zod'
 import { buildLightMemorySnapshot, getMemoryRecallLimit, retrieveMemoriesForPrompt, storeMemories, touchMemories, compactMemoriesIfNeeded, validateExpiresInHours } from '@/lib/ai/memory'
 import type { MemoryCategory } from '@/lib/ai/memory'
 import { openRouterModel } from '@/lib/ai/openrouter'
-import { createClient } from '@/lib/supabase/server'
+import { createClient, createClientFromRequest } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { rateLimit } from '@/lib/rate-limit'
 import { getTierFromProfile, isMemoryEnabled, getContextLimit, getMemoryInPromptLimit, getSquadLimit, type SubscriptionTier } from '@mygang/shared'
@@ -681,8 +681,11 @@ function ensureEventMessageIds(
 
 async function handlePost(req: Request, routeSignal?: AbortSignal) {
     try {
-        // Auth check FIRST — before parsing any input
-        const supabase = await createClient()
+        // Auth check FIRST — before parsing any input.
+        // createClientFromRequest accepts BOTH cookie-auth (web) and
+        // Bearer-token auth (mobile) so the same /api/chat route serves
+        // both clients.
+        const supabase = await createClientFromRequest(req)
         const [{ data: { user } }, globalLowCostOverride] = await Promise.all([
             supabase.auth.getUser(),
             getGlobalLowCostOverride(),
