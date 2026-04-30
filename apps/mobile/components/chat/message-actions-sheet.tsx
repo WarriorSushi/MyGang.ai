@@ -1,4 +1,5 @@
-import { Modal, Pressable, Text, View } from "react-native";
+import { BlurView } from "expo-blur";
+import { Modal, Pressable, StyleSheet, Text, View } from "react-native";
 
 const QUICK_REACTIONS = ["👍", "❤️", "😂", "😮", "😢", "🔥"];
 
@@ -21,52 +22,67 @@ export function MessageActionsSheet({
     <Modal
       visible={visible}
       transparent
-      animationType="fade"
+      animationType="slide"
       onRequestClose={onClose}
     >
-      <Pressable
-        className="flex-1 justify-end bg-black/50"
-        onPress={onClose}
-      >
+      <Pressable className="flex-1 justify-end" onPress={onClose}>
+        <BlurView
+          intensity={40}
+          tint="dark"
+          experimentalBlurMethod="dimezisBlurView"
+          style={StyleSheet.absoluteFill}
+        />
+        <View className="absolute inset-0 bg-black/40" />
         <Pressable
           onPress={(e) => e.stopPropagation()}
-          className="rounded-t-3xl border-t border-border bg-card px-4 pb-8 pt-3"
+          className="overflow-hidden rounded-t-3xl border-t border-border"
         >
-          <View className="mb-3 self-center h-1 w-10 rounded-full bg-secondary" />
+          <BlurView
+            intensity={60}
+            tint="dark"
+            experimentalBlurMethod="dimezisBlurView"
+            style={StyleSheet.absoluteFill}
+          />
+          <View className="absolute inset-0 bg-card-translucent" />
+          <View className="px-4 pb-8 pt-3">
+            <View className="mb-3 self-center h-1 w-10 rounded-full bg-secondary" />
 
-          {canReact ? (
-            <View className="mb-3 flex-row justify-between rounded-2xl bg-muted p-3">
-              {QUICK_REACTIONS.map((emoji) => (
-                <Pressable
-                  key={emoji}
-                  onPress={() => {
-                    onReact(emoji);
-                    onClose();
-                  }}
-                  className="h-12 w-12 items-center justify-center rounded-full active:bg-secondary"
-                >
-                  <Text className="text-2xl">{emoji}</Text>
-                </Pressable>
-              ))}
-            </View>
-          ) : null}
+            {canReact ? (
+              <View className="mb-3 flex-row justify-between rounded-2xl bg-muted/60 p-3">
+                {QUICK_REACTIONS.map((emoji) => (
+                  <Pressable
+                    key={emoji}
+                    onPress={() => {
+                      onReact(emoji);
+                      onClose();
+                    }}
+                    className="h-12 w-12 items-center justify-center rounded-full active:bg-secondary"
+                  >
+                    <Text className="text-2xl">{emoji}</Text>
+                  </Pressable>
+                ))}
+              </View>
+            ) : null}
 
-          <Pressable
-            onPress={() => {
-              onCopy();
-              onClose();
-            }}
-            className="rounded-2xl bg-muted px-4 py-3 active:bg-secondary"
-          >
-            <Text className="text-base text-foreground">Copy</Text>
-          </Pressable>
+            <Pressable
+              onPress={() => {
+                onCopy();
+                onClose();
+              }}
+              className="rounded-2xl bg-muted/60 px-4 py-3 active:bg-secondary"
+            >
+              <Text className="text-base text-foreground">Copy</Text>
+            </Pressable>
 
-          <Pressable
-            onPress={onClose}
-            className="mt-2 rounded-2xl bg-muted px-4 py-3 active:bg-secondary"
-          >
-            <Text className="text-center text-base text-muted-foreground">Cancel</Text>
-          </Pressable>
+            <Pressable
+              onPress={onClose}
+              className="mt-2 rounded-2xl bg-muted/40 px-4 py-3 active:bg-secondary"
+            >
+              <Text className="text-center text-base text-muted-foreground">
+                Cancel
+              </Text>
+            </Pressable>
+          </View>
         </Pressable>
       </Pressable>
     </Modal>

@@ -1,4 +1,5 @@
-import { Image, Modal, Pressable, Text, View } from "react-native";
+import { BlurView } from "expo-blur";
+import { Image, Modal, Pressable, StyleSheet, Text, View } from "react-native";
 import {
   resolveAvatarUrl,
   type AvatarStyle,
@@ -41,9 +42,32 @@ export function AvatarLightbox({
     >
       <Pressable
         onPress={onClose}
-        className="flex-1 items-center justify-center bg-black/85 px-6"
+        className="flex-1 items-center justify-center px-6"
       >
-        <View className="w-full max-w-sm overflow-hidden rounded-3xl border border-border bg-card">
+        <BlurView
+          intensity={50}
+          tint="dark"
+          experimentalBlurMethod="dimezisBlurView"
+          style={StyleSheet.absoluteFill}
+        />
+        <View className="absolute inset-0 bg-black/65" />
+        <View
+          className="w-full max-w-sm overflow-hidden rounded-3xl border border-border"
+          style={{
+            shadowColor: "#3eddc0",
+            shadowOpacity: 0.18,
+            shadowRadius: 32,
+            shadowOffset: { width: 0, height: 12 },
+            elevation: 20,
+          }}
+        >
+          <BlurView
+            intensity={70}
+            tint="dark"
+            experimentalBlurMethod="dimezisBlurView"
+            style={StyleSheet.absoluteFill}
+          />
+          <View className="absolute inset-0 bg-card-translucent" />
           <View className="aspect-square w-full bg-muted">
             <Image
               source={{ uri: url }}
@@ -111,6 +135,7 @@ export function AvatarLightbox({
               Close
             </Text>
           </Pressable>
+          <View />
         </View>
       </Pressable>
     </Modal>

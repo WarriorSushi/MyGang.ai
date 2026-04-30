@@ -21,6 +21,16 @@ const TEXT_SIZE: Record<NonNullable<PrimaryButtonProps["size"]>, string> = {
   xl: "text-xl",
 };
 
+// Teal-tinted shadow underneath the button so the brand color glows softly.
+// Mirrors web's `shadow-lg shadow-primary/10` style of accent halos.
+const ACTIVE_SHADOW = {
+  shadowColor: "#3eddc0",
+  shadowOpacity: 0.32,
+  shadowRadius: 18,
+  shadowOffset: { width: 0, height: 8 },
+  elevation: 10,
+};
+
 export function PrimaryButton({
   label,
   onPress,
@@ -33,7 +43,7 @@ export function PrimaryButton({
   return (
     <Pressable
       onPress={inactive ? undefined : onPress}
-      style={style}
+      style={[!inactive ? ACTIVE_SHADOW : undefined, style]}
       className={`${SIZE_CLASSES[size]} flex-row items-center justify-center ${
         inactive ? "bg-secondary" : "bg-primary active:opacity-90"
       }`}
