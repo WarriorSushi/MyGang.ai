@@ -5,12 +5,33 @@ import {
   Modal,
   Pressable,
   ScrollView,
-  StyleSheet,
+  Switch,
   Text,
   View,
 } from "react-native";
-import { BlurView } from "expo-blur";
-import { Link } from "expo-router";
+import { LinearGradient } from "expo-linear-gradient";
+import { useRouter } from "expo-router";
+import Animated, {
+  FadeInDown,
+  SlideInRight,
+  SlideOutRight,
+} from "react-native-reanimated";
+import {
+  ArrowRight,
+  Check,
+  ChevronLeft,
+  ChevronRight,
+  CreditCard,
+  Image as ImageIcon,
+  Lock,
+  LogOut,
+  Sparkles,
+  Tag,
+  Trash2,
+  Users,
+  X,
+  type LucideIcon,
+} from "lucide-react-native";
 import {
   AVATAR_STYLES,
   CHAT_WALLPAPERS,
@@ -24,6 +45,7 @@ import {
 import { useAuth } from "../../lib/auth-context";
 import { supabase } from "../../lib/supabase";
 import { clearPersistedMessages } from "../../lib/chat-storage";
+import { ConfirmDialog } from "../confirm-dialog";
 
 const STYLE_LABELS: Record<AvatarStyle, string> = {
   robots: "Robots",
@@ -34,7 +56,21 @@ const STYLE_LABELS: Record<AvatarStyle, string> = {
 type ChatMode = "gang_focus" | "ecosystem";
 
 const { width: SCREEN_WIDTH } = Dimensions.get("window");
-const DRAWER_WIDTH = Math.min(SCREEN_WIDTH * 0.88, 380);
+const DRAWER_WIDTH = Math.min(SCREEN_WIDTH * 0.85, 480);
+
+// 3-stop swatch previews matching the actual blob colors of each wallpaper
+const SWATCH: Record<string, [string, string, string]> = {
+  default: ["#3eddc0", "#60a5fa", "#d946ef"],
+  neon: ["#22d3ee", "#4ade80", "#a78bfa"],
+  aurora: ["#22d3ee", "#4ade80", "#a78bfa"],
+  sunset: ["#fb923c", "#f472b6", "#a855f7"],
+  soft: ["#94a3b8", "#c7d2fe", "#94a3b8"],
+  graphite: ["#0e0f12", "#3a3a3a", "#0e0f12"],
+  midnight: ["#070b16", "#3b82f6", "#6366f1"],
+};
+function previewColorsForWallpaper(id: string): [string, string, string] {
+  return SWATCH[id] ?? SWATCH.default;
+}
 
 type SettingsDrawerProps = {
   visible: boolean;
@@ -42,8 +78,13 @@ type SettingsDrawerProps = {
 };
 
 export function SettingsDrawer({ visible, onClose }: SettingsDrawerProps) {
+  const router = useRouter();
   const { user, profile, refreshProfile } = useAuth();
   const [savingField, setSavingField] = useState<string | null>(null);
+  const [signOutOpen, setSignOutOpen] = useState(false);
+  const [subPanel, setSubPanel] = useState<"wallpaper" | "avatar-pack" | null>(
+    null,
+  );
 
   const tier = getTierFromProfile(profile?.subscription_tier ?? null);
   const tierCopy = getTierCopy(tier);
@@ -53,13 +94,15 @@ export function SettingsDrawer({ visible, onClose }: SettingsDrawerProps) {
     (profile?.chat_wallpaper as ChatWallpaper) ?? "default";
   const currentChatMode: ChatMode =
     (profile?.chat_mode as ChatMode) ?? "gang_focus";
-
-  async function updateProfileField(field: string, value: string) {
+  async function updateProfileField(
+    field: string,
+    value: string | boolean,
+  ) {
     if (!user) return;
     setSavingField(field);
     const { error } = await supabase
       .from("profiles")
-      .update({ [field]: value })
+      .update({ [field]: value } as never)
       .eq("id", user.id);
     setSavingField(null);
     if (error) {
@@ -75,15 +118,23 @@ export function SettingsDrawer({ visible, onClose }: SettingsDrawerProps) {
   }
 
   function confirmSignOut() {
-    Alert.alert("Sign out?", "You can sign back in any time.", [
-      { text: "Cancel", style: "cancel" },
-      {
-        text: "Sign out",
-        style: "destructive",
-        onPress: () => void signOut(),
-      },
-    ]);
+    setSignOutOpen(true);
   }
+
+  function navigate(path: string) {
+    onClose();
+    setSubPanel(null);
+    router.push(path as never);
+  }
+
+  const tierPillBg =
+    tier === "pro"
+      ? "rgba(213,109,181,0.15)"
+      : tier === "basic"
+        ? "rgba(125,211,252,0.15)"
+        : "rgba(245,158,11,0.15)";
+  const tierPillFg =
+    tier === "pro" ? "#f0abfc" : tier === "basic" ? "#7dd3fc" : "#fbbf24";
 
   return (
     <Modal
@@ -93,239 +144,456 @@ export function SettingsDrawer({ visible, onClose }: SettingsDrawerProps) {
       onRequestClose={onClose}
     >
       <Pressable className="flex-1" onPress={onClose}>
-        <BlurView
-          intensity={30}
-          tint="dark"
-          style={StyleSheet.absoluteFill}
-        />
-        <View className="absolute inset-0 bg-black/50" />
+        <View className="absolute inset-0 bg-black/60" />
 
         <Pressable
           onPress={(e) => e.stopPropagation()}
           className="absolute bottom-0 right-0 top-0 overflow-hidden border-l border-border"
-          style={{ width: DRAWER_WIDTH }}
+          style={{ width: DRAWER_WIDTH, backgroundColor: "#0c1220" }}
         >
-          <BlurView
-            intensity={70}
-            tint="dark"
-            style={StyleSheet.absoluteFill}
-          />
-          <View className="absolute inset-0 bg-card-translucent" />
-
-          <View className="flex-row items-center justify-between border-b border-border px-4 pb-3 pt-14">
-            <Text className="text-lg font-bold text-foreground">Settings</Text>
-            <Pressable
-              onPress={onClose}
-              className="rounded-full border border-border bg-card px-3 py-1.5"
-              accessibilityLabel="Close settings"
-            >
-              <Text className="text-xs font-semibold text-muted-foreground">
-                Close
-              </Text>
-            </Pressable>
+          {/* Header */}
+          <View className="border-b border-border px-5 pt-14 pb-4">
+            <View className="flex-row items-start justify-between">
+              <View className="flex-1 pr-4">
+                <Text
+                  className="text-2xl font-bold text-foreground"
+                  numberOfLines={1}
+                >
+                  Hey, {profile?.username ?? "friend"}
+                </Text>
+                <View className="mt-1 flex-row items-center gap-2 flex-wrap">
+                  <Text
+                    className="text-sm text-muted-foreground"
+                    numberOfLines={1}
+                  >
+                    {user?.email ?? ""}
+                  </Text>
+                  <View
+                    className="rounded-full px-2 py-0.5"
+                    style={{ backgroundColor: tierPillBg }}
+                  >
+                    <Text
+                      className="text-[10px] font-bold uppercase tracking-wider"
+                      style={{ color: tierPillFg }}
+                    >
+                      {tier}
+                    </Text>
+                  </View>
+                </View>
+              </View>
+              <Pressable
+                onPress={onClose}
+                className="h-8 w-8 items-center justify-center rounded-full active:bg-card"
+                accessibilityLabel="Close settings"
+              >
+                <X size={20} color="#a1a1aa" strokeWidth={2.4} />
+              </Pressable>
+            </View>
           </View>
 
           <ScrollView contentContainerClassName="pb-12">
-            {/* Account */}
-            <View className="mt-4 px-4">
-              <Text className="mb-2 text-[11px] font-semibold uppercase tracking-widest text-muted-foreground/70">
-                Account
-              </Text>
-              <View className="overflow-hidden rounded-2xl border border-border bg-card-translucent">
-                <View className="border-b border-border px-4 py-3">
-                  <Text className="text-[11px] uppercase tracking-wider text-muted-foreground/70">
-                    Username
-                  </Text>
-                  <Text className="mt-0.5 text-base text-foreground">
-                    {profile?.username ?? "(unset)"}
-                  </Text>
-                </View>
-                <View className="border-b border-border px-4 py-3">
-                  <Text className="text-[11px] uppercase tracking-wider text-muted-foreground/70">
-                    Email
-                  </Text>
-                  <Text className="mt-0.5 text-base text-foreground">
-                    {user?.email ?? "(unknown)"}
-                  </Text>
-                </View>
-                <Link href="/(app)/pricing" asChild>
-                  <Pressable className="px-4 py-3 active:bg-muted/50" onPress={onClose}>
-                    <View className="flex-row items-center justify-between">
-                      <View>
-                        <Text className="text-[11px] uppercase tracking-wider text-muted-foreground/70">
-                          Plan
-                        </Text>
-                        <Text className="mt-0.5 text-base text-foreground">
-                          {tierCopy.label}{" "}
-                          <Text className="text-sm text-muted-foreground">
-                            · {tierCopy.priceLabel}
-                          </Text>
+            {/* Promo / Pro status card */}
+            <Animated.View entering={FadeInDown.delay(0).duration(220)}>
+              {tier === "free" ? (
+                <Pressable
+                  onPress={() => navigate("/(app)/pricing")}
+                  className="mt-4 mx-4 overflow-hidden rounded-3xl"
+                >
+                  <LinearGradient
+                    colors={[
+                      "rgba(62,221,192,0.18)",
+                      "rgba(213,109,181,0.10)",
+                    ]}
+                    start={{ x: 0, y: 0 }}
+                    end={{ x: 1, y: 1 }}
+                    style={{ paddingHorizontal: 16, paddingVertical: 20 }}
+                  >
+                    <View className="flex-row items-start justify-between">
+                      <View className="flex-row items-center gap-1.5 self-start rounded-full bg-primary/15 px-2.5 py-1">
+                        <Sparkles
+                          size={11}
+                          color="#5eead4"
+                          strokeWidth={2.5}
+                        />
+                        <Text className="text-[10px] font-bold uppercase tracking-[0.18em] text-primary">
+                          80% OFF LAUNCH
                         </Text>
                       </View>
-                      {tier === "free" ? (
-                        <View className="rounded-full bg-amber-500/15 px-3 py-1">
-                          <Text className="text-[10px] font-bold text-amber-300">
-                            Upgrade
-                          </Text>
-                        </View>
-                      ) : null}
+                      <View className="items-end">
+                        <Text className="text-sm text-muted-foreground line-through">
+                          $99/mo
+                        </Text>
+                      </View>
                     </View>
-                  </Pressable>
-                </Link>
-              </View>
-            </View>
-
-            {/* Gang */}
-            <View className="mt-6 px-4">
-              <Text className="mb-2 text-[11px] font-semibold uppercase tracking-widest text-muted-foreground/70">
-                Your gang
-              </Text>
-              <View className="overflow-hidden rounded-2xl border border-border bg-card-translucent">
-                <Link href="/(app)/edit-gang" asChild>
-                  <Pressable
-                    className="border-b border-border active:bg-muted/50"
-                    onPress={onClose}
+                    <Text className="mt-3 text-lg font-bold text-foreground">
+                      Unlock memory & unlimited messages
+                    </Text>
+                    <Text className="mt-1 text-xs text-muted-foreground">
+                      Free includes preview memory plus light recall. Upgrade
+                      when you want the full vault and deeper recall.
+                    </Text>
+                    <View className="mt-3 flex-row items-center gap-1.5 self-start rounded-full bg-primary/20 px-3 py-1.5">
+                      <Text className="text-xs font-semibold text-primary">
+                        See plans
+                      </Text>
+                      <ArrowRight
+                        size={12}
+                        color="#5eead4"
+                        strokeWidth={2.6}
+                      />
+                    </View>
+                  </LinearGradient>
+                </Pressable>
+              ) : (
+                <View className="mt-4 mx-4 overflow-hidden rounded-3xl">
+                  <LinearGradient
+                    colors={
+                      tier === "pro"
+                        ? [
+                            "rgba(213,109,181,0.18)",
+                            "rgba(167,139,250,0.10)",
+                          ]
+                        : [
+                            "rgba(125,211,252,0.18)",
+                            "rgba(62,221,192,0.10)",
+                          ]
+                    }
+                    start={{ x: 0, y: 0 }}
+                    end={{ x: 1, y: 1 }}
+                    style={{ paddingHorizontal: 16, paddingVertical: 20 }}
                   >
-                    <Row label="Manage gang" hint="Add or remove characters" />
-                  </Pressable>
-                </Link>
-                <Link href="/(app)/custom-names" asChild>
-                  <Pressable
-                    className="border-b border-border active:bg-muted/50"
-                    onPress={onClose}
-                  >
-                    <Row label="Custom names" hint="Rename characters in your chat" />
-                  </Pressable>
-                </Link>
-                <Link href="/(app)/memory-vault" asChild>
-                  <Pressable
-                    className="active:bg-muted/50"
-                    onPress={onClose}
-                  >
-                    <Row label="Memory vault" hint="What your gang remembers about you" />
-                  </Pressable>
-                </Link>
-              </View>
-            </View>
+                    <View className="flex-row items-center gap-2">
+                      <Sparkles
+                        size={14}
+                        color={tierPillFg}
+                        strokeWidth={2.5}
+                      />
+                      <Text
+                        className="text-[10px] font-bold uppercase tracking-[0.18em]"
+                        style={{ color: tierPillFg }}
+                      >
+                        {tierCopy.label} Plan Active
+                      </Text>
+                    </View>
+                    <Text className="mt-2 text-lg font-bold text-foreground">
+                      {tierCopy.usageHeading}
+                    </Text>
+                    <Text className="mt-1 text-xs text-muted-foreground">
+                      {tierCopy.usageDescription}
+                    </Text>
+                  </LinearGradient>
+                </View>
+              )}
+            </Animated.View>
 
             {/* Chat mode */}
-            <Section title="Chat mode">
-              {(["gang_focus", "ecosystem"] as ChatMode[]).map((mode, idx) => {
-                const isCurrent = currentChatMode === mode;
-                const label = mode === "gang_focus" ? "Gang focus" : "Ecosystem";
-                const desc =
-                  mode === "gang_focus"
-                    ? "Just your selected gang chats with you."
-                    : "All 14 characters can drop in occasionally.";
-                return (
-                  <Pressable
-                    key={mode}
-                    onPress={() => void updateProfileField("chat_mode", mode)}
-                    disabled={savingField !== null}
-                    className={`px-4 py-3 active:bg-muted/50 ${
-                      idx === 0 ? "border-b border-border" : ""
-                    }`}
-                  >
-                    <View className="flex-row items-center justify-between">
-                      <View className="flex-1 pr-3">
-                        <Text className="text-base text-foreground">{label}</Text>
-                        <Text className="text-xs text-muted-foreground/70">
-                          {desc}
+            <Animated.View entering={FadeInDown.delay(40).duration(220)}>
+              <Section title="Chat mode">
+                <View className="m-3 flex-row rounded-full bg-muted p-1">
+                  {(["gang_focus", "ecosystem"] as ChatMode[]).map((mode) => {
+                    const effectiveMode: ChatMode =
+                      tier === "free" ? "gang_focus" : currentChatMode;
+                    const isCurrent = effectiveMode === mode;
+                    const isLocked =
+                      mode === "ecosystem" && tier === "free";
+                    return (
+                      <Pressable
+                        key={mode}
+                        onPress={() => {
+                          if (isLocked) {
+                            navigate("/(app)/pricing");
+                            return;
+                          }
+                          void updateProfileField("chat_mode", mode);
+                        }}
+                        disabled={savingField !== null && !isLocked}
+                        className={`flex-1 flex-row items-center justify-center gap-1.5 rounded-full py-2 ${
+                          isCurrent ? "bg-primary" : ""
+                        }`}
+                      >
+                        <Text
+                          className={`text-sm font-semibold ${
+                            isCurrent
+                              ? "text-primary-foreground"
+                              : isLocked
+                                ? "text-muted-foreground/70"
+                                : "text-foreground"
+                          }`}
+                        >
+                          {mode === "gang_focus"
+                            ? "Gang Focus"
+                            : "Ecosystem"}
                         </Text>
-                      </View>
-                      {isCurrent ? <Check /> : null}
-                    </View>
-                  </Pressable>
-                );
-              })}
-            </Section>
-
-            {/* Avatar pack */}
-            <Section title="Avatar pack">
-              {AVATAR_STYLES.map((style, idx) => {
-                const isCurrent = currentStyle === style;
-                return (
-                  <Pressable
-                    key={style}
-                    onPress={() =>
-                      void updateProfileField("avatar_style_preference", style)
-                    }
-                    disabled={savingField !== null}
-                    className={`flex-row items-center justify-between px-4 py-3 active:bg-muted/50 ${
-                      idx < AVATAR_STYLES.length - 1
-                        ? "border-b border-border"
-                        : ""
-                    }`}
-                  >
-                    <Text className="text-base text-foreground">
-                      {STYLE_LABELS[style]}
-                    </Text>
-                    {isCurrent ? <Check /> : null}
-                  </Pressable>
-                );
-              })}
-            </Section>
-
-            {/* Wallpaper */}
-            <Section title="Chat wallpaper">
-              {CHAT_WALLPAPERS.map((w, idx) => {
-                const isCurrent = currentWallpaper === w.id;
-                return (
-                  <Pressable
-                    key={w.id}
-                    onPress={() => void updateProfileField("chat_wallpaper", w.id)}
-                    disabled={savingField !== null}
-                    className={`px-4 py-3 active:bg-muted/50 ${
-                      idx < CHAT_WALLPAPERS.length - 1
-                        ? "border-b border-border"
-                        : ""
-                    }`}
-                  >
-                    <View className="flex-row items-center justify-between">
-                      <View className="flex-1 pr-3">
-                        <Text className="text-base text-foreground">{w.label}</Text>
-                        <Text className="text-xs text-muted-foreground/70">
-                          {w.description}
-                        </Text>
-                      </View>
-                      {isCurrent ? <Check /> : null}
-                    </View>
-                  </Pressable>
-                );
-              })}
-            </Section>
-
-            {/* Danger */}
-            <View className="mt-8 px-4">
-              <Pressable
-                onPress={confirmSignOut}
-                className="rounded-2xl border border-destructive/30 bg-destructive/10 px-4 py-3"
-              >
-                <Text className="text-center text-sm font-semibold text-destructive">
-                  Sign out
-                </Text>
-              </Pressable>
-            </View>
-
-            <View className="mt-3 px-4">
-              <Link href="/(app)/delete-account" asChild>
-                <Pressable
-                  className="rounded-xl px-4 py-3 active:bg-muted/50"
-                  onPress={onClose}
-                >
-                  <Text className="text-center text-xs text-muted-foreground/70 underline">
-                    Delete account
+                        {isLocked ? (
+                          <Lock
+                            size={11}
+                            color="#71717a"
+                            strokeWidth={2.5}
+                          />
+                        ) : null}
+                      </Pressable>
+                    );
+                  })}
+                </View>
+                {tier === "free" ? (
+                  <Text className="mb-3 px-4 text-xs text-amber-300/90">
+                    Ecosystem mode unlocks with Basic or Pro. Your gang talks
+                    freely, reacts to each other, and the chat feels alive.
                   </Text>
-                </Pressable>
-              </Link>
-            </View>
+                ) : null}
+              </Section>
+            </Animated.View>
 
-            <View className="mt-6 px-4">
-              <Text className="text-center text-[10px] text-muted-foreground/50">
+            {/* Preferences */}
+            <Animated.View entering={FadeInDown.delay(80).duration(220)}>
+              <Section title="Preferences">
+                <ToggleRow
+                  label="Low-cost mode"
+                  subtitle="Shorter responses, lower compute"
+                  value={Boolean(profile?.low_cost_mode)}
+                  onValueChange={(v) =>
+                    void updateProfileField("low_cost_mode", v)
+                  }
+                />
+              </Section>
+            </Animated.View>
+
+            {/* Personalize */}
+            <Animated.View entering={FadeInDown.delay(120).duration(220)}>
+              <Section title="Personalize">
+                <IconRow
+                  icon={ImageIcon}
+                  iconTint="rgba(125,211,252,0.18)"
+                  iconColor="#7dd3fc"
+                  title="Wallpaper"
+                  subtitle={
+                    CHAT_WALLPAPERS.find((w) => w.id === currentWallpaper)
+                      ?.label ?? "Default"
+                  }
+                  onPress={() => setSubPanel("wallpaper")}
+                />
+                <View className="border-t border-border" />
+                <IconRow
+                  icon={Sparkles}
+                  iconTint="rgba(213,109,181,0.18)"
+                  iconColor="#f0abfc"
+                  title="Avatar pack"
+                  subtitle={STYLE_LABELS[currentStyle]}
+                  onPress={() => setSubPanel("avatar-pack")}
+                />
+                <View className="border-t border-border" />
+                <IconRow
+                  icon={Users}
+                  iconTint="rgba(74,222,128,0.18)"
+                  iconColor="#4ade80"
+                  title="Manage gang"
+                  subtitle="Add or remove characters"
+                  onPress={() => navigate("/(app)/edit-gang")}
+                />
+                <View className="border-t border-border" />
+                <IconRow
+                  icon={Tag}
+                  iconTint="rgba(245,158,11,0.18)"
+                  iconColor="#fbbf24"
+                  title="Custom names"
+                  subtitle="Rename characters in your chat"
+                  onPress={() => navigate("/(app)/custom-names")}
+                />
+              </Section>
+            </Animated.View>
+
+            {/* Account */}
+            <Animated.View entering={FadeInDown.delay(160).duration(220)}>
+              <Section title="Account">
+                <IconRow
+                  icon={CreditCard}
+                  iconTint="rgba(62,221,192,0.18)"
+                  iconColor="#5eead4"
+                  title="Plan & usage"
+                  subtitle={`${tierCopy.label} · ${tierCopy.priceLabel}`}
+                  onPress={() => navigate("/(app)/pricing")}
+                />
+                <View className="border-t border-border" />
+                <IconRow
+                  icon={LogOut}
+                  iconTint="rgba(245,158,11,0.18)"
+                  iconColor="#fbbf24"
+                  title="Sign out"
+                  onPress={confirmSignOut}
+                />
+                <View className="border-t border-border" />
+                <IconRow
+                  icon={Trash2}
+                  iconTint="rgba(236,94,94,0.18)"
+                  iconColor="#fca5a5"
+                  title="Delete account"
+                  subtitle="Permanent and irreversible"
+                  onPress={() => navigate("/(app)/delete-account")}
+                />
+              </Section>
+            </Animated.View>
+
+            <View className="mt-8 px-4">
+              <Text className="text-center text-[10px] uppercase tracking-[0.18em] text-muted-foreground/50">
                 MyGang.ai · v0.0.1
               </Text>
             </View>
           </ScrollView>
+
+          {/* Wallpaper sub-panel */}
+          {subPanel === "wallpaper" ? (
+            <Animated.View
+              entering={SlideInRight.duration(200)}
+              exiting={SlideOutRight.duration(200)}
+              className="absolute inset-0"
+              style={{ backgroundColor: "#0c1220" }}
+            >
+              <View className="flex-row items-center gap-3 border-b border-border px-4 pt-14 pb-3">
+                <Pressable
+                  onPress={() => setSubPanel(null)}
+                  className="h-8 w-8 items-center justify-center rounded-full active:bg-card"
+                  accessibilityLabel="Back"
+                >
+                  <ChevronLeft
+                    size={18}
+                    color="#a1a1aa"
+                    strokeWidth={2.4}
+                  />
+                </Pressable>
+                <Text className="text-lg font-bold text-foreground">
+                  Wallpaper
+                </Text>
+              </View>
+              <ScrollView contentContainerClassName="px-4 py-4">
+                {CHAT_WALLPAPERS.map((w) => {
+                  const isCurrent = currentWallpaper === w.id;
+                  return (
+                    <Pressable
+                      key={w.id}
+                      onPress={() =>
+                        void updateProfileField("chat_wallpaper", w.id)
+                      }
+                      disabled={savingField !== null}
+                      className="mb-2 flex-row items-center gap-3 rounded-2xl border border-border bg-card-translucent px-3 py-3"
+                    >
+                      <View className="h-12 w-9 overflow-hidden rounded-lg">
+                        <LinearGradient
+                          colors={previewColorsForWallpaper(w.id)}
+                          start={{ x: 0, y: 0 }}
+                          end={{ x: 1, y: 1 }}
+                          style={{ flex: 1 }}
+                        />
+                      </View>
+                      <View className="flex-1">
+                        <Text className="text-base text-foreground">
+                          {w.label}
+                        </Text>
+                        <Text className="text-xs text-muted-foreground/70">
+                          {w.description}
+                        </Text>
+                      </View>
+                      {isCurrent ? (
+                        <View className="h-6 w-6 items-center justify-center rounded-full bg-primary">
+                          <Check
+                            size={14}
+                            color="#1a1d24"
+                            strokeWidth={3}
+                          />
+                        </View>
+                      ) : null}
+                    </Pressable>
+                  );
+                })}
+              </ScrollView>
+            </Animated.View>
+          ) : null}
+
+          {/* Avatar pack sub-panel */}
+          {subPanel === "avatar-pack" ? (
+            <Animated.View
+              entering={SlideInRight.duration(200)}
+              exiting={SlideOutRight.duration(200)}
+              className="absolute inset-0"
+              style={{ backgroundColor: "#0c1220" }}
+            >
+              <View className="flex-row items-center gap-3 border-b border-border px-4 pt-14 pb-3">
+                <Pressable
+                  onPress={() => setSubPanel(null)}
+                  className="h-8 w-8 items-center justify-center rounded-full active:bg-card"
+                  accessibilityLabel="Back"
+                >
+                  <ChevronLeft
+                    size={18}
+                    color="#a1a1aa"
+                    strokeWidth={2.4}
+                  />
+                </Pressable>
+                <Text className="text-lg font-bold text-foreground">
+                  Avatar pack
+                </Text>
+              </View>
+              <ScrollView contentContainerClassName="px-4 py-4">
+                {AVATAR_STYLES.map((style) => {
+                  const isCurrent = currentStyle === style;
+                  return (
+                    <Pressable
+                      key={style}
+                      onPress={() =>
+                        void updateProfileField(
+                          "avatar_style_preference",
+                          style,
+                        )
+                      }
+                      disabled={savingField !== null}
+                      className="mb-2 flex-row items-center gap-3 rounded-2xl border border-border bg-card-translucent px-4 py-3"
+                    >
+                      <View
+                        className="h-9 w-9 items-center justify-center rounded-full"
+                        style={{
+                          backgroundColor: "rgba(213,109,181,0.18)",
+                        }}
+                      >
+                        <Sparkles
+                          size={16}
+                          color="#f0abfc"
+                          strokeWidth={2.4}
+                        />
+                      </View>
+                      <View className="flex-1">
+                        <Text className="text-base text-foreground">
+                          {STYLE_LABELS[style]}
+                        </Text>
+                      </View>
+                      {isCurrent ? (
+                        <View className="h-6 w-6 items-center justify-center rounded-full bg-primary">
+                          <Check
+                            size={14}
+                            color="#1a1d24"
+                            strokeWidth={3}
+                          />
+                        </View>
+                      ) : null}
+                    </Pressable>
+                  );
+                })}
+              </ScrollView>
+            </Animated.View>
+          ) : null}
+
+          <ConfirmDialog
+            visible={signOutOpen}
+            title="Sign out?"
+            body="You can sign back in any time."
+            confirmLabel="Sign out"
+            cancelLabel="Stay"
+            variant="neutral"
+            icon={LogOut}
+            onConfirm={async () => {
+              setSignOutOpen(false);
+              await signOut();
+            }}
+            onCancel={() => setSignOutOpen(false)}
+          />
         </Pressable>
       </Pressable>
     </Modal>
@@ -351,22 +619,66 @@ function Section({
   );
 }
 
-function Row({ label, hint }: { label: string; hint: string }) {
+function IconRow({
+  icon: Icon,
+  iconTint,
+  iconColor,
+  title,
+  subtitle,
+  onPress,
+}: {
+  icon: LucideIcon;
+  iconTint: string;
+  iconColor: string;
+  title: string;
+  subtitle?: string;
+  onPress: () => void;
+}) {
   return (
-    <View className="flex-row items-center justify-between px-4 py-3">
-      <View className="flex-1 pr-3">
-        <Text className="text-base text-foreground">{label}</Text>
-        <Text className="text-xs text-muted-foreground/70">{hint}</Text>
+    <Pressable
+      onPress={onPress}
+      className="flex-row items-center gap-3 px-4 py-3 active:bg-muted/30"
+    >
+      <View
+        className="h-9 w-9 items-center justify-center rounded-full"
+        style={{ backgroundColor: iconTint }}
+      >
+        <Icon size={16} color={iconColor} strokeWidth={2.4} />
       </View>
-      <Text className="text-muted-foreground/70">›</Text>
-    </View>
+      <View className="flex-1">
+        <Text className="text-base text-foreground">{title}</Text>
+        {subtitle ? (
+          <Text className="text-xs text-muted-foreground/70">{subtitle}</Text>
+        ) : null}
+      </View>
+      <ChevronRight size={16} color="#71717a" strokeWidth={2.4} />
+    </Pressable>
   );
 }
 
-function Check() {
+function ToggleRow({
+  label,
+  subtitle,
+  value,
+  onValueChange,
+}: {
+  label: string;
+  subtitle: string;
+  value: boolean;
+  onValueChange: (next: boolean) => void;
+}) {
   return (
-    <View className="h-6 w-6 items-center justify-center rounded-full bg-primary">
-      <Text className="text-xs font-bold text-primary-foreground">✓</Text>
+    <View className="flex-row items-center justify-between gap-3 px-4 py-3">
+      <View className="flex-1">
+        <Text className="text-base text-foreground">{label}</Text>
+        <Text className="text-xs text-muted-foreground/70">{subtitle}</Text>
+      </View>
+      <Switch
+        value={value}
+        onValueChange={onValueChange}
+        thumbColor={value ? "#3eddc0" : "#71717a"}
+        trackColor={{ false: "#2a2e36", true: "rgba(62,221,192,0.4)" }}
+      />
     </View>
   );
 }

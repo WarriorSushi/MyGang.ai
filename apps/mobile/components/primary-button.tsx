@@ -1,34 +1,42 @@
-import { ActivityIndicator, Pressable, Text, type StyleProp, type ViewStyle } from "react-native";
+import { useEffect } from "react";
+import {
+  ActivityIndicator,
+  Pressable,
+  Text,
+  View,
+  type PressableProps,
+} from "react-native";
+import { LinearGradient } from "expo-linear-gradient";
+import Animated, {
+  useAnimatedStyle,
+  useSharedValue,
+  withSpring,
+} from "react-native-reanimated";
+import { ArrowRight, type LucideIcon } from "lucide-react-native";
+
+const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
+
+type Variant = "solid" | "gradient";
+type Size = "default" | "lg" | "xl";
 
 type PrimaryButtonProps = {
   label: string;
-  onPress: () => void;
+  onPress?: PressableProps["onPress"];
   isLoading?: boolean;
   disabled?: boolean;
-  size?: "default" | "lg" | "xl";
-  style?: StyleProp<ViewStyle>;
+  size?: Size;
+  variant?: Variant;
+  /** Lucide icon component to render at trailing edge (e.g. ArrowRight). */
+  iconRight?: LucideIcon;
+  /** When true, label is rendered uppercase with wide letter-spacing (auth-style). */
+  upperCase?: boolean;
 };
 
-const SIZE_CLASSES: Record<NonNullable<PrimaryButtonProps["size"]>, string> = {
-  default: "h-11 rounded-2xl px-5",
-  lg: "h-14 rounded-2xl px-7",
-  xl: "h-16 rounded-3xl px-8",
-};
-
-const TEXT_SIZE: Record<NonNullable<PrimaryButtonProps["size"]>, string> = {
+const SIZE_HEIGHT: Record<Size, number> = { default: 44, lg: 52, xl: 60 };
+const SIZE_TEXT: Record<Size, string> = {
   default: "text-base",
-  lg: "text-lg",
-  xl: "text-xl",
-};
-
-// Teal-tinted shadow underneath the button so the brand color glows softly.
-// Mirrors web's `shadow-lg shadow-primary/10` style of accent halos.
-const ACTIVE_SHADOW = {
-  shadowColor: "#3eddc0",
-  shadowOpacity: 0.32,
-  shadowRadius: 18,
-  shadowOffset: { width: 0, height: 8 },
-  elevation: 10,
+  lg: "text-base",
+  xl: "text-lg",
 };
 
 export function PrimaryButton({
@@ -36,29 +44,89 @@ export function PrimaryButton({
   onPress,
   isLoading = false,
   disabled = false,
-  size = "lg",
-  style,
+  size = "default",
+  variant = "solid",
+  iconRight,
+  upperCase = false,
 }: PrimaryButtonProps) {
-  const inactive = disabled || isLoading;
-  return (
-    <Pressable
-      onPress={inactive ? undefined : onPress}
-      style={[!inactive ? ACTIVE_SHADOW : undefined, style]}
-      className={`${SIZE_CLASSES[size]} flex-row items-center justify-center ${
-        inactive ? "bg-secondary" : "bg-primary active:opacity-90"
-      }`}
-    >
+  const scale = useSharedValue(1);
+  const isInteractive = !isLoading && !disabled;
+
+  useEffect(() => {
+    scale.value = 1;
+  }, [disabled, isLoading, scale]);
+
+  const animatedStyle = useAnimatedStyle(() => ({
+    transform: [{ scale: scale.value }],
+  }));
+
+  const Icon = iconRight ?? ArrowRight;
+  const showIcon = iconRight !== undefined;
+
+  const labelClasses = `${SIZE_TEXT[size]} font-bold ${
+    upperCase ? "uppercase tracking-[0.18em] font-black" : ""
+  } ${variant === "solid" ? "text-primary-foreground" : "text-black"}`;
+
+  const inner = (
+    <View className="flex-row items-center justify-center gap-2">
       {isLoading ? (
-        <ActivityIndicator color="#1a1d24" />
+        <ActivityIndicator
+          color={variant === "solid" ? "#1a1d24" : "#0a0a0a"}
+        />
       ) : (
-        <Text
-          className={`${TEXT_SIZE[size]} font-bold ${
-            inactive ? "text-muted-foreground" : "text-primary-foreground"
-          }`}
-        >
-          {label}
-        </Text>
+        <>
+          <Text className={labelClasses}>{label}</Text>
+          {showIcon ? (
+            <Icon
+              size={size === "xl" ? 22 : size === "lg" ? 20 : 18}
+              color={variant === "solid" ? "#1a1d24" : "#0a0a0a"}
+              strokeWidth={2.5}
+            />
+          ) : null}
+        </>
       )}
-    </Pressable>
+    </View>
+  );
+
+  return (
+    <AnimatedPressable
+      onPress={onPress}
+      disabled={!isInteractive}
+      onPressIn={() => {
+        if (isInteractive)
+          scale.value = withSpring(0.97, { damping: 18, stiffness: 320 });
+      }}
+      onPressOut={() => {
+        scale.value = withSpring(1, { damping: 18, stiffness: 320 });
+      }}
+      style={[
+        animatedStyle,
+        {
+          height: SIZE_HEIGHT[size],
+          opacity: isInteractive ? 1 : 0.55,
+          shadowColor: variant === "solid" ? "#3eddc0" : "#22d3ee",
+          shadowOffset: { width: 0, height: 8 },
+          shadowOpacity: isInteractive ? 0.25 : 0,
+          shadowRadius: 16,
+          elevation: isInteractive ? 6 : 0,
+        },
+      ]}
+      className="overflow-hidden rounded-full"
+    >
+      {variant === "gradient" ? (
+        <LinearGradient
+          colors={["#7dd3fc", "#67e8f9", "#6ee7b7"]}
+          start={{ x: 0, y: 0.5 }}
+          end={{ x: 1, y: 0.5 }}
+          style={{ flex: 1, alignItems: "center", justifyContent: "center" }}
+        >
+          {inner}
+        </LinearGradient>
+      ) : (
+        <View className="flex-1 items-center justify-center bg-primary">
+          {inner}
+        </View>
+      )}
+    </AnimatedPressable>
   );
 }

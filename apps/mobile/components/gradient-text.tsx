@@ -3,15 +3,15 @@ import { LinearGradient } from "expo-linear-gradient";
 import { Text, type TextProps, type StyleProp, type TextStyle } from "react-native";
 
 type GradientTextProps = TextProps & {
-  /** Two-color gradient. Defaults to brand teal → magenta. */
-  colors?: [string, string];
+  /** Multi-stop gradient. Defaults to brand teal → soft slate → magenta. */
+  colors?: readonly [string, string, ...string[]];
   textClassName?: string;
   textStyle?: StyleProp<TextStyle>;
 };
 
 export function GradientText({
   children,
-  colors = ["#3eddc0", "#d56db5"],
+  colors = ["#3eddc0", "#cbd5e1", "#d56db5"],
   textClassName,
   textStyle,
   ...textProps
@@ -29,7 +29,7 @@ export function GradientText({
       }
     >
       <LinearGradient
-        colors={colors}
+        colors={colors as unknown as readonly [string, string, ...string[]]}
         start={{ x: 0, y: 0 }}
         end={{ x: 1, y: 0 }}
       >

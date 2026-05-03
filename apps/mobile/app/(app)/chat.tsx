@@ -1,11 +1,13 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { Alert, KeyboardAvoidingView, Platform, View } from "react-native";
+import { Alert, KeyboardAvoidingView, Platform, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import * as Clipboard from "expo-clipboard";
 import {
   CHARACTERS,
   applyAvatarStyleToGang,
   DEFAULT_AVATAR_STYLE,
+  getContextLimit,
+  getTierFromProfile,
   type AvatarStyle,
   type CharacterCatalogEntry,
   type ChatWallpaper,
@@ -32,6 +34,7 @@ import { MessageActionsSheet } from "../../components/chat/message-actions-sheet
 import { AvatarLightbox } from "../../components/chat/avatar-lightbox";
 import { WallpaperBackground } from "../../components/chat/wallpaper-background";
 import { SettingsDrawer } from "../../components/chat/settings-drawer";
+import { MemoryVaultDrawer } from "../../components/chat/memory-vault-drawer";
 import { type ChatMessage } from "../../components/chat/message-item";
 
 export default function ChatScreen() {
@@ -41,9 +44,12 @@ export default function ChatScreen() {
   const [hasHydrated, setHasHydrated] = useState(false);
   const [typingCharacterId, setTypingCharacterId] = useState<string | null>(null);
   const [actionMessage, setActionMessage] = useState<ChatMessage | null>(null);
+  const [replyTarget, setReplyTarget] = useState<ChatMessage | null>(null);
   const [lightboxCharacter, setLightboxCharacter] =
     useState<CharacterCatalogEntry | null>(null);
   const [settingsOpen, setSettingsOpen] = useState(false);
+  const [memoryVaultOpen, setMemoryVaultOpen] = useState(false);
+  const [showResumedPill, setShowResumedPill] = useState(false);
   const userIdRef = useRef<string | null>(null);
 
   // Hydrate persisted chat history once we know the user.
@@ -70,6 +76,10 @@ export default function ChatScreen() {
         setMessages(server);
       }
       setHasHydrated(true);
+      // Surface a "Resumed your last session" pill if any source delivered messages.
+      if (cached.length > 0 || server.length > 0) {
+        setShowResumedPill(true);
+      }
     })();
 
     return () => {
@@ -82,6 +92,13 @@ export default function ChatScreen() {
     if (!hasHydrated || !user?.id) return;
     void savePersistedMessages(user.id, messages);
   }, [messages, user?.id, hasHydrated]);
+
+  // Auto-dismiss the "Resumed your last session" pill after ~6s.
+  useEffect(() => {
+    if (!showResumedPill) return;
+    const t = setTimeout(() => setShowResumedPill(false), 6000);
+    return () => clearTimeout(t);
+  }, [showResumedPill]);
 
   const avatarStyle: AvatarStyle =
     (profile?.avatar_style_preference as AvatarStyle) ?? DEFAULT_AVATAR_STYLE;
@@ -149,17 +166,30 @@ export default function ChatScreen() {
     []
   );
 
-  const chatMode = (profile?.chat_mode as "gang_focus" | "ecosystem") ?? "gang_focus";
+  // Free tier cannot use ecosystem mode (server returns 403). Mirror the web
+  // guard at auth-manager.tsx:65 — clamp to gang_focus unless tier is paid.
+  const tier = (profile?.subscription_tier ?? "free") as string;
+  const rawChatMode = (profile?.chat_mode as "gang_focus" | "ecosystem") ?? "gang_focus";
+  const chatMode: "gang_focus" | "ecosystem" =
+    tier === "free" ? "gang_focus" : rawChatMode;
+  const lowCostMode = Boolean(profile?.low_cost_mode);
 
   const sendChatPayload = useCallback(
     async (extraMessage: ChatMessage | null) => {
+      const tierForLimit = getTierFromProfile(
+        profile?.subscription_tier ?? null
+      );
+      const contextLimit = getContextLimit(tierForLimit);
       const baseMessages = extraMessage ? [...messages, extraMessage] : messages;
-      const apiMessages: ChatRequestMessage[] = baseMessages.map((m) => ({
+      // Keep the most recent contextLimit messages (mirrors web behaviour).
+      const cappedMessages = baseMessages.slice(-contextLimit);
+      const apiMessages: ChatRequestMessage[] = cappedMessages.map((m) => ({
         id: m.id,
         speaker: m.speaker,
         content: m.content,
         created_at: m.created_at,
         ...(m.reaction ? { reaction: m.reaction } : {}),
+        ...(m.replyToId ? { replyToId: m.replyToId } : {}),
       }));
 
       return postChat({
@@ -167,21 +197,33 @@ export default function ChatScreen() {
         activeGangIds: gangIds,
         userName: profile?.username ?? null,
         chatMode,
+        lowCostMode,
       });
     },
-    [messages, gangIds, profile?.username, chatMode]
+    [
+      messages,
+      gangIds,
+      profile?.username,
+      profile?.subscription_tier,
+      chatMode,
+      lowCostMode,
+    ]
   );
 
   const handleSend = useCallback(
     async (text: string) => {
       if (isWaiting) return;
+      // User taking action — dismiss the resumed-session pill immediately.
+      setShowResumedPill(false);
       const userMsg: ChatMessage = {
         id: generateMessageId(),
         speaker: "user",
         content: text,
         created_at: new Date().toISOString(),
+        ...(replyTarget ? { replyToId: replyTarget.id } : {}),
       };
       setMessages((prev) => [...prev, userMsg]);
+      setReplyTarget(null);
       setIsWaiting(true);
 
       const result = await sendChatPayload(userMsg);
@@ -201,7 +243,7 @@ export default function ChatScreen() {
 
       scheduleEvents(result.data.events);
     },
-    [isWaiting, sendChatPayload, scheduleEvents]
+    [isWaiting, sendChatPayload, scheduleEvents, replyTarget]
   );
 
   const handleCopy = useCallback(async (msg: ChatMessage) => {
@@ -218,6 +260,26 @@ export default function ChatScreen() {
     []
   );
 
+  const replyChipProps = replyTarget
+    ? {
+        speaker: replyTarget.speaker,
+        content: replyTarget.content,
+        speakerName:
+          replyTarget.speaker === "user"
+            ? "yourself"
+            : (profile?.custom_character_names as Record<string, string> | null)?.[
+                replyTarget.speaker
+              ] ??
+              allCharacters.find((c) => c.id === replyTarget.speaker)?.name ??
+              replyTarget.speaker,
+        speakerColor:
+          replyTarget.speaker === "user"
+            ? "#3eddc0"
+            : allCharacters.find((c) => c.id === replyTarget.speaker)?.color ??
+              "#a1a1aa",
+      }
+    : null;
+
   // If we somehow got here without a gang, show a helpful state instead of an empty chat.
   if (gang.length === 0) {
     return (
@@ -226,6 +288,8 @@ export default function ChatScreen() {
           characters={[]}
           avatarStyle={avatarStyle}
           onOpenSettings={() => setSettingsOpen(true)}
+          onOpenMemoryVault={() => setMemoryVaultOpen(true)}
+          isTyping={typingCharacterId !== null}
         />
         <EmptyState
           gang={[]}
@@ -235,6 +299,10 @@ export default function ChatScreen() {
         <SettingsDrawer
           visible={settingsOpen}
           onClose={() => setSettingsOpen(false)}
+        />
+        <MemoryVaultDrawer
+          visible={memoryVaultOpen}
+          onClose={() => setMemoryVaultOpen(false)}
         />
       </SafeAreaView>
     );
@@ -252,6 +320,8 @@ export default function ChatScreen() {
             avatarStyle={avatarStyle}
             onAvatarPress={(c) => setLightboxCharacter(c)}
             onOpenSettings={() => setSettingsOpen(true)}
+            onOpenMemoryVault={() => setMemoryVaultOpen(true)}
+            isTyping={typingCharacterId !== null}
             onRefresh={async () => {
               if (!user?.id) return;
               const server = await fetchRecentChatHistory(user.id);
@@ -259,6 +329,13 @@ export default function ChatScreen() {
             }}
           />
         <View className="flex-1">
+          {showResumedPill && messages.length > 0 ? (
+            <View className="self-center mt-3 mb-1 rounded-full border border-border bg-card-translucent px-3 py-1.5">
+              <Text className="text-[10px] uppercase tracking-[0.18em] text-muted-foreground">
+                RESUMED YOUR LAST SESSION
+              </Text>
+            </View>
+          ) : null}
           {messages.length === 0 && hasHydrated ? (
             <EmptyState
               gang={gang}
@@ -275,6 +352,8 @@ export default function ChatScreen() {
               }
               avatarStyle={avatarStyle}
               onMessageLongPress={(m) => setActionMessage(m)}
+              onReactPress={(m, emoji) => void handleReact(m, emoji)}
+              onReplyPress={(m) => setReplyTarget(m)}
             />
           )}
           {typingCharacterId
@@ -294,7 +373,12 @@ export default function ChatScreen() {
               })()
             : null}
         </View>
-        <ChatInput onSend={handleSend} disabled={isWaiting} />
+        <ChatInput
+          onSend={handleSend}
+          disabled={isWaiting}
+          replyTarget={replyChipProps}
+          onCancelReply={() => setReplyTarget(null)}
+        />
         <AiDisclaimer />
         </KeyboardAvoidingView>
       </WallpaperBackground>
@@ -309,6 +393,9 @@ export default function ChatScreen() {
           if (actionMessage) void handleReact(actionMessage, emoji);
         }}
         canReact={actionMessage !== null && actionMessage.speaker !== "user"}
+        onReply={() => {
+          if (actionMessage) setReplyTarget(actionMessage);
+        }}
       />
 
       <AvatarLightbox
@@ -327,6 +414,11 @@ export default function ChatScreen() {
       <SettingsDrawer
         visible={settingsOpen}
         onClose={() => setSettingsOpen(false)}
+      />
+
+      <MemoryVaultDrawer
+        visible={memoryVaultOpen}
+        onClose={() => setMemoryVaultOpen(false)}
       />
     </SafeAreaView>
   );

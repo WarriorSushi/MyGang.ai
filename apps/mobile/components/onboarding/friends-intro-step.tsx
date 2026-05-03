@@ -1,10 +1,13 @@
-import { Image, ScrollView, Text, TextInput, View } from "react-native";
+import { useState } from "react";
+import { Image, Pressable, ScrollView, Text, TextInput, View } from "react-native";
+import { ArrowRight, ChevronRight } from "lucide-react-native";
 import {
   resolveAvatarUrl,
   type AvatarStyle,
   type CharacterCatalogEntry,
 } from "@mygang/shared";
 import { PrimaryButton } from "../primary-button";
+import { CharacterDetailModal } from "./character-detail-modal";
 
 const SITE_URL = "https://mygang.ai";
 
@@ -28,6 +31,13 @@ export function FriendsIntroStep({
   const selectedCharacters = characters.filter((c) =>
     selectedIds.includes(c.id)
   );
+
+  const [detailCharacterId, setDetailCharacterId] = useState<string | null>(
+    null
+  );
+  const detailCharacter = detailCharacterId
+    ? selectedCharacters.find((c) => c.id === detailCharacterId) ?? null
+    : null;
 
   return (
     <View className="flex-1">
@@ -67,6 +77,15 @@ export function FriendsIntroStep({
                       </Text>
                     ) : null}
                   </View>
+                  <Pressable
+                    onPress={() => setDetailCharacterId(c.id)}
+                    className="flex-row items-center gap-1 self-start rounded-full border border-border bg-card-translucent px-2.5 py-1"
+                  >
+                    <Text className="text-[10px] font-semibold text-muted-foreground">
+                      Details
+                    </Text>
+                    <ChevronRight size={11} color="#a1a1aa" strokeWidth={2.5} />
+                  </Pressable>
                 </View>
                 <View className="mt-3">
                   <Text className="text-[10px] uppercase tracking-widest text-muted-foreground/70">
@@ -78,9 +97,9 @@ export function FriendsIntroStep({
                       onNameChange(c.id, text.slice(0, 30))
                     }
                     placeholder={c.name}
-                    placeholderTextColor="#71717a"
+                    placeholderTextColor="rgba(0,0,0,0.5)"
                     maxLength={30}
-                    className="mt-1 h-10 rounded-lg border border-border bg-muted px-3 text-sm text-foreground"
+                    className="mt-1 h-10 rounded-lg bg-white/80 px-3 text-sm text-black"
                   />
                 </View>
               </View>
@@ -89,13 +108,29 @@ export function FriendsIntroStep({
         </View>
       </ScrollView>
 
-      <View className="absolute inset-x-0 bottom-0 border-t border-border bg-background/95 px-6 py-3 pb-6">
-        <Text className="mb-2 text-center text-xs text-muted-foreground">
+      <View className="absolute inset-x-0 bottom-0 flex-row items-center justify-between gap-3 border-t border-border bg-background/95 px-4 py-3 pb-6">
+        <Text className="text-xs text-muted-foreground">
           {selectedCharacters.length} friend
           {selectedCharacters.length !== 1 ? "s" : ""} ready
         </Text>
-        <PrimaryButton label="Start Chat →" onPress={onNext} />
+        <View className="w-36">
+          <PrimaryButton
+            label="Start Chat"
+            onPress={onNext}
+            size="default"
+            iconRight={ArrowRight}
+          />
+        </View>
       </View>
+
+      <CharacterDetailModal
+        character={detailCharacter}
+        customName={
+          detailCharacter ? customNames[detailCharacter.id] : undefined
+        }
+        avatarStyle={avatarStyle}
+        onClose={() => setDetailCharacterId(null)}
+      />
     </View>
   );
 }

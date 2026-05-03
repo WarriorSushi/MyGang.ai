@@ -1,42 +1,54 @@
+import { View, type ViewProps } from "react-native";
 import { BlurView } from "expo-blur";
-import { type ReactNode } from "react";
-import { StyleSheet, View, type StyleProp, type ViewStyle } from "react-native";
 
-type GlassCardProps = {
-  children: ReactNode;
-  intensity?: number;
-  className?: string;
-  style?: StyleProp<ViewStyle>;
+type GlassCardProps = ViewProps & {
+  withShadow?: boolean;
 };
 
 /**
- * Translucent card with a real backdrop blur. Mirrors web's glass-card
- * pattern (bg-card/82 + backdrop-blur-xl). On Android the blur is a
- * single-pass approximation; on iOS it's hardware-accelerated.
+ * Translucent dark card with a frosted backdrop and rounded-[28px] (~2rem) corners.
+ * Mirrors the web `glass-card` container used across auth + content blocks.
  */
 export function GlassCard({
   children,
-  intensity = 28,
-  className,
+  withShadow = true,
   style,
+  ...rest
 }: GlassCardProps) {
   return (
     <View
-      style={style}
-      className={`overflow-hidden border border-border ${className ?? ""}`}
+      {...rest}
+      style={[
+        {
+          borderRadius: 28,
+          overflow: "hidden",
+          ...(withShadow
+            ? {
+                shadowColor: "#000",
+                shadowOffset: { width: 0, height: 24 },
+                shadowOpacity: 0.45,
+                shadowRadius: 48,
+                elevation: 12,
+              }
+            : null),
+        },
+        style,
+      ]}
+      className="border border-white/10"
     >
       <BlurView
-        intensity={intensity}
+        intensity={40}
         tint="dark"
         experimentalBlurMethod="dimezisBlurView"
-        style={StyleSheet.absoluteFill}
-      />
-      {/* Subtle tint on top of the blur to keep contrast strong */}
-      <View
-        className="bg-card-translucent"
-        style={StyleSheet.absoluteFill}
-      />
-      <View>{children}</View>
+        style={{ flex: 1 }}
+      >
+        <View
+          style={{ backgroundColor: "rgba(7,12,20,0.74)" }}
+          className="p-6"
+        >
+          {children}
+        </View>
+      </BlurView>
     </View>
   );
 }

@@ -1,4 +1,5 @@
 import { Pressable, Text, View } from "react-native";
+import { ArrowRight } from "lucide-react-native";
 import { PrimaryButton } from "../primary-button";
 import { GradientText } from "../gradient-text";
 
@@ -19,7 +20,12 @@ export function WelcomeStep({ onNext, onLogin }: WelcomeStepProps) {
         Your friends are waiting. 24/7, no drama (mostly), just vibes.
       </Text>
       <View className="w-full max-w-xs">
-        <PrimaryButton label="Assemble the Gang  →" onPress={onNext} size="xl" />
+        <PrimaryButton
+          label="Assemble the Gang"
+          onPress={onNext}
+          size="xl"
+          iconRight={ArrowRight}
+        />
         {onLogin ? (
           <Pressable className="mt-5 self-center" onPress={onLogin}>
             <Text className="text-[10px] font-semibold uppercase tracking-[0.18em] text-muted-foreground/70">

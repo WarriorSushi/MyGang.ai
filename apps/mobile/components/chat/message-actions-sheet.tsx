@@ -1,5 +1,6 @@
 import { BlurView } from "expo-blur";
 import { Modal, Pressable, StyleSheet, Text, View } from "react-native";
+import { Reply } from "lucide-react-native";
 
 const QUICK_REACTIONS = ["👍", "❤️", "😂", "😮", "😢", "🔥"];
 
@@ -9,6 +10,7 @@ type MessageActionsSheetProps = {
   onCopy: () => void;
   onReact: (emoji: string) => void;
   canReact: boolean;
+  onReply?: () => void;
 };
 
 export function MessageActionsSheet({
@@ -17,6 +19,7 @@ export function MessageActionsSheet({
   onCopy,
   onReact,
   canReact,
+  onReply,
 }: MessageActionsSheetProps) {
   return (
     <Modal
@@ -62,6 +65,19 @@ export function MessageActionsSheet({
                   </Pressable>
                 ))}
               </View>
+            ) : null}
+
+            {onReply ? (
+              <Pressable
+                onPress={() => {
+                  onReply();
+                  onClose();
+                }}
+                className="mb-2 flex-row items-center gap-3 rounded-2xl bg-muted/60 px-4 py-3 active:bg-secondary"
+              >
+                <Reply size={18} color="#e4e4e7" strokeWidth={2.2} />
+                <Text className="text-base text-foreground">Reply</Text>
+              </Pressable>
             ) : null}
 
             <Pressable

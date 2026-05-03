@@ -1,5 +1,14 @@
 import { useEffect, useRef, useState } from "react";
-import { ActivityIndicator, Text, View } from "react-native";
+import { Text, View } from "react-native";
+import Animated, {
+  Easing,
+  FadeInUp,
+  useAnimatedStyle,
+  useSharedValue,
+  withRepeat,
+  withTiming,
+} from "react-native-reanimated";
+import { Check, Loader2 } from "lucide-react-native";
 
 export const LOADING_STEP_DURATION_MS = 1600;
 
@@ -8,42 +17,106 @@ type LoadingStepProps = {
   onComplete: () => void;
 };
 
-export function LoadingStep({ states, onComplete }: LoadingStepProps) {
-  const [index, setIndex] = useState(0);
-  const completedRef = useRef(false);
+function StepIcon({ isPast, isCurrent }: { isPast: boolean; isCurrent: boolean }) {
+  const rotate = useSharedValue(0);
 
   useEffect(() => {
-    if (index < states.length - 1) {
-      const t = setTimeout(() => {
-        setIndex((i) => i + 1);
-      }, LOADING_STEP_DURATION_MS);
-      return () => clearTimeout(t);
+    if (isCurrent) {
+      rotate.value = 0;
+      rotate.value = withRepeat(
+        withTiming(360, { duration: 900, easing: Easing.linear }),
+        -1,
+        false,
+      );
     }
-    if (!completedRef.current) {
-      completedRef.current = true;
-      const t = setTimeout(onComplete, LOADING_STEP_DURATION_MS);
-      return () => clearTimeout(t);
+  }, [isCurrent, rotate]);
+
+  const animStyle = useAnimatedStyle(() => ({
+    transform: [{ rotate: `${rotate.value}deg` }],
+  }));
+
+  if (isPast) {
+    return (
+      <View className="h-5 w-5 items-center justify-center rounded-full bg-primary/30">
+        <Check size={12} color="#3eddc0" strokeWidth={3} />
+      </View>
+    );
+  }
+  if (isCurrent) {
+    return (
+      <Animated.View style={animStyle}>
+        <Loader2 size={20} color="#3eddc0" strokeWidth={2.4} />
+      </Animated.View>
+    );
+  }
+  return null;
+}
+
+export function LoadingStep({ states, onComplete }: LoadingStepProps) {
+  const [index, setIndex] = useState(0);
+
+  // Hold onComplete in a ref so the animation effect can stay deps-free
+  // and never re-run mid-animation when the parent re-renders.
+  const onCompleteRef = useRef(onComplete);
+  useEffect(() => {
+    onCompleteRef.current = onComplete;
+  }, [onComplete]);
+
+  useEffect(() => {
+    let cancelled = false;
+    let timer: ReturnType<typeof setTimeout> | null = null;
+
+    function tick(i: number) {
+      if (cancelled) return;
+      if (i < states.length - 1) {
+        timer = setTimeout(() => {
+          if (cancelled) return;
+          setIndex(i + 1);
+          tick(i + 1);
+        }, LOADING_STEP_DURATION_MS);
+      } else {
+        // Final state — wait one duration, then fire onComplete.
+        timer = setTimeout(() => {
+          if (!cancelled) onCompleteRef.current();
+        }, LOADING_STEP_DURATION_MS);
+      }
     }
-  }, [index, states.length, onComplete]);
+
+    tick(0);
+    return () => {
+      cancelled = true;
+      if (timer) clearTimeout(timer);
+    };
+    // Intentionally empty deps — animation runs once on mount.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   return (
     <View className="flex-1 items-center justify-center bg-background px-6">
-      <ActivityIndicator color="#ffffff" size="large" />
-      <View className="mt-8 max-w-xs">
+      <View className="w-full max-w-sm">
         {states.map((state, i) => {
+          if (i > index) return null;
           const isCurrent = i === index;
           const isPast = i < index;
-          if (i > index) return null;
           return (
-            <Text
+            <Animated.View
               key={i}
-              className={`mb-2 text-center text-base ${
-                isCurrent ? "text-foreground font-semibold" : "text-muted-foreground/50"
+              entering={FadeInUp.duration(280).springify().damping(16)}
+              className={`mb-3 flex-row items-center gap-3 ${
+                isCurrent ? "" : "opacity-50"
               }`}
             >
-              {isPast ? "✓ " : ""}
-              {state.text}
-            </Text>
+              <StepIcon isPast={isPast} isCurrent={isCurrent} />
+              <Text
+                className={`flex-1 text-base ${
+                  isCurrent
+                    ? "font-semibold text-foreground"
+                    : "text-muted-foreground"
+                }`}
+              >
+                {state.text}
+              </Text>
+            </Animated.View>
           );
         })}
       </View>

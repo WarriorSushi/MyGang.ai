@@ -1,6 +1,7 @@
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import { Alert, Pressable, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { useRouter } from "expo-router";
 import {
   CHARACTERS,
   DEFAULT_AVATAR_STYLE,
@@ -27,6 +28,8 @@ import {
   LoadingStep,
   buildLoadingStates,
 } from "../../components/onboarding/loading-step";
+import { StepIndicator } from "../../components/onboarding/step-indicator";
+import { StepTransition } from "../../components/onboarding/step-transition";
 
 type Step =
   | "WELCOME"
@@ -60,6 +63,7 @@ const BACK_MAP: Partial<Record<Step, Step>> = {
 
 export default function OnboardingScreen() {
   const { user, profile, refreshProfile } = useAuth();
+  const router = useRouter();
   const [step, setStep] = useState<Step>("WELCOME");
   const [name, setName] = useState("");
   const [vibeProfile, setVibeProfile] = useState<VibeProfile | null>(null);
@@ -97,9 +101,19 @@ export default function OnboardingScreen() {
     setCustomNames((prev) => ({ ...prev, [characterId]: nextName }));
   }
 
+  const directionRef = useRef<"forward" | "backward">("forward");
+
+  function goForward(next: Step) {
+    directionRef.current = "forward";
+    setStep(next);
+  }
+
   function goBack() {
     const back = BACK_MAP[step];
-    if (back) setStep(back);
+    if (back) {
+      directionRef.current = "backward";
+      setStep(back);
+    }
   }
 
   async function finalize() {
@@ -107,10 +121,9 @@ export default function OnboardingScreen() {
     if (selectedIds.length < 2) return;
 
     try {
-      // Step 1: write to gangs + gang_members tables (same logic web uses)
+      console.log("[onboarding] finalize: persistGangMembership");
       await persistGangMembership(supabase, user.id, selectedIds);
 
-      // Step 2: trim custom names to non-empty entries
       const trimmedCustomNames: Record<string, string> = {};
       for (const [k, v] of Object.entries(customNames)) {
         if (v && v.trim().length > 0) {
@@ -118,13 +131,16 @@ export default function OnboardingScreen() {
         }
       }
 
-      // Step 3: update profile with all the onboarding payload
+      console.log("[onboarding] finalize: profile update");
       const { error: profileError } = await supabase
         .from("profiles")
         .update({
           username: name.trim(),
           preferred_squad: selectedIds,
           onboarding_completed: true,
+          // Free tier cannot use ecosystem mode; force gang_focus on the
+          // freshly-created profile so the chat call doesn't 403 later.
+          chat_mode: "gang_focus",
           custom_character_names:
             Object.keys(trimmedCustomNames).length > 0
               ? trimmedCustomNames
@@ -135,6 +151,7 @@ export default function OnboardingScreen() {
         .eq("id", user.id);
 
       if (profileError) {
+        console.warn("[onboarding] profile update error:", profileError);
         Alert.alert(
           "Could not finish onboarding",
           profileError.message
@@ -143,9 +160,11 @@ export default function OnboardingScreen() {
         return;
       }
 
+      console.log("[onboarding] finalize: refreshProfile");
       await refreshProfile();
-      // Route gate redirects to (app)/index on next render.
+      console.log("[onboarding] finalize: done");
     } catch (err) {
+      console.warn("[onboarding] finalize threw:", err);
       Alert.alert(
         "Could not finish onboarding",
         err instanceof Error ? err.message : "Unknown error"
@@ -169,81 +188,106 @@ export default function OnboardingScreen() {
         </View>
       ) : null}
 
-      {step === "WELCOME" ? (
-        <WelcomeStep onNext={() => setStep("IDENTITY")} />
+      {step !== "WELCOME" && step !== "LOADING" ? (
+        <View className="absolute left-0 right-0 top-12 z-40 items-center">
+          <StepIndicator
+            total={STEP_ORDER.length - 1}
+            current={STEP_ORDER.indexOf(step)}
+          />
+        </View>
       ) : null}
 
-      {step === "IDENTITY" ? (
-        <IdentityStep
-          name={name}
-          setName={setName}
-          onNext={() => setStep("VIBE_QUIZ")}
-        />
-      ) : null}
+      <StepTransition stepKey={step} direction={directionRef.current}>
+        {step === "WELCOME" ? (
+          <WelcomeStep onNext={() => goForward("IDENTITY")} />
+        ) : null}
 
-      {step === "VIBE_QUIZ" ? (
-        <VibeQuizStep
-          onNext={(vibe) => {
-            setVibeProfile(vibe);
-            setStep("AVATAR_GIFT");
-          }}
-        />
-      ) : null}
+        {step === "IDENTITY" ? (
+          <IdentityStep
+            name={name}
+            setName={setName}
+            onNext={() => goForward("VIBE_QUIZ")}
+          />
+        ) : null}
 
-      {step === "AVATAR_GIFT" ? (
-        <AvatarGiftStep onNext={() => setStep("AVATAR_STYLE")} />
-      ) : null}
+        {step === "VIBE_QUIZ" ? (
+          <VibeQuizStep
+            onNext={(vibe) => {
+              setVibeProfile(vibe);
+              goForward("AVATAR_GIFT");
+            }}
+          />
+        ) : null}
 
-      {step === "AVATAR_STYLE" ? (
-        <AvatarStyleStep
-          selectedStyle={avatarStyle}
-          onSelectStyle={setAvatarStyle}
-          onNext={() => setStep("SELECTION")}
-        />
-      ) : null}
+        {step === "AVATAR_GIFT" ? (
+          <AvatarGiftStep onNext={() => goForward("AVATAR_STYLE")} />
+        ) : null}
 
-      {step === "SELECTION" ? (
-        <SelectionStep
-          characters={characters}
-          selectedIds={selectedIds}
-          toggleCharacter={toggleCharacter}
-          recommendedIds={recommendedIds}
-          maxMembers={maxMembers}
-          avatarStyle={avatarStyle}
-          onNext={() => setStep("INTRO")}
-        />
-      ) : null}
+        {step === "AVATAR_STYLE" ? (
+          <AvatarStyleStep
+            selectedStyle={avatarStyle}
+            onSelectStyle={setAvatarStyle}
+            onNext={() => goForward("SELECTION")}
+          />
+        ) : null}
 
-      {step === "INTRO" ? (
-        <FriendsIntroStep
-          characters={characters}
-          selectedIds={selectedIds}
-          customNames={customNames}
-          onNameChange={handleNameChange}
-          avatarStyle={avatarStyle}
-          onNext={() => {
-            setStep("LOADING");
-            // kick off backend write while loading animation plays
-            finalize();
-          }}
-        />
-      ) : null}
+        {step === "SELECTION" ? (
+          <SelectionStep
+            characters={characters}
+            selectedIds={selectedIds}
+            toggleCharacter={toggleCharacter}
+            recommendedIds={recommendedIds}
+            maxMembers={maxMembers}
+            avatarStyle={avatarStyle}
+            onNext={() => goForward("INTRO")}
+          />
+        ) : null}
 
-      {step === "LOADING" ? (
-        <LoadingStep
-          states={buildLoadingStates(
-            characters
-              .filter((c) => selectedIds.includes(c.id))
-              .map((c) => ({
-                displayName: customNames[c.id]?.trim() || c.name,
-              })),
-            name.trim() || undefined
-          )}
-          onComplete={() => {
-            // The route gate handles the actual redirect once profile.onboarding_completed flips.
-          }}
-        />
-      ) : null}
+        {step === "INTRO" ? (
+          <FriendsIntroStep
+            characters={characters}
+            selectedIds={selectedIds}
+            customNames={customNames}
+            onNameChange={handleNameChange}
+            avatarStyle={avatarStyle}
+            onNext={() => {
+              goForward("LOADING");
+              // kick off backend write while loading animation plays
+              finalize();
+            }}
+          />
+        ) : null}
+
+        {step === "LOADING" ? (
+          <LoadingStep
+            states={buildLoadingStates(
+              characters
+                .filter((c) => selectedIds.includes(c.id))
+                .map((c) => ({
+                  displayName: customNames[c.id]?.trim() || c.name,
+                })),
+              name.trim() || undefined
+            )}
+            onComplete={async () => {
+              // Defensive: re-fetch profile RIGHT before navigating so the
+              // route gate sees onboarding_completed=true and doesn't bounce
+              // us back to /(app)/onboarding (which remounts at WELCOME).
+              // The race we're guarding against: finalize() does the DB
+              // update + refreshProfile, but if React state hasn't propagated
+              // by the time the loading animation finishes, the gate fires
+              // with stale `profile.onboarding_completed=false` and ping-pongs
+              // us into a fresh onboarding session.
+              console.log("[onboarding] LoadingStep onComplete → refreshing profile then routing");
+              try {
+                await refreshProfile();
+              } catch (err) {
+                console.warn("[onboarding] final refreshProfile threw:", err);
+              }
+              router.replace("/(app)/chat");
+            }}
+          />
+        ) : null}
+      </StepTransition>
     </SafeAreaView>
   );
 }

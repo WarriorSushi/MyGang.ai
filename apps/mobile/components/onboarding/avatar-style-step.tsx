@@ -1,4 +1,6 @@
-import { Image, Pressable, ScrollView, Text, View } from "react-native";
+import { Dimensions, FlatList, Pressable, ScrollView, Text, View } from "react-native";
+import { Image } from "expo-image";
+import { ArrowRight } from "lucide-react-native";
 import {
   AVATAR_STYLES,
   getCharactersForAvatarStyle,
@@ -9,29 +11,43 @@ import { PrimaryButton } from "../primary-button";
 
 const SITE_URL = "https://mygang.ai";
 
+const { width: SCREEN_WIDTH } = Dimensions.get("window");
+const HORIZONTAL_PADDING = 16;
+const CARD_GAP = 12;
+const CARD_W = SCREEN_WIDTH - HORIZONTAL_PADDING * 2;
+const CARD_FULL = CARD_W + CARD_GAP;
+
 type AvatarStyleStepProps = {
   selectedStyle: AvatarStyle;
   onSelectStyle: (style: AvatarStyle) => void;
   onNext: () => void;
 };
 
-const PACK_META: Record<
-  AvatarStyle,
-  {
-    title: string;
-    description: string;
-    isGift: boolean;
-  }
-> = {
-  robots: { title: "Robots", description: "Bold and classic.", isGift: false },
-  human: { title: "Human", description: "Lifelike and cinematic.", isGift: true },
-  retro: { title: "Retro", description: "Nostalgic and playful.", isGift: true },
+const STYLE_LABEL: Record<AvatarStyle, string> = {
+  robots: "Robots",
+  human: "Human",
+  retro: "Retro",
+};
+
+const STYLE_TAGLINE: Record<AvatarStyle, string> = {
+  robots: "Bold and classic.",
+  human: "Lifelike and cinematic.",
+  retro: "Nostalgic and playful.",
 };
 
 const PREVIEW_HERO_ID = "sage";
 const PREVIEW_SUPPORT_IDS = ["nyx", "atlas", "luna"];
 
-function PackPreview({ style }: { style: AvatarStyle }) {
+function PackCard({
+  style,
+  isSelected,
+  onSelect,
+}: {
+  style: AvatarStyle;
+  isSelected: boolean;
+  onSelect: () => void;
+}) {
+  const isGift = style === "human" || style === "retro";
   const characters = getCharactersForAvatarStyle(style);
   const hero =
     characters.find((c) => c.id === PREVIEW_HERO_ID) ?? characters[0];
@@ -44,24 +60,120 @@ function PackPreview({ style }: { style: AvatarStyle }) {
   const heroUrl = `${SITE_URL}${resolveAvatarUrl(hero.id, style)}`;
 
   return (
-    <View className="gap-2">
-      <View className="aspect-[1.15/1] overflow-hidden rounded-2xl bg-muted">
-        <Image source={{ uri: heroUrl }} className="h-full w-full" resizeMode="cover" />
-      </View>
-      <View className="flex-row gap-2">
-        {supports.map((c) => {
-          const url = `${SITE_URL}${resolveAvatarUrl(c.id, style)}`;
-          return (
+    <Pressable onPress={onSelect} style={{ width: CARD_W }}>
+      {/* Outer halo wrapper — simulates ring-[3px] ring-primary/35 */}
+      <View
+        className={`rounded-[28px] ${
+          isSelected ? "bg-primary/35" : "bg-transparent"
+        }`}
+        style={{ padding: isSelected ? 3 : 0 }}
+      >
+        <View
+          className={`overflow-hidden rounded-3xl border-[3px] bg-card ${
+            isSelected ? "border-primary" : "border-transparent"
+          }`}
+          style={
+            isSelected
+              ? {
+                  shadowColor: "#3eddc0",
+                  shadowOpacity: 0.35,
+                  shadowRadius: 12,
+                  shadowOffset: { width: 0, height: 0 },
+                  elevation: 6,
+                }
+              : undefined
+          }
+        >
+          {/* Hero image */}
+          <View className="relative h-72 w-full bg-muted">
+            <Image
+              source={{ uri: heroUrl }}
+              style={{ width: "100%", height: "100%" }}
+              contentFit="cover"
+              transition={150}
+            />
+            {/* Pack label pill, centered horizontally near bottom of hero */}
             <View
-              key={c.id}
-              className="flex-1 aspect-square overflow-hidden rounded-xl border border-primary/10 bg-muted"
+              className="absolute self-center rounded-full border border-border bg-card-translucent px-4 py-1"
+              style={{ bottom: 12, alignSelf: "center" }}
             >
-              <Image source={{ uri: url }} className="h-full w-full" resizeMode="cover" />
+              <Text className="text-[10px] font-bold uppercase tracking-[0.18em] text-foreground">
+                {STYLE_LABEL[style]}
+              </Text>
             </View>
-          );
-        })}
+            {/* FREE GIFT diagonal ribbon (top-right corner) */}
+            {isGift ? (
+              <View
+                pointerEvents="none"
+                style={{
+                  position: "absolute",
+                  top: 18,
+                  right: -36,
+                  width: 160,
+                  transform: [{ rotate: "45deg" }],
+                }}
+              >
+                <View
+                  className="bg-red-500"
+                  style={{
+                    paddingVertical: 4,
+                    alignItems: "center",
+                    justifyContent: "center",
+                    shadowColor: "#000",
+                    shadowOffset: { width: 0, height: 2 },
+                    shadowOpacity: 0.35,
+                    shadowRadius: 6,
+                    elevation: 4,
+                  }}
+                >
+                  <Text className="text-[11px] font-black uppercase tracking-wider text-white">
+                    FREE GIFT
+                  </Text>
+                </View>
+              </View>
+            ) : null}
+          </View>
+
+          {/* Thumbnails row */}
+          <View className="flex-row gap-2 px-4 py-3">
+            {supports.map((c, i) => {
+              const isLast = i === supports.length - 1;
+              const url = `${SITE_URL}${resolveAvatarUrl(c.id, style)}`;
+              return (
+                <View
+                  key={c.id}
+                  className="relative h-20 flex-1 overflow-hidden rounded-xl border border-border bg-muted"
+                >
+                  <Image
+                    source={{ uri: url }}
+                    style={{ width: "100%", height: "100%" }}
+                    contentFit="cover"
+                    transition={150}
+                  />
+                  {isLast ? (
+                    <View className="absolute inset-0 items-center justify-center bg-black/60">
+                      <Text className="text-[10px] font-bold uppercase tracking-wider text-white">
+                        10+ more
+                      </Text>
+                    </View>
+                  ) : null}
+                </View>
+              );
+            })}
+          </View>
+
+          {/* Title + tagline */}
+          <View className="px-4 pb-4">
+            <Text className="text-xl font-black text-foreground">
+              {STYLE_LABEL[style]}
+            </Text>
+            <Text className="mt-0.5 text-xs text-muted-foreground">
+              {STYLE_TAGLINE[style]}
+            </Text>
+          </View>
+        </View>
       </View>
-    </View>
+    </Pressable>
   );
 }
 
@@ -72,62 +184,53 @@ export function AvatarStyleStep({
 }: AvatarStyleStepProps) {
   return (
     <View className="flex-1">
-      <ScrollView contentContainerClassName="px-6 pb-32">
-        <Text className="mt-4 text-center text-2xl font-black text-foreground">
+      <ScrollView
+        contentContainerClassName="pb-32"
+        showsVerticalScrollIndicator={false}
+      >
+        <Text className="mt-4 px-6 text-center text-2xl font-black text-foreground">
           Pick your gang's look
         </Text>
-        <Text className="mb-4 text-center text-sm text-muted-foreground">
+        <Text className="mb-4 px-6 text-center text-sm text-muted-foreground">
           Choose one avatar pack for the whole app.
         </Text>
 
-        <View className="gap-3">
-          {AVATAR_STYLES.map((style) => {
-            const meta = PACK_META[style];
-            const isSelected = selectedStyle === style;
-            return (
-              <Pressable
-                key={style}
-                onPress={() => onSelectStyle(style)}
-                className={`overflow-hidden rounded-3xl border-2 bg-card-translucent p-3 ${
-                  isSelected ? "border-primary" : "border-border"
-                }`}
-              >
-                {meta.isGift ? (
-                  <View className="absolute right-0 top-0 z-10 -translate-y-2 translate-x-4 rotate-45 bg-red-500 px-8 py-1">
-                    <Text className="text-[10px] font-extrabold uppercase tracking-wider text-foreground">
-                      Free Gift
-                    </Text>
-                  </View>
-                ) : null}
-                <View className="rounded-2xl bg-muted/80 p-2">
-                  <PackPreview style={style} />
-                </View>
-                <View className="mt-3 flex-row items-start justify-between gap-3 px-1">
-                  <View className="flex-1">
-                    <Text className="text-xl font-semibold text-foreground">
-                      {meta.title}
-                    </Text>
-                    <Text className="mt-0.5 text-xs text-muted-foreground">
-                      {meta.description}
-                    </Text>
-                  </View>
-                  {isSelected ? (
-                    <View className="h-7 w-7 items-center justify-center rounded-full bg-primary">
-                      <Text className="text-xs font-bold text-primary-foreground">✓</Text>
-                    </View>
-                  ) : null}
-                </View>
-              </Pressable>
-            );
-          })}
-        </View>
+        <FlatList
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          data={AVATAR_STYLES as readonly AvatarStyle[]}
+          keyExtractor={(s) => s}
+          contentContainerStyle={{ paddingHorizontal: HORIZONTAL_PADDING }}
+          ItemSeparatorComponent={() => <View style={{ width: CARD_GAP }} />}
+          snapToInterval={CARD_FULL}
+          snapToAlignment="start"
+          decelerationRate="fast"
+          renderItem={({ item: style }) => (
+            <PackCard
+              style={style}
+              isSelected={selectedStyle === style}
+              onSelect={() => onSelectStyle(style)}
+            />
+          )}
+        />
       </ScrollView>
 
-      <View className="absolute inset-x-0 bottom-0 border-t border-border bg-background/95 px-6 py-3 pb-6">
-        <PrimaryButton
-          label={`Continue with ${PACK_META[selectedStyle].title}`}
-          onPress={onNext}
-        />
+      <View className="absolute inset-x-0 bottom-0 flex-row items-center justify-between gap-3 border-t border-border bg-background/95 px-4 py-3 pb-6">
+        <Text className="flex-1 text-xs text-muted-foreground">
+          You have selected the{" "}
+          <Text className="font-bold text-foreground">
+            {STYLE_LABEL[selectedStyle]}
+          </Text>{" "}
+          avatar pack.
+        </Text>
+        <View className="w-44">
+          <PrimaryButton
+            label={`Continue with ${STYLE_LABEL[selectedStyle]}`}
+            onPress={onNext}
+            size="default"
+            iconRight={ArrowRight}
+          />
+        </View>
       </View>
     </View>
   );

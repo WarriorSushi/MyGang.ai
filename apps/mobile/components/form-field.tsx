@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { Text, TextInput, View, type TextInputProps } from "react-native";
 import type { Control, FieldPath, FieldValues } from "react-hook-form";
 import { Controller } from "react-hook-form";
@@ -18,6 +19,8 @@ export function FormField<T extends FieldValues>({
   hint,
   ...textInputProps
 }: FormFieldProps<T>) {
+  const [isFocused, setIsFocused] = useState(false);
+
   return (
     <View className="mb-4">
       {label ? (
@@ -33,9 +36,30 @@ export function FormField<T extends FieldValues>({
             {...textInputProps}
             value={(value as string) ?? ""}
             onChangeText={onChange}
-            onBlur={onBlur}
+            onFocus={() => setIsFocused(true)}
+            onBlur={() => {
+              setIsFocused(false);
+              onBlur();
+            }}
             placeholderTextColor="#6b6f7a"
-            className="rounded-2xl border border-border bg-muted/40 px-5 py-4 text-base text-foreground"
+            className={`rounded-2xl border bg-muted/40 px-5 py-4 text-base text-foreground ${
+              isFocused
+                ? "border-primary"
+                : error
+                ? "border-destructive/60"
+                : "border-border"
+            }`}
+            style={
+              isFocused
+                ? {
+                    shadowColor: "#3eddc0",
+                    shadowOpacity: 0.25,
+                    shadowRadius: 8,
+                    shadowOffset: { width: 0, height: 0 },
+                    elevation: 0,
+                  }
+                : undefined
+            }
           />
         )}
       />
