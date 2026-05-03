@@ -41,3 +41,10 @@ app-example
 # generated native folders
 /ios
 /android
+
+# Playwright audit captures (development scratch — referenced from spec docs but not tracked)
+/audit
+/.playwright-mcp
+
+# Claude Code local settings
+/.claude
