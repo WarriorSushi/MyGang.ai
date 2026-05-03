@@ -37,23 +37,49 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     let mounted = true;
 
     async function loadProfile(userId: string): Promise<ProfileRow | null> {
-      const { data } = await supabase
-        .from("profiles")
-        .select("*")
-        .eq("id", userId)
-        .maybeSingle();
-      return (data as ProfileRow | null) ?? null;
+      try {
+        const { data, error } = await supabase
+          .from("profiles")
+          .select("*")
+          .eq("id", userId)
+          .maybeSingle();
+        if (error) console.warn("[auth] loadProfile error:", error);
+        return (data as ProfileRow | null) ?? null;
+      } catch (err) {
+        console.warn("[auth] loadProfile threw:", err);
+        return null;
+      }
     }
 
-    supabase.auth.getSession().then(async ({ data }) => {
-      if (!mounted) return;
-      setSession(data.session);
-      if (data.session?.user.id) {
-        const profileRow = await loadProfile(data.session.user.id);
-        if (mounted) setProfile(profileRow);
+    async function init() {
+      try {
+        console.log("[auth] init: calling getSession");
+        const { data, error } = await supabase.auth.getSession();
+        if (error) console.warn("[auth] getSession error:", error);
+        if (!mounted) return;
+        console.log("[auth] init: session =", data.session ? "present" : "null");
+        setSession(data.session);
+        if (data.session?.user.id) {
+          const profileRow = await loadProfile(data.session.user.id);
+          if (mounted) setProfile(profileRow);
+        }
+      } catch (err) {
+        console.warn("[auth] init failed:", err);
+      } finally {
+        if (mounted) setIsLoading(false);
       }
-      if (mounted) setIsLoading(false);
-    });
+    }
+
+    // Safety net: if init hangs (network down, corrupt session, etc.),
+    // unblock the UI so the user lands on sign-in instead of a forever-spinner.
+    const safetyTimer = setTimeout(() => {
+      if (mounted) {
+        console.warn("[auth] init timed out after 10s — unblocking UI");
+        setIsLoading(false);
+      }
+    }, 10000);
+
+    init();
 
     const { data: subscription } = supabase.auth.onAuthStateChange(
       async (_event, newSession) => {
@@ -70,6 +96,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     return () => {
       mounted = false;
+      clearTimeout(safetyTimer);
       subscription.subscription.unsubscribe();
     };
   }, []);
