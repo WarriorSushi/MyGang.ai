@@ -30,24 +30,7 @@ type ExpoPushResponse = {
  */
 export async function sendMobileWywaTeaser(userId: string): Promise<void> {
   try {
-    // Cast to any: mobile_push_tokens is not yet in the generated Database types
-    // (added in batch 30; types regen pending). Same workaround the rest of the
-    // mobile push surface uses.
-    const admin = createAdminClient() as unknown as {
-      from: (table: string) => {
-        select: (cols: string) => {
-          eq: (col: string, val: string) => Promise<{
-            data: Array<{ id: string; expo_push_token: string }> | null
-            error: { message: string } | null
-          }>
-        }
-        delete: () => {
-          in: (col: string, vals: string[]) => Promise<{
-            error: { message: string } | null
-          }>
-        }
-      }
-    }
+    const admin = createAdminClient()
     const { data: tokens, error } = await admin
       .from('mobile_push_tokens')
       .select('id, expo_push_token')

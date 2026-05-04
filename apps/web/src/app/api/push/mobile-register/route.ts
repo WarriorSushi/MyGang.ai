@@ -4,14 +4,6 @@ import { rateLimit } from '@/lib/rate-limit'
 
 export const runtime = 'nodejs'
 
-// Until the migration in 20260504100000_add_mobile_push_tokens.sql is applied
-// to the live Supabase project AND `supabase gen types` is re-run, the
-// generated Database type doesn't include 'mobile_push_tokens'. Cast the
-// query builder through any so the build passes; runtime is unaffected.
-// Remove this once types are regenerated.
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-type AnyQB = any
-
 export async function POST(request: NextRequest) {
   const supabase = await createClientFromRequest(request)
   const { data: { user } } = await supabase.auth.getUser()
@@ -43,7 +35,8 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'Invalid Expo push token format' }, { status: 400 })
   }
 
-  const { data, error } = await (supabase.from as AnyQB)('mobile_push_tokens')
+  const { data, error } = await supabase
+    .from('mobile_push_tokens')
     .upsert(
       {
         user_id: user.id,
@@ -85,7 +78,8 @@ export async function DELETE(request: NextRequest) {
     return NextResponse.json({ error: 'Missing expo_push_token' }, { status: 400 })
   }
 
-  const { error } = await (supabase.from as AnyQB)('mobile_push_tokens')
+  const { error } = await supabase
+    .from('mobile_push_tokens')
     .delete()
     .eq('user_id', user.id)
     .eq('expo_push_token', expo_push_token)

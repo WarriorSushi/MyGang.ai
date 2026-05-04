@@ -100,8 +100,7 @@ export async function POST(request: NextRequest) {
     // Update subscriptions table. The `id` column is `text primary key` (no
     // default) — use the purchase token as a stable, unique identifier.
     const admin = createAdminClient()
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- onConflict on id
-    const { error: subError } = await (admin.from as any)('subscriptions').upsert(
+    const { error: subError } = await admin.from('subscriptions').upsert(
         {
             id: purchaseToken,
             user_id: user.id,
