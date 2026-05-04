@@ -1,5 +1,5 @@
-import { useEffect, useState } from "react";
-import { Linking, Pressable, ScrollView, Text, View } from "react-native";
+import { useCallback, useEffect, useState } from "react";
+import { Alert, Linking, Platform, Pressable, ScrollView, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
 import { LinearGradient } from "expo-linear-gradient";
@@ -21,14 +21,18 @@ import {
   ShieldCheck,
   Sparkles,
 } from "lucide-react-native";
+import { useIAP, type Purchase } from "expo-iap";
 import {
+  ANDROID_SKU,
   TIER_COPY,
   getTierFromProfile,
+  type AndroidSku,
   type SubscriptionTier,
 } from "@mygang/shared";
 
 import { useAuth } from "../../lib/auth-context";
 import { GradientText } from "../../components/gradient-text";
+import { verifyAndroidPurchase } from "../../lib/billing";
 
 const PRICING_URL = "https://mygang.ai/pricing";
 
@@ -104,13 +108,127 @@ const FAQS: { q: string; a: string }[] = [
 
 export default function PricingScreen() {
   const router = useRouter();
-  const { profile } = useAuth();
+  const { profile, refreshProfile } = useAuth();
   const currentTier = getTierFromProfile(profile?.subscription_tier ?? null);
   const [openFaqIndex, setOpenFaqIndex] = useState<number | null>(null);
+  const [purchasing, setPurchasing] = useState(false);
 
-  function openCheckout() {
-    void Linking.openURL(PRICING_URL);
+  // Server-side validate the purchase, finish the transaction, refresh the
+  // profile so the UI flips to "Current Plan". On Android only.
+  const handlePurchaseSuccess = useCallback(
+    async (purchase: Purchase) => {
+      if (Platform.OS !== "android") return;
+      const productId = purchase.productId as AndroidSku | undefined;
+      const purchaseToken = purchase.purchaseToken ?? null;
+      if (!purchaseToken || !productId) {
+        Alert.alert("Purchase issue", "Couldn't read the purchase receipt.");
+        return;
+      }
+      const tier = await verifyAndroidPurchase({ purchaseToken, productId });
+      if (!tier) {
+        Alert.alert(
+          "Couldn't verify purchase",
+          "Your purchase went through Google Play but we couldn't activate the subscription on your account. Contact support if this persists.",
+        );
+      } else {
+        await refreshProfile();
+        Alert.alert(
+          `Welcome to ${tier.charAt(0).toUpperCase() + tier.slice(1)}!`,
+          "Your gang is feeling extra fancy.",
+        );
+      }
+      try {
+        await finishTransaction({ purchase, isConsumable: false });
+      } catch (err) {
+        console.warn("[billing] finishTransaction failed:", err);
+      }
+    },
+    [refreshProfile],
+  );
+
+  const {
+    connected,
+    subscriptions,
+    fetchProducts,
+    requestPurchase,
+    finishTransaction,
+  } = useIAP({
+    onPurchaseSuccess: (purchase) => {
+      void handlePurchaseSuccess(purchase);
+    },
+    onPurchaseError: (error) => {
+      // User cancellation is not an error worth alerting about.
+      if (error?.code === "user-cancelled") return;
+      console.warn("[billing] purchase error:", error);
+      Alert.alert("Purchase failed", error?.message ?? "Try again in a moment.");
+    },
+  });
+
+  // Load product details once Play Billing connects.
+  useEffect(() => {
+    if (Platform.OS !== "android" || !connected) return;
+    void fetchProducts({
+      skus: Object.values(ANDROID_SKU),
+      type: "subs",
+    });
+  }, [connected, fetchProducts]);
+
+  async function startSubscriptionPurchase(tier: "basic" | "pro") {
+    if (Platform.OS !== "android") {
+      void Linking.openURL(PRICING_URL);
+      return;
+    }
+    if (purchasing) return;
+
+    const sku =
+      tier === "basic" ? ANDROID_SKU.basic_monthly : ANDROID_SKU.pro_monthly;
+
+    const subscription = subscriptions.find((s) => s.id === sku);
+    if (!subscription) {
+      Alert.alert("Plans loading", "Try again in a moment.");
+      return;
+    }
+
+    // Android subscriptions need an offerToken from the matched ProductSubscription.
+    // Prefer the standardized `subscriptionOffers[].offerTokenAndroid`; fall
+    // back to the deprecated `subscriptionOfferDetailsAndroid[].offerToken`
+    // for older payloads. We narrow on `platform === 'android'` to access
+    // the Android-only field on the union type.
+    let offerToken: string | null = null;
+    for (const offer of subscription.subscriptionOffers ?? []) {
+      if (offer.offerTokenAndroid) {
+        offerToken = offer.offerTokenAndroid;
+        break;
+      }
+    }
+    if (!offerToken && subscription.platform === "android") {
+      const legacy = subscription.subscriptionOfferDetailsAndroid?.[0]?.offerToken;
+      if (legacy) offerToken = legacy;
+    }
+
+    if (!offerToken) {
+      Alert.alert("Plans loading", "Try again in a moment.");
+      return;
+    }
+
+    setPurchasing(true);
+    try {
+      await requestPurchase({
+        request: {
+          google: {
+            skus: [sku],
+            subscriptionOffers: [{ sku, offerToken }],
+          },
+        },
+        type: "subs",
+      });
+    } catch (err) {
+      console.warn("[billing] requestPurchase failed:", err);
+    } finally {
+      setPurchasing(false);
+    }
   }
+
 
   return (
     <SafeAreaView className="flex-1 bg-background" edges={["top", "left", "right"]}>
@@ -236,17 +354,22 @@ export default function PricingScreen() {
                       </View>
                     ) : tierId === "free" ? null : (
                       <Pressable
-                        onPress={openCheckout}
+                        onPress={() =>
+                          void startSubscriptionPurchase(
+                            tierId as "basic" | "pro",
+                          )
+                        }
+                        disabled={purchasing}
                         className={`h-11 flex-row items-center justify-center gap-1.5 rounded-full ${
                           isPro ? "bg-primary" : "border border-border bg-card"
-                        }`}
+                        } ${purchasing ? "opacity-60" : ""}`}
                       >
                         <Text
                           className={`text-xs font-bold uppercase tracking-wider ${
                             isPro ? "text-primary-foreground" : "text-foreground"
                           }`}
                         >
-                          Get {copy.label}
+                          {purchasing ? "Opening…" : `Get ${copy.label}`}
                         </Text>
                         <ArrowRight
                           size={12}
@@ -367,12 +490,15 @@ export default function PricingScreen() {
           </Text>
           <View className="mt-5 self-center">
             <Pressable
-              onPress={openCheckout}
-              className="h-12 flex-row items-center justify-center gap-1.5 rounded-full bg-primary px-6"
+              onPress={() => void startSubscriptionPurchase("pro")}
+              disabled={purchasing}
+              className={`h-12 flex-row items-center justify-center gap-1.5 rounded-full bg-primary px-6 ${
+                purchasing ? "opacity-60" : ""
+              }`}
             >
               <Sparkles size={14} color="#1a1d24" strokeWidth={2.6} />
               <Text className="text-sm font-bold uppercase tracking-wider text-primary-foreground">
-                Get Pro $19.99/mo
+                {purchasing ? "Opening…" : "Get Pro $19.99/mo"}
               </Text>
               <ArrowRight size={14} color="#1a1d24" strokeWidth={2.6} />
             </Pressable>
@@ -404,8 +530,9 @@ export default function PricingScreen() {
 
         <View className="mt-6 px-5">
           <Text className="text-center text-xs text-muted-foreground/70">
-            Subscriptions are managed via mygang.ai for now. Native in-app
-            billing is coming soon.
+            {Platform.OS === "android"
+              ? "Billing handled by Google Play. Cancel anytime in Play Store › Subscriptions."
+              : "Subscriptions are managed via mygang.ai. Open the link to upgrade."}
           </Text>
         </View>
       </ScrollView>

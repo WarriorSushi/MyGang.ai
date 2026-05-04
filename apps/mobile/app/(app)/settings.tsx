@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Alert, Linking, Pressable, ScrollView, Text, TextInput, View } from "react-native";
+import { Alert, Linking, Platform, Pressable, ScrollView, Text, TextInput, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Link, useRouter } from "expo-router";
 import { LinearGradient } from "expo-linear-gradient";
@@ -166,6 +166,19 @@ export default function SettingsScreen() {
       await clearPersistedMessages(user.id);
     }
     await supabase.auth.signOut();
+  }
+
+  // Subscription management deep-link. On Android, jump straight to Google
+  // Play's subscription center (cancel/upgrade live there, not in our app).
+  // On other platforms, fall back to the web pricing page.
+  function manageSubscription() {
+    if (Platform.OS === "android") {
+      void Linking.openURL(
+        "https://play.google.com/store/account/subscriptions?package=ai.mygang.app",
+      );
+    } else {
+      void Linking.openURL("https://mygang.ai/pricing");
+    }
   }
 
   async function submitChangeEmail() {
@@ -593,7 +606,7 @@ export default function SettingsScreen() {
                 {tierCopy.usageDescription}
               </Text>
               <Pressable
-                onPress={() => router.push("/(app)/pricing")}
+                onPress={manageSubscription}
                 className="mt-3 self-start rounded-full border border-primary/40 bg-primary/10 px-3 py-1.5"
               >
                 <Text className="text-xs font-semibold text-primary">Manage plan →</Text>
