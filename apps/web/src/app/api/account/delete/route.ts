@@ -23,6 +23,7 @@ const TABLES_TO_PURGE = [
     'gang_members',
     'gangs',
     'push_subscriptions',
+    'mobile_push_tokens',
     'squad_tier_members',
     'subscriptions',
 ] as const

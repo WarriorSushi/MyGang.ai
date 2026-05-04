@@ -2,10 +2,12 @@ import { Stack, useRouter, useSegments } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import "react-native-reanimated";
 import { useEffect } from "react";
+import * as Notifications from "expo-notifications";
 
 import "../global.css";
 import { AuthProvider, useAuth } from "../lib/auth-context";
 import { LoadingScreen } from "../components/loading-screen";
+import { configureForegroundHandler } from "../lib/push";
 
 function RouteGate() {
   const { session, profile, isLoading } = useAuth();
@@ -40,6 +42,20 @@ function RouteGate() {
       }
     }
   }, [session, profile, isLoading, segments, router]);
+
+  // Foreground notification config + tap-to-open chat deep link.
+  // Lives outside the auth gate so the listener is always wired; if the user
+  // taps a notification while signed-out, the route gate will bounce them to
+  // sign-in and the navigation no-ops.
+  useEffect(() => {
+    configureForegroundHandler();
+    const sub = Notifications.addNotificationResponseReceivedListener(() => {
+      router.push("/(app)/chat");
+    });
+    return () => {
+      sub.remove();
+    };
+  }, [router]);
 
   if (isLoading) {
     return <LoadingScreen label="Waking up the gang…" />;

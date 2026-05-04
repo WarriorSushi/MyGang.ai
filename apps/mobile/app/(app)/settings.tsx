@@ -1,11 +1,14 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Alert, Linking, Pressable, ScrollView, Text, TextInput, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Link, useRouter } from "expo-router";
 import { LinearGradient } from "expo-linear-gradient";
+import * as Notifications from "expo-notifications";
 import {
   AlertTriangle,
   BarChart3,
+  Bell,
+  BellOff,
   ChevronLeft,
   Crown,
   ExternalLink,
@@ -34,6 +37,11 @@ import { useAuth } from "../../lib/auth-context";
 import { supabase } from "../../lib/supabase";
 import { clearPersistedMessages } from "../../lib/chat-storage";
 import { ConfirmDialog } from "../../components/confirm-dialog";
+import {
+  getExpoPushToken,
+  registerPushToken,
+  requestNotificationPermission,
+} from "../../lib/push";
 
 const STYLE_LABELS: Record<AvatarStyle, string> = {
   robots: "Robots",
@@ -69,6 +77,61 @@ export default function SettingsScreen() {
   const [deleteEmailInput, setDeleteEmailInput] = useState("");
   const [deleteAccountOpen, setDeleteAccountOpen] = useState(false);
   const [deletingAccount, setDeletingAccount] = useState(false);
+
+  // Notifications card state
+  const [notifPermission, setNotifPermission] = useState<
+    "unknown" | "granted" | "denied"
+  >("unknown");
+  const [notifBusy, setNotifBusy] = useState(false);
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const { status } = await Notifications.getPermissionsAsync();
+        if (cancelled) return;
+        if (status === "granted") setNotifPermission("granted");
+        else if (status === "denied") setNotifPermission("denied");
+        else setNotifPermission("unknown");
+      } catch {
+        // leave as "unknown"
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  async function enableNotifications() {
+    if (notifBusy) return;
+    setNotifBusy(true);
+    try {
+      const result = await requestNotificationPermission();
+      if (result === "denied") {
+        setNotifPermission("denied");
+        return;
+      }
+      if (result !== "granted") {
+        return;
+      }
+      setNotifPermission("granted");
+      const token = await getExpoPushToken();
+      if (!token) {
+        // Permission granted but couldn't get a token (e.g., Expo Go on SDK 53+
+        // without a dev build). Don't error-alert — silent is fine for now.
+        return;
+      }
+      const ok = await registerPushToken(token);
+      if (!ok) {
+        Alert.alert(
+          "Notifications enabled",
+          "Couldn't register your device with the server. We'll retry next time you open the app.",
+        );
+      }
+    } finally {
+      setNotifBusy(false);
+    }
+  }
 
   const tier = getTierFromProfile(profile?.subscription_tier ?? null);
   const tierCopy = getTierCopy(tier);
@@ -561,6 +624,68 @@ export default function SettingsScreen() {
             <Text className="mt-3 text-xs text-muted-foreground">
               Send a message to see your usage.
             </Text>
+          </View>
+        </View>
+
+        {/* Notifications card */}
+        <View className="mt-5 px-4">
+          <Text className="mb-2 text-[10px] font-semibold uppercase tracking-[0.18em] text-muted-foreground/70">
+            Notifications
+          </Text>
+          <View className="overflow-hidden rounded-3xl border border-border/50 bg-muted/40 p-5">
+            <View className="flex-row items-center gap-3">
+              <View className="h-9 w-9 items-center justify-center rounded-full bg-primary/15">
+                {notifPermission === "denied" ? (
+                  <BellOff size={18} color="#fca5a5" strokeWidth={2.4} />
+                ) : (
+                  <Bell size={18} color="#5eead4" strokeWidth={2.4} />
+                )}
+              </View>
+              <View className="flex-1 pr-2">
+                <Text className="text-base font-black text-foreground">
+                  Get notified when your gang is active
+                </Text>
+                <Text className="mt-0.5 text-xs text-muted-foreground/80">
+                  {tier === "free"
+                    ? "Free tier: occasional pings."
+                    : "Basic+: rich notifications."}
+                </Text>
+              </View>
+              {notifPermission === "granted" ? (
+                <View className="rounded-full border border-primary/40 bg-primary/10 px-3 py-1.5">
+                  <Text className="text-[11px] font-semibold uppercase tracking-wider text-primary">
+                    Enabled ✓
+                  </Text>
+                </View>
+              ) : notifPermission === "denied" ? (
+                <Pressable
+                  onPress={() => void Linking.openSettings()}
+                  className="flex-row items-center gap-1.5 rounded-full border border-border bg-card px-3 py-1.5"
+                >
+                  <Text className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+                    Open Settings
+                  </Text>
+                </Pressable>
+              ) : (
+                <Pressable
+                  onPress={enableNotifications}
+                  disabled={notifBusy}
+                  className={`rounded-full px-3 py-1.5 ${
+                    notifBusy ? "bg-muted" : "bg-primary"
+                  }`}
+                >
+                  <Text
+                    className={`text-[11px] font-bold uppercase tracking-wider ${
+                      notifBusy
+                        ? "text-muted-foreground/70"
+                        : "text-primary-foreground"
+                    }`}
+                  >
+                    {notifBusy ? "Enabling…" : "Enable"}
+                  </Text>
+                </Pressable>
+              )}
+            </View>
           </View>
         </View>
 
