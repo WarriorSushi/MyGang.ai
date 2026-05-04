@@ -16,6 +16,7 @@ import {
 import { useAuth } from "../../lib/auth-context";
 import {
   postChat,
+  postRenderedEvents,
   generateMessageId,
   type ChatRequestMessage,
 } from "../../lib/chat-api";
@@ -262,6 +263,38 @@ export default function ChatScreen() {
       }
 
       scheduleEvents(result.data.events);
+
+      // Persist AI-rendered events to chat_history so they survive app reloads.
+      // /api/chat only persists the user's message — AI events are ephemeral
+      // until we POST them back via /api/chat/rendered. Web does this; mobile
+      // wasn't, which caused AI replies to vanish on every app restart.
+      // Fire-and-forget: failures are logged in postRenderedEvents but don't
+      // block the chat UX (the local AsyncStorage cache still holds the messages
+      // for this session — only cross-session restoration was broken).
+      const renderedAtBase = Date.now();
+      const renderedEvents = result.data.events
+        .filter(
+          (e) =>
+            e.type === "message" &&
+            typeof e.content === "string" &&
+            e.content.length > 0 &&
+            typeof e.message_id === "string" &&
+            e.message_id.length > 0,
+        )
+        .map((e, i) => ({
+          message_id: e.message_id!,
+          speaker: e.character,
+          content: e.content!,
+          // Stagger by index so chat_history sorts these in event order
+          // even if multiple messages share the same wall-clock second.
+          displayed_at: new Date(renderedAtBase + i).toISOString(),
+        }));
+      if (renderedEvents.length > 0) {
+        void postRenderedEvents({
+          turnId: generateMessageId(),
+          events: renderedEvents,
+        });
+      }
     },
     [isWaiting, sendChatPayload, scheduleEvents, replyTarget]
   );
