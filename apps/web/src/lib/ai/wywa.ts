@@ -15,6 +15,7 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { CHARACTERS } from '@mygang/shared'
 import { TYPING_STYLES } from './wywa-prompt'
 import { sendWywaTeaser } from '@/lib/push/wywa-teaser'
+import { sendMobileWywaTeaser } from '@/lib/push/mobile-send'
 import { detectUnsafeContent } from '@mygang/shared'
 
 // ── Constants ──
@@ -349,6 +350,13 @@ export async function generateWywaForUser(userId: string): Promise<WywaResult> {
         await sendWywaTeaser(userId)
     } catch (err) {
         console.error('[wywa] Push teaser failed (non-fatal):', err instanceof Error ? err.message : err)
+    }
+
+    // 11b. Send mobile push teaser to Expo devices (fail-soft, parallel concern to web push)
+    try {
+        await sendMobileWywaTeaser(userId)
+    } catch (err) {
+        console.error('[wywa] Mobile push teaser failed (non-fatal):', err instanceof Error ? err.message : err)
     }
 
     // 12. Update last_wywa_generated_at

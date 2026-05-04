@@ -70,7 +70,11 @@ export async function POST(request: Request) {
             continue
         }
 
-        const { error } = await admin.from(table).delete().eq('user_id', userId)
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any -- mobile_push_tokens
+        // is not yet in the generated Database type until the migration is
+        // applied and types are regenerated. Cast through any to avoid a
+        // build-time narrowing error; runtime behavior is unchanged.
+        const { error } = await (admin.from as any)(table).delete().eq('user_id', userId)
         if (error) {
             console.error(`[account/delete] purging ${table} failed:`, error)
             return NextResponse.json(
