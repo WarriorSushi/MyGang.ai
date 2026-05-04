@@ -414,13 +414,20 @@ export default function ChatScreen() {
               })()
             : null}
         </View>
-        <ChatInput
-          onSend={handleSend}
-          disabled={isWaiting}
-          replyTarget={replyChipProps}
-          onCancelReply={() => setReplyTarget(null)}
-        />
-        <AiDisclaimer />
+        {/* Bottom area gets its own SafeAreaView with edges=["bottom"] so the
+            input + disclaimer sit ABOVE the Android nav bar in edge-to-edge
+            mode. The outer SafeAreaView intentionally excludes "bottom" so
+            the wallpaper still draws under the nav bar — this nested one
+            applies the system inset only to the input wrapper. */}
+        <SafeAreaView edges={["bottom"]}>
+          <ChatInput
+            onSend={handleSend}
+            disabled={isWaiting}
+            replyTarget={replyChipProps}
+            onCancelReply={() => setReplyTarget(null)}
+          />
+          <AiDisclaimer />
+        </SafeAreaView>
         </KeyboardAvoidingView>
       </WallpaperBackground>
 
