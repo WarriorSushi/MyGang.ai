@@ -231,7 +231,7 @@ export default function PricingScreen() {
 
 
   return (
-    <SafeAreaView className="flex-1 bg-background" edges={["top", "left", "right"]}>
+    <SafeAreaView className="flex-1 bg-background">
       <View className="flex-row items-center justify-between border-b border-border px-5 pb-3 pt-12">
         <Pressable
           onPress={() => router.back()}

@@ -176,7 +176,7 @@ export default function OnboardingScreen() {
   const showBack = Boolean(BACK_MAP[step]) && step !== "LOADING";
 
   return (
-    <SafeAreaView className="flex-1 bg-background" edges={["top", "left", "right"]}>
+    <SafeAreaView className="flex-1 bg-background">
       {showBack ? (
         <View className="absolute left-4 top-12 z-50">
           <Pressable
