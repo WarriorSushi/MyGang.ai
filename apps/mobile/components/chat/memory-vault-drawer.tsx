@@ -4,13 +4,18 @@ import {
   Alert,
   Dimensions,
   FlatList,
+  type GestureResponderEvent,
   Modal,
   Pressable,
+  StyleSheet,
   Text,
   View,
 } from "react-native";
+import Animated, { FadeIn, SlideInRight } from "react-native-reanimated";
 import { useRouter } from "expo-router";
 import { Brain, Sparkles, Trash2, X } from "lucide-react-native";
+
+const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
 import {
   FREE_MEMORY_VAULT_PREVIEW_LIMIT,
   getMemoryVaultPreviewLimit,
@@ -112,14 +117,18 @@ export function MemoryVaultDrawer({ visible, onClose }: MemoryVaultDrawerProps) 
     <Modal
       visible={visible}
       transparent
-      animationType="slide"
+      animationType="none"
       onRequestClose={onClose}
     >
       <Pressable className="flex-1" onPress={onClose}>
-        <View className="absolute inset-0 bg-black/60" />
+        <Animated.View
+          entering={FadeIn.duration(180)}
+          style={[StyleSheet.absoluteFill, { backgroundColor: "rgba(0,0,0,0.6)" }]}
+        />
 
-        <Pressable
-          onPress={(e) => e.stopPropagation()}
+        <AnimatedPressable
+          entering={SlideInRight.duration(220).springify().damping(22)}
+          onPress={(e: GestureResponderEvent) => e.stopPropagation()}
           className="absolute bottom-0 right-0 top-0 overflow-hidden border-l border-border"
           style={{ width: DRAWER_WIDTH, backgroundColor: "#0c1220" }}
         >
@@ -256,7 +265,7 @@ export function MemoryVaultDrawer({ visible, onClose }: MemoryVaultDrawerProps) 
               }
             />
           )}
-        </Pressable>
+        </AnimatedPressable>
       </Pressable>
 
       <ConfirmDialog

@@ -2,9 +2,11 @@ import { useState } from "react";
 import {
   Alert,
   Dimensions,
+  type GestureResponderEvent,
   Modal,
   Pressable,
   ScrollView,
+  StyleSheet,
   Switch,
   Text,
   View,
@@ -12,9 +14,12 @@ import {
 import { LinearGradient } from "expo-linear-gradient";
 import { useRouter } from "expo-router";
 import Animated, {
+  FadeIn,
   SlideInRight,
   SlideOutRight,
 } from "react-native-reanimated";
+
+const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
 import {
   ArrowRight,
   Check,
@@ -139,14 +144,18 @@ export function SettingsDrawer({ visible, onClose }: SettingsDrawerProps) {
     <Modal
       visible={visible}
       transparent
-      animationType="slide"
+      animationType="none"
       onRequestClose={onClose}
     >
       <Pressable className="flex-1" onPress={onClose}>
-        <View className="absolute inset-0 bg-black/60" />
+        <Animated.View
+          entering={FadeIn.duration(180)}
+          style={[StyleSheet.absoluteFill, { backgroundColor: "rgba(0,0,0,0.6)" }]}
+        />
 
-        <Pressable
-          onPress={(e) => e.stopPropagation()}
+        <AnimatedPressable
+          entering={SlideInRight.duration(220).springify().damping(22)}
+          onPress={(e: GestureResponderEvent) => e.stopPropagation()}
           className="absolute bottom-0 right-0 top-0 overflow-hidden border-l border-border"
           style={{ width: DRAWER_WIDTH, backgroundColor: "#0c1220" }}
         >
@@ -593,7 +602,7 @@ export function SettingsDrawer({ visible, onClose }: SettingsDrawerProps) {
             }}
             onCancel={() => setSignOutOpen(false)}
           />
-        </Pressable>
+        </AnimatedPressable>
       </Pressable>
     </Modal>
   );
