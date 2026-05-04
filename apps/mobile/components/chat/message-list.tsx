@@ -7,7 +7,6 @@ import {
   type NativeScrollEvent,
   type NativeSyntheticEvent,
 } from "react-native";
-import Animated, { FadeIn } from "react-native-reanimated";
 import { ChevronDown } from "lucide-react-native";
 import {
   type AvatarStyle,
@@ -132,28 +131,23 @@ export function MessageList({
             ? messagesById.get(item.replyToId) ?? null
             : null;
           return (
-            <Animated.View
-              key={item.id}
-              entering={FadeIn.duration(220).springify().damping(20)}
-            >
-              <MessageItem
-                message={item}
-                character={character}
-                customName={customName}
-                avatarStyle={avatarStyle}
-                isUser={isUser}
-                groupPosition={groupPosition}
-                isContinued={isContinued}
-                onLongPress={
-                  onMessageLongPress ? () => onMessageLongPress(item) : undefined
-                }
-                onReactPress={onReactPress}
-                onReplyPress={onReplyPress}
-                quotedMessage={quotedMessage}
-                characters={characters}
-                customNames={customNames}
-              />
-            </Animated.View>
+            <MessageItem
+              message={item}
+              character={character}
+              customName={customName}
+              avatarStyle={avatarStyle}
+              isUser={isUser}
+              groupPosition={groupPosition}
+              isContinued={isContinued}
+              onLongPress={
+                onMessageLongPress ? () => onMessageLongPress(item) : undefined
+              }
+              onReactPress={onReactPress}
+              onReplyPress={onReplyPress}
+              quotedMessage={quotedMessage}
+              characters={characters}
+              customNames={customNames}
+            />
           );
         }}
       />
