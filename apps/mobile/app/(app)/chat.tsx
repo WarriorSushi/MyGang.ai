@@ -296,14 +296,18 @@ export default function ChatScreen() {
           avatarStyle={avatarStyle}
           username={profile?.username ?? null}
         />
-        <SettingsDrawer
-          visible={settingsOpen}
-          onClose={() => setSettingsOpen(false)}
-        />
-        <MemoryVaultDrawer
-          visible={memoryVaultOpen}
-          onClose={() => setMemoryVaultOpen(false)}
-        />
+        {settingsOpen ? (
+          <SettingsDrawer
+            visible
+            onClose={() => setSettingsOpen(false)}
+          />
+        ) : null}
+        {memoryVaultOpen ? (
+          <MemoryVaultDrawer
+            visible
+            onClose={() => setMemoryVaultOpen(false)}
+          />
+        ) : null}
       </SafeAreaView>
     );
   }
@@ -411,15 +415,19 @@ export default function ChatScreen() {
         onClose={() => setLightboxCharacter(null)}
       />
 
-      <SettingsDrawer
-        visible={settingsOpen}
-        onClose={() => setSettingsOpen(false)}
-      />
+      {settingsOpen ? (
+        <SettingsDrawer
+          visible
+          onClose={() => setSettingsOpen(false)}
+        />
+      ) : null}
 
-      <MemoryVaultDrawer
-        visible={memoryVaultOpen}
-        onClose={() => setMemoryVaultOpen(false)}
-      />
+      {memoryVaultOpen ? (
+        <MemoryVaultDrawer
+          visible
+          onClose={() => setMemoryVaultOpen(false)}
+        />
+      ) : null}
     </SafeAreaView>
   );
 }

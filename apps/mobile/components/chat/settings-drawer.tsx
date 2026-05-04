@@ -12,7 +12,6 @@ import {
 import { LinearGradient } from "expo-linear-gradient";
 import { useRouter } from "expo-router";
 import Animated, {
-  FadeInDown,
   SlideInRight,
   SlideOutRight,
 } from "react-native-reanimated";
@@ -193,7 +192,7 @@ export function SettingsDrawer({ visible, onClose }: SettingsDrawerProps) {
 
           <ScrollView contentContainerClassName="pb-12">
             {/* Promo / Pro status card */}
-            <Animated.View entering={FadeInDown.delay(0).duration(220)}>
+            <View>
               {tier === "free" ? (
                 <Pressable
                   onPress={() => navigate("/(app)/pricing")}
@@ -284,10 +283,10 @@ export function SettingsDrawer({ visible, onClose }: SettingsDrawerProps) {
                   </LinearGradient>
                 </View>
               )}
-            </Animated.View>
+            </View>
 
             {/* Chat mode */}
-            <Animated.View entering={FadeInDown.delay(40).duration(220)}>
+            <View>
               <Section title="Chat mode">
                 <View className="m-3 flex-row rounded-full bg-muted p-1">
                   {(["gang_focus", "ecosystem"] as ChatMode[]).map((mode) => {
@@ -342,10 +341,10 @@ export function SettingsDrawer({ visible, onClose }: SettingsDrawerProps) {
                   </Text>
                 ) : null}
               </Section>
-            </Animated.View>
+            </View>
 
             {/* Preferences */}
-            <Animated.View entering={FadeInDown.delay(80).duration(220)}>
+            <View>
               <Section title="Preferences">
                 <ToggleRow
                   label="Low-cost mode"
@@ -356,10 +355,10 @@ export function SettingsDrawer({ visible, onClose }: SettingsDrawerProps) {
                   }
                 />
               </Section>
-            </Animated.View>
+            </View>
 
             {/* Personalize */}
-            <Animated.View entering={FadeInDown.delay(120).duration(220)}>
+            <View>
               <Section title="Personalize">
                 <IconRow
                   icon={ImageIcon}
@@ -400,10 +399,10 @@ export function SettingsDrawer({ visible, onClose }: SettingsDrawerProps) {
                   onPress={() => navigate("/(app)/custom-names")}
                 />
               </Section>
-            </Animated.View>
+            </View>
 
             {/* Account */}
-            <Animated.View entering={FadeInDown.delay(160).duration(220)}>
+            <View>
               <Section title="Account">
                 <IconRow
                   icon={CreditCard}
@@ -431,7 +430,7 @@ export function SettingsDrawer({ visible, onClose }: SettingsDrawerProps) {
                   onPress={() => navigate("/(app)/delete-account")}
                 />
               </Section>
-            </Animated.View>
+            </View>
 
             <View className="mt-8 px-4">
               <Text className="text-center text-[10px] uppercase tracking-[0.18em] text-muted-foreground/50">

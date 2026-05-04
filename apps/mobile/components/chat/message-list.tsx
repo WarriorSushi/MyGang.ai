@@ -1,6 +1,8 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   FlatList,
+  type ListRenderItem,
+  Platform,
   Pressable,
   Text,
   View,
@@ -104,6 +106,50 @@ export function MessageList({
 
   const showFab = !isAtBottom;
 
+  const renderItem = useCallback<ListRenderItem<ChatMessage>>(
+    ({ item, index }) => {
+      const isUser = item.speaker === "user";
+      const character = isUser
+        ? null
+        : characters.find((c) => c.id === item.speaker) ?? null;
+      const customName =
+        !isUser && customNames ? customNames[item.speaker] : undefined;
+      const { groupPosition, isContinued } = getGroupPosition(messages, index);
+      const quotedMessage = item.replyToId
+        ? messagesById.get(item.replyToId) ?? null
+        : null;
+      return (
+        <MessageItem
+          message={item}
+          character={character}
+          customName={customName}
+          avatarStyle={avatarStyle}
+          isUser={isUser}
+          groupPosition={groupPosition}
+          isContinued={isContinued}
+          onLongPress={
+            onMessageLongPress ? () => onMessageLongPress(item) : undefined
+          }
+          onReactPress={onReactPress}
+          onReplyPress={onReplyPress}
+          quotedMessage={quotedMessage}
+          characters={characters}
+          customNames={customNames}
+        />
+      );
+    },
+    [
+      messages,
+      messagesById,
+      characters,
+      customNames,
+      avatarStyle,
+      onMessageLongPress,
+      onReactPress,
+      onReplyPress,
+    ],
+  );
+
   return (
     <View className="flex-1">
       <FlatList
@@ -114,42 +160,16 @@ export function MessageList({
         ItemSeparatorComponent={() => <View className="h-1" />}
         onScroll={handleScroll}
         scrollEventThrottle={16}
+        removeClippedSubviews={Platform.OS === "android"}
+        initialNumToRender={15}
+        maxToRenderPerBatch={10}
+        windowSize={11}
         onContentSizeChange={() => {
           if (isAtBottomRef.current) {
             listRef.current?.scrollToEnd({ animated: false });
           }
         }}
-        renderItem={({ item, index }) => {
-          const isUser = item.speaker === "user";
-          const character = isUser
-            ? null
-            : characters.find((c) => c.id === item.speaker) ?? null;
-          const customName =
-            !isUser && customNames ? customNames[item.speaker] : undefined;
-          const { groupPosition, isContinued } = getGroupPosition(messages, index);
-          const quotedMessage = item.replyToId
-            ? messagesById.get(item.replyToId) ?? null
-            : null;
-          return (
-            <MessageItem
-              message={item}
-              character={character}
-              customName={customName}
-              avatarStyle={avatarStyle}
-              isUser={isUser}
-              groupPosition={groupPosition}
-              isContinued={isContinued}
-              onLongPress={
-                onMessageLongPress ? () => onMessageLongPress(item) : undefined
-              }
-              onReactPress={onReactPress}
-              onReplyPress={onReplyPress}
-              quotedMessage={quotedMessage}
-              characters={characters}
-              customNames={customNames}
-            />
-          );
-        }}
+        renderItem={renderItem}
       />
       {showFab ? (
         <Pressable

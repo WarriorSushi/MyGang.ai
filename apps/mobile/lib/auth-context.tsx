@@ -35,6 +35,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     let mounted = true;
+    let safetyTimer: ReturnType<typeof setTimeout> | null = null;
 
     async function loadProfile(userId: string): Promise<ProfileRow | null> {
       try {
@@ -67,12 +68,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         console.warn("[auth] init failed:", err);
       } finally {
         if (mounted) setIsLoading(false);
+        if (safetyTimer) {
+          clearTimeout(safetyTimer);
+          safetyTimer = null;
+        }
       }
     }
 
     // Safety net: if init hangs (network down, corrupt session, etc.),
     // unblock the UI so the user lands on sign-in instead of a forever-spinner.
-    const safetyTimer = setTimeout(() => {
+    safetyTimer = setTimeout(() => {
       if (mounted) {
         console.warn("[auth] init timed out after 10s — unblocking UI");
         setIsLoading(false);
@@ -96,7 +101,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     return () => {
       mounted = false;
-      clearTimeout(safetyTimer);
+      if (safetyTimer) clearTimeout(safetyTimer);
       subscription.subscription.unsubscribe();
     };
   }, []);

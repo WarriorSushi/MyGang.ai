@@ -1,3 +1,4 @@
+import { memo } from "react";
 import { Image, Pressable, Text, View } from "react-native";
 import { Heart, Reply } from "lucide-react-native";
 import {
@@ -158,7 +159,7 @@ function formatRelative(iso: string): string {
   return `${Math.floor(diffD)}d ago`;
 }
 
-export function MessageItem({
+function MessageItemBase({
   message,
   character,
   customName,
@@ -353,3 +354,30 @@ export function MessageItem({
     </View>
   );
 }
+
+// Custom equality: re-render only when meaningful inputs change.
+// Handler-prop identity changes are intentionally ignored — handlers are
+// forwarded but rarely produce different visuals, and the parent recreates
+// them on every render.
+function arePropsEqual(prev: MessageItemProps, next: MessageItemProps): boolean {
+  if (prev.message.id !== next.message.id) return false;
+  if (prev.message.content !== next.message.content) return false;
+  if (prev.message.reaction !== next.message.reaction) return false;
+  if (prev.message.replyToId !== next.message.replyToId) return false;
+  if (prev.message.created_at !== next.message.created_at) return false;
+  if (prev.groupPosition !== next.groupPosition) return false;
+  if (prev.isContinued !== next.isContinued) return false;
+  if (prev.isUser !== next.isUser) return false;
+  if (prev.avatarStyle !== next.avatarStyle) return false;
+  if (prev.customName !== next.customName) return false;
+  if (prev.character?.id !== next.character?.id) return false;
+  // Quoted message: compare by id + content (the only fields rendered).
+  const prevQ = prev.quotedMessage;
+  const nextQ = next.quotedMessage;
+  if (prevQ?.id !== nextQ?.id) return false;
+  if (prevQ?.content !== nextQ?.content) return false;
+  if (prevQ?.speaker !== nextQ?.speaker) return false;
+  return true;
+}
+
+export const MessageItem = memo(MessageItemBase, arePropsEqual);
