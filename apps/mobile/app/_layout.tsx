@@ -62,7 +62,20 @@ function RouteGate() {
   }
 
   return (
-    <Stack screenOptions={{ headerShown: false }}>
+    <Stack
+      screenOptions={{
+        headerShown: false,
+        // Disable cross-fade/slide transitions. On Android with new arch +
+        // react-native-screens, the default screen transition briefly composites
+        // the outgoing snapshot over the incoming screen, which reads as a
+        // translucent wash over chat + header during the ~250ms transition.
+        // Instant cuts also match the user's no-busy-animations preference.
+        animation: "none",
+        // Pin the screen container's bg color so RN's default white window bg
+        // never flashes through during mount or unmount.
+        contentStyle: { backgroundColor: "#161924" },
+      }}
+    >
       <Stack.Screen name="(auth)" />
       <Stack.Screen name="(app)" />
     </Stack>

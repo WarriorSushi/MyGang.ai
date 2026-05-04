@@ -92,7 +92,7 @@ export function ChatHeader({
   const dotColor = isTyping ? STATUS_DOT_AMBER : STATUS_DOT_GREEN;
 
   return (
-    <View className="flex-row items-center justify-between border-b border-border bg-background/85 px-3 py-2">
+    <View className="flex-row items-center justify-between border-b border-border bg-background px-3 py-2">
       <View className="flex-1 flex-row items-center">
         <View className="flex-row -space-x-2">
           {characters.slice(0, 6).map((c) => {
