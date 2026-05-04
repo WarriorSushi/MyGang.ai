@@ -280,6 +280,23 @@ export default function ChatScreen() {
     []
   );
 
+  // Stable handlers for MessageList — inline arrows would force renderItem to
+  // recreate every parent re-render, which thrashes FlatList visible-window updates.
+  const handleMessageLongPress = useCallback(
+    (m: ChatMessage) => setActionMessage(m),
+    [],
+  );
+  const handleReplyPress = useCallback(
+    (m: ChatMessage) => setReplyTarget(m),
+    [],
+  );
+  const handleReactPress = useCallback(
+    (m: ChatMessage, emoji: string) => {
+      void handleReact(m, emoji);
+    },
+    [handleReact],
+  );
+
   const replyChipProps = replyTarget
     ? {
         speaker: replyTarget.speaker,
@@ -375,9 +392,9 @@ export default function ChatScreen() {
                 undefined
               }
               avatarStyle={avatarStyle}
-              onMessageLongPress={(m) => setActionMessage(m)}
-              onReactPress={(m, emoji) => void handleReact(m, emoji)}
-              onReplyPress={(m) => setReplyTarget(m)}
+              onMessageLongPress={handleMessageLongPress}
+              onReactPress={handleReactPress}
+              onReplyPress={handleReplyPress}
             />
           )}
           {typingCharacterId

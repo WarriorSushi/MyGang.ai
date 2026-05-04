@@ -1,5 +1,6 @@
-import { memo } from "react";
-import { Image, Pressable, Text, View } from "react-native";
+import { memo, useMemo } from "react";
+import { Pressable, Text, View } from "react-native";
+import { Image } from "expo-image";
 import { Heart, Reply } from "lucide-react-native";
 import {
   resolveAvatarUrl,
@@ -174,9 +175,21 @@ function MessageItemBase({
   characters,
   customNames,
 }: MessageItemProps) {
-  const radii = getBubbleRadii(groupPosition, isUser);
-  const timeLabel = formatTime(message.created_at);
-  const relativeLabel = formatRelative(message.created_at);
+  const radii = useMemo(
+    () => getBubbleRadii(groupPosition, isUser),
+    [groupPosition, isUser],
+  );
+  // Memoize date formatting: created_at is stable per message, and these
+  // string ops add up across 50+ rows during virtualized re-renders.
+  // The relative label intentionally won't live-update — we already accept that.
+  const timeLabel = useMemo(
+    () => formatTime(message.created_at),
+    [message.created_at],
+  );
+  const relativeLabel = useMemo(
+    () => formatRelative(message.created_at),
+    [message.created_at],
+  );
   const isHearted = message.reaction === HEART_EMOJI;
 
   const quotedColor = quotedMessage
@@ -302,8 +315,8 @@ function MessageItemBase({
           {avatarUrl ? (
             <Image
               source={{ uri: avatarUrl }}
-              className="h-full w-full"
-              resizeMode="cover"
+              style={{ width: "100%", height: "100%" }}
+              contentFit="cover"
             />
           ) : null}
         </View>

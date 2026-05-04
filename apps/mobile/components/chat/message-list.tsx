@@ -66,6 +66,13 @@ export function MessageList({
     return map;
   }, [messages]);
 
+  // Stable lookup so renderItem doesn't .find() across all characters per row.
+  const charactersById = useMemo(() => {
+    const map = new Map<string, CharacterCatalogEntry>();
+    for (const c of characters) map.set(c.id, c);
+    return map;
+  }, [characters]);
+
   // Auto-scroll to end whenever new messages arrive AND user is near the bottom.
   useEffect(() => {
     const grew = messages.length > prevLengthRef.current;
@@ -111,7 +118,7 @@ export function MessageList({
       const isUser = item.speaker === "user";
       const character = isUser
         ? null
-        : characters.find((c) => c.id === item.speaker) ?? null;
+        : charactersById.get(item.speaker) ?? null;
       const customName =
         !isUser && customNames ? customNames[item.speaker] : undefined;
       const { groupPosition, isContinued } = getGroupPosition(messages, index);
@@ -141,6 +148,7 @@ export function MessageList({
     [
       messages,
       messagesById,
+      charactersById,
       characters,
       customNames,
       avatarStyle,
