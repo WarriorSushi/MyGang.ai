@@ -1,8 +1,14 @@
-# Session 2026-05-03 — Mobile/Web Parity Phases 1-5
+# Session 2026-05-03 — Mobile/Web Parity Phases 1-5 + Push (Phase 3 of master plan)
 
 **Agent:** Claude Code (Opus 4.7, 1M context)
-**Phase:** Mobile/Web Parity — Phase 1 (primitives) + Phase 2 (chat surface) + Phase 3 (onboarding polish) + Phase 4 (settings + memory vault drawer + pricing) + Phase 5 (polish + reply system)
-**Status:** All 5 phases code-complete in working tree. Mobile typecheck clean. Web build clean. Nothing committed.
+**Phase:** Mobile/Web Parity Phases 1-5 (primitives, chat, onboarding, settings/vault/pricing, polish+reply) + master-plan Phase 3 (push notifications) + master-plan Phase 5 part 1 (EAS profiles)
+**Status:** Code-complete. Mobile typecheck clean. Web build clean. Committed locally in 7 commits on master, **NOT pushed** (user testing on Expo Go first).
+
+**User action required before push will work end-to-end:**
+1. Apply migration: `apps/web/supabase/migrations/20260504100000_add_mobile_push_tokens.sql` via Supabase dashboard SQL editor
+2. Regenerate Supabase types: `supabase gen types typescript --project-id xiekctfhbqkhoqplobep > packages/shared/src/database/types.ts` (and remove the `(client.from as any)` casts in `apps/web/src/app/api/push/mobile-register/route.ts` + `apps/web/src/app/api/account/delete/route.ts`)
+3. Run `eas init` to provision an EAS project; copy the resulting `extra.eas.projectId` into `apps/mobile/app.json` so production push tokens are stable
+4. Push to origin/master once all of the above is done — Vercel auto-deploys the new endpoints
 
 ## Context entering this session
 
