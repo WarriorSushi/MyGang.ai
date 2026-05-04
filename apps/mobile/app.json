@@ -15,9 +15,8 @@
     "android": {
       "package": "ai.mygang.app",
       "adaptiveIcon": {
-        "backgroundColor": "#E6F4FE",
+        "backgroundColor": "#0a0e1a",
         "foregroundImage": "./assets/images/android-icon-foreground.png",
-        "backgroundImage": "./assets/images/android-icon-background.png",
         "monochromeImage": "./assets/images/android-icon-monochrome.png"
       },
       "edgeToEdgeEnabled": true,
@@ -27,9 +26,14 @@
           "action": "VIEW",
           "autoVerify": false,
           "data": [
-            { "scheme": "mygang" }
+            {
+              "scheme": "mygang"
+            }
           ],
-          "category": ["BROWSABLE", "DEFAULT"]
+          "category": [
+            "BROWSABLE",
+            "DEFAULT"
+          ]
         }
       ]
     },
@@ -45,9 +49,9 @@
           "image": "./assets/images/splash-icon.png",
           "imageWidth": 200,
           "resizeMode": "contain",
-          "backgroundColor": "#ffffff",
+          "backgroundColor": "#0a0e1a",
           "dark": {
-            "backgroundColor": "#000000"
+            "backgroundColor": "#0a0e1a"
           }
         }
       ],
@@ -56,6 +60,17 @@
         {
           "color": "#3eddc0",
           "defaultChannel": "default"
+        }
+      ],
+      [
+        "expo-iap"
+      ],
+      [
+        "expo-build-properties",
+        {
+          "android": {
+            "kotlinVersion": "2.2.0"
+          }
         }
       ],
       [

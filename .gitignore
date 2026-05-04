@@ -50,6 +50,7 @@ next-env.d.ts
 # debug screenshots & temp images
 *.png
 !public/**/*.png
+!apps/mobile/assets/**/*.png
 # IDE configs
 .idea/
 .vscode/
