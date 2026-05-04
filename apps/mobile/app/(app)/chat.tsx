@@ -229,14 +229,34 @@ export default function ChatScreen() {
       const result = await sendChatPayload(userMsg);
 
       if (!result.ok) {
+        console.warn(
+          `[chat] send failed status=${result.status} message=${result.message}`,
+        );
         if (result.status === 402 && result.cooldownSeconds) {
           Alert.alert(
             "Message limit reached",
             `Try again in ${Math.ceil(result.cooldownSeconds / 60)} min, or upgrade for more messages.`
           );
+        } else if (result.status === 429) {
+          Alert.alert(
+            "Slow down a sec",
+            "Free tier is 25 messages per hour. Take a breather and try again, or upgrade for more.",
+          );
         } else {
-          Alert.alert("Send failed", result.message);
+          Alert.alert("Send failed", `${result.message} (HTTP ${result.status})`);
         }
+        setIsWaiting(false);
+        return;
+      }
+
+      // If the server returns ok but with zero events, the gang isn't actually
+      // going to respond — surface this so the user isn't waiting on nothing.
+      if (!result.data.events || result.data.events.length === 0) {
+        console.warn("[chat] server returned 0 events — no AI reply scheduled");
+        Alert.alert(
+          "Your gang's quiet",
+          "The server accepted your message but didn't generate a reply. Try again in a moment.",
+        );
         setIsWaiting(false);
         return;
       }
