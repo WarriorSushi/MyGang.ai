@@ -52,6 +52,13 @@
         }
       ],
       [
+        "expo-notifications",
+        {
+          "color": "#3eddc0",
+          "defaultChannel": "default"
+        }
+      ],
+      [
         "@sentry/react-native",
         {
           "organization": "altcorp",
@@ -60,6 +67,11 @@
         }
       ]
     ],
+    "notification": {
+      "color": "#3eddc0",
+      "androidMode": "default",
+      "androidCollapsedTitle": "MyGang"
+    },
     "experiments": {
       "typedRoutes": false,
       "reactCompiler": false
