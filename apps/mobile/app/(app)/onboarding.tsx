@@ -62,7 +62,7 @@ const BACK_MAP: Partial<Record<Step, Step>> = {
 };
 
 export default function OnboardingScreen() {
-  const { user, profile, refreshProfile } = useAuth();
+  const { user, profile, refreshProfile, applyProfilePatch } = useAuth();
   const router = useRouter();
   const [step, setStep] = useState<Step>("WELCOME");
   const [name, setName] = useState("");
@@ -121,8 +121,9 @@ export default function OnboardingScreen() {
     if (selectedIds.length < 2) return;
 
     try {
-      console.log("[onboarding] finalize: persistGangMembership");
+      console.log("[onboarding] finalize: persistGangMembership for user", user.id);
       await persistGangMembership(supabase, user.id, selectedIds);
+      console.log("[onboarding] finalize: persistGangMembership ok");
 
       const trimmedCustomNames: Record<string, string> = {};
       for (const [k, v] of Object.entries(customNames)) {
@@ -131,24 +132,33 @@ export default function OnboardingScreen() {
         }
       }
 
-      console.log("[onboarding] finalize: profile update");
-      const { error: profileError } = await supabase
+      const profilePatch = {
+        username: name.trim(),
+        preferred_squad: selectedIds,
+        onboarding_completed: true,
+        // Free tier cannot use ecosystem mode; force gang_focus on the
+        // freshly-created profile so the chat call doesn't 403 later.
+        chat_mode: "gang_focus" as const,
+        custom_character_names:
+          Object.keys(trimmedCustomNames).length > 0
+            ? trimmedCustomNames
+            : null,
+        avatar_style_preference: avatarStyle,
+        ...(vibeProfile ? { vibe_profile: vibeProfile } : {}),
+      };
+
+      console.log("[onboarding] finalize: profile update with patch", {
+        keys: Object.keys(profilePatch),
+        selectedCount: selectedIds.length,
+      });
+      // .select() so we can verify the UPDATE actually changed a row.
+      // Without it, an UPDATE that matches 0 rows (e.g. RLS quietly filtered,
+      // or the profile row doesn't exist) returns no error but persists nothing.
+      const { data: updatedRows, error: profileError } = await supabase
         .from("profiles")
-        .update({
-          username: name.trim(),
-          preferred_squad: selectedIds,
-          onboarding_completed: true,
-          // Free tier cannot use ecosystem mode; force gang_focus on the
-          // freshly-created profile so the chat call doesn't 403 later.
-          chat_mode: "gang_focus",
-          custom_character_names:
-            Object.keys(trimmedCustomNames).length > 0
-              ? trimmedCustomNames
-              : null,
-          avatar_style_preference: avatarStyle,
-          ...(vibeProfile ? { vibe_profile: vibeProfile } : {}),
-        })
-        .eq("id", user.id);
+        .update(profilePatch)
+        .eq("id", user.id)
+        .select();
 
       if (profileError) {
         console.warn("[onboarding] profile update error:", profileError);
@@ -160,8 +170,54 @@ export default function OnboardingScreen() {
         return;
       }
 
-      console.log("[onboarding] finalize: refreshProfile");
-      await refreshProfile();
+      if (!updatedRows || updatedRows.length === 0) {
+        // UPDATE returned no error but matched 0 rows. Profile row probably
+        // doesn't exist for this user (Supabase auth created the auth.users
+        // row but the trigger to create profiles didn't fire). Try insert.
+        console.warn(
+          "[onboarding] profile UPDATE matched 0 rows for user",
+          user.id,
+          "— attempting INSERT",
+        );
+        const { error: insertError } = await supabase
+          .from("profiles")
+          .insert({ id: user.id, ...profilePatch });
+        if (insertError) {
+          console.warn("[onboarding] profile insert error:", insertError);
+          Alert.alert(
+            "Could not finish onboarding",
+            insertError.message,
+          );
+          setStep("INTRO");
+          return;
+        }
+        console.log("[onboarding] finalize: profile INSERT ok");
+      } else {
+        console.log(
+          "[onboarding] finalize: profile UPDATE ok, rows =",
+          updatedRows.length,
+          "onboarding_completed =",
+          (updatedRows[0] as { onboarding_completed?: boolean })
+            ?.onboarding_completed,
+        );
+      }
+
+      // OPTIMISTIC LOCAL STATE UPDATE.
+      // Don't depend on refreshProfile() here — if the supabase select hangs
+      // (flaky network, stale connection), the route gate keeps reading stale
+      // profile.onboarding_completed=false and ping-pongs the user back to
+      // /(app)/onboarding when LoadingStep navigates to /(app)/chat.
+      // Applying the patch to local state synchronously guarantees the gate
+      // sees the new state next render.
+      applyProfilePatch(profilePatch);
+      console.log("[onboarding] finalize: applied optimistic patch");
+
+      // Best-effort background refresh to reconcile with server. May hang;
+      // that's OK — local state is already correct.
+      void refreshProfile().catch((err) =>
+        console.warn("[onboarding] background refreshProfile threw:", err),
+      );
+
       console.log("[onboarding] finalize: done");
     } catch (err) {
       console.warn("[onboarding] finalize threw:", err);

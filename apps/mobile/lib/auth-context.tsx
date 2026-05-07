@@ -18,6 +18,14 @@ type AuthState = {
   profile: ProfileRow | null;
   isLoading: boolean;
   refreshProfile: () => Promise<void>;
+  /**
+   * Optimistically merge a partial update into the local profile state without
+   * a server round-trip. Use this after a successful Supabase write so React
+   * state reflects the new server state immediately — without depending on
+   * refreshProfile() (which can hang on a flaky network and cause routing
+   * bugs that depend on `profile.*` fields).
+   */
+  applyProfilePatch: (patch: Partial<ProfileRow>) => void;
 };
 
 const AuthContext = createContext<AuthState>({
@@ -26,6 +34,7 @@ const AuthContext = createContext<AuthState>({
   profile: null,
   isLoading: true,
   refreshProfile: async () => {},
+  applyProfilePatch: () => {},
 });
 
 export function AuthProvider({ children }: { children: ReactNode }) {
@@ -116,6 +125,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setProfile((data as ProfileRow | null) ?? null);
   }
 
+  function applyProfilePatch(patch: Partial<ProfileRow>) {
+    setProfile((prev) => (prev ? { ...prev, ...patch } : prev));
+  }
+
   return (
     <AuthContext.Provider
       value={{
@@ -124,6 +137,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         profile,
         isLoading,
         refreshProfile,
+        applyProfilePatch,
       }}
     >
       {children}
