@@ -1,4 +1,14 @@
-import { Dimensions, FlatList, Pressable, ScrollView, Text, View } from "react-native";
+import { useMemo, useState } from "react";
+import {
+  Dimensions,
+  FlatList,
+  Pressable,
+  ScrollView,
+  Text,
+  View,
+  type NativeScrollEvent,
+  type NativeSyntheticEvent,
+} from "react-native";
 import { Image } from "expo-image";
 import { ArrowRight } from "lucide-react-native";
 import {
@@ -12,10 +22,13 @@ import { PrimaryButton } from "../primary-button";
 const SITE_URL = "https://mygang.ai";
 
 const { width: SCREEN_WIDTH } = Dimensions.get("window");
-const HORIZONTAL_PADDING = 16;
 const CARD_GAP = 12;
-const CARD_W = SCREEN_WIDTH - HORIZONTAL_PADDING * 2;
+// Card occupies 86% of viewport width — leaves ~14% for the next card to peek
+// (split between the start of next + end of prev, indicating "swipe for more").
+const CARD_W = Math.round(SCREEN_WIDTH * 0.86);
 const CARD_FULL = CARD_W + CARD_GAP;
+// Center-snap padding so each card centers in the viewport when settled.
+const SIDE_PADDING = Math.round((SCREEN_WIDTH - CARD_W) / 2);
 
 type AvatarStyleStepProps = {
   selectedStyle: AvatarStyle;
@@ -182,6 +195,22 @@ export function AvatarStyleStep({
   onSelectStyle,
   onNext,
 }: AvatarStyleStepProps) {
+  const styles = AVATAR_STYLES as readonly AvatarStyle[];
+  const [centeredIndex, setCenteredIndex] = useState(() => {
+    const idx = styles.indexOf(selectedStyle);
+    return idx >= 0 ? idx : 0;
+  });
+
+  const onScroll = (e: NativeSyntheticEvent<NativeScrollEvent>) => {
+    const x = e.nativeEvent.contentOffset.x;
+    const idx = Math.round(x / CARD_FULL);
+    if (idx !== centeredIndex && idx >= 0 && idx < styles.length) {
+      setCenteredIndex(idx);
+    }
+  };
+
+  const dotIndices = useMemo(() => styles.map((_, i) => i), [styles]);
+
   return (
     <View className="flex-1">
       <ScrollView
@@ -192,19 +221,21 @@ export function AvatarStyleStep({
           Pick your gang's look
         </Text>
         <Text className="mb-4 px-6 text-center text-sm text-muted-foreground">
-          Choose one avatar pack for the whole app.
+          Swipe to see all packs.
         </Text>
 
         <FlatList
           horizontal
           showsHorizontalScrollIndicator={false}
-          data={AVATAR_STYLES as readonly AvatarStyle[]}
+          data={styles}
           keyExtractor={(s) => s}
-          contentContainerStyle={{ paddingHorizontal: HORIZONTAL_PADDING }}
+          contentContainerStyle={{ paddingHorizontal: SIDE_PADDING }}
           ItemSeparatorComponent={() => <View style={{ width: CARD_GAP }} />}
           snapToInterval={CARD_FULL}
-          snapToAlignment="start"
+          snapToAlignment="center"
           decelerationRate="fast"
+          onScroll={onScroll}
+          scrollEventThrottle={16}
           renderItem={({ item: style }) => (
             <PackCard
               style={style}
@@ -213,6 +244,24 @@ export function AvatarStyleStep({
             />
           )}
         />
+
+        {/* Carousel position dots — clear "there are more cards" affordance */}
+        <View className="mt-4 flex-row items-center justify-center gap-2">
+          {dotIndices.map((i) => {
+            const isActive = i === centeredIndex;
+            return (
+              <View
+                key={i}
+                style={{
+                  width: isActive ? 18 : 6,
+                  height: 6,
+                  borderRadius: 3,
+                  backgroundColor: isActive ? "#3eddc0" : "rgba(255,255,255,0.18)",
+                }}
+              />
+            );
+          })}
+        </View>
       </ScrollView>
 
       <View className="absolute inset-x-0 bottom-0 flex-row items-center justify-between gap-3 border-t border-border bg-background/95 px-4 py-3 pb-6">
@@ -223,7 +272,9 @@ export function AvatarStyleStep({
           </Text>{" "}
           avatar pack.
         </Text>
-        <View className="w-44">
+        {/* Button auto-sizes to its content (with internal px-5 from PrimaryButton).
+            Old fixed w-44 squeezed long labels against the rounded edges. */}
+        <View>
           <PrimaryButton
             label={`Continue with ${STYLE_LABEL[selectedStyle]}`}
             onPress={onNext}

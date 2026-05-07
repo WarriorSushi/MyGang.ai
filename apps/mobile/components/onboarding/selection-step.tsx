@@ -42,6 +42,20 @@ export function SelectionStep({
         ]
       : characters;
 
+  // Pad the array to a multiple of 3 so FlatList's numColumns doesn't stretch
+  // the last partial row. Without this, with 14 characters in 3 columns, the
+  // bottom 2 cards each get ~50% width instead of ~33% — the bug user reported.
+  const COLS = 3;
+  const padded: (CharacterCatalogEntry | { __empty: true; id: string })[] = [
+    ...sortedCharacters,
+  ];
+  const remainder = padded.length % COLS;
+  if (remainder > 0) {
+    for (let i = 0; i < COLS - remainder; i++) {
+      padded.push({ __empty: true, id: `__empty-${i}` });
+    }
+  }
+
   const detailCharacter =
     detailCharacterId !== null
       ? (characters.find((c) => c.id === detailCharacterId) ?? null)
@@ -59,13 +73,18 @@ export function SelectionStep({
       </View>
 
       <FlatList
-        data={sortedCharacters}
+        data={padded}
         keyExtractor={(c) => c.id}
         numColumns={3}
         contentContainerClassName="px-3 pb-32"
         columnWrapperClassName="gap-2"
         ItemSeparatorComponent={() => <View className="h-2" />}
         renderItem={({ item }) => {
+          // Empty padding cell — invisible spacer that keeps the last row's
+          // real cards at 1/3 width.
+          if ("__empty" in item) {
+            return <View className="flex-1" />;
+          }
           const isSelected = selectedIds.includes(item.id);
           const isRecommended = recommendedIds.includes(item.id);
           const url = `${SITE_URL}${resolveAvatarUrl(item.id, avatarStyle)}`;

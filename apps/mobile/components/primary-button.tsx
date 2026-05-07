@@ -118,12 +118,17 @@ export function PrimaryButton({
           colors={["#7dd3fc", "#67e8f9", "#6ee7b7"]}
           start={{ x: 0, y: 0.5 }}
           end={{ x: 1, y: 0.5 }}
-          style={{ flex: 1, alignItems: "center", justifyContent: "center" }}
+          style={{
+            flex: 1,
+            alignItems: "center",
+            justifyContent: "center",
+            paddingHorizontal: 20,
+          }}
         >
           {inner}
         </LinearGradient>
       ) : (
-        <View className="flex-1 items-center justify-center bg-primary">
+        <View className="flex-1 items-center justify-center bg-primary px-5">
           {inner}
         </View>
       )}

@@ -268,22 +268,23 @@ export default function OnboardingScreen() {
                 })),
               name.trim() || undefined
             )}
-            onComplete={async () => {
-              // Defensive: re-fetch profile RIGHT before navigating so the
-              // route gate sees onboarding_completed=true and doesn't bounce
-              // us back to /(app)/onboarding (which remounts at WELCOME).
-              // The race we're guarding against: finalize() does the DB
-              // update + refreshProfile, but if React state hasn't propagated
-              // by the time the loading animation finishes, the gate fires
-              // with stale `profile.onboarding_completed=false` and ping-pongs
-              // us into a fresh onboarding session.
-              console.log("[onboarding] LoadingStep onComplete → refreshing profile then routing");
-              try {
-                await refreshProfile();
-              } catch (err) {
-                console.warn("[onboarding] final refreshProfile threw:", err);
-              }
+            onComplete={() => {
+              // Navigate IMMEDIATELY — never block on refreshProfile here.
+              // Previous version awaited refreshProfile() which could hang
+              // indefinitely on a flaky network or stale supabase connection,
+              // leaving the user staring at the "let's go 🎉" screen forever.
+              // finalize() (which ran ~19s before this fires) already did its
+              // own refreshProfile, so the local profile state should be up
+              // to date. We also kick off a background refresh as belt-and-
+              // suspenders, but don't await it.
+              console.log("[onboarding] LoadingStep onComplete → /(app)/chat");
               router.replace("/(app)/chat");
+              // Best-effort background refresh in case finalize's refresh
+              // raced with React state propagation. Failures are harmless —
+              // the route gate will recover on the next profile change.
+              void refreshProfile().catch((err) =>
+                console.warn("[onboarding] background refreshProfile threw:", err),
+              );
             }}
           />
         ) : null}
