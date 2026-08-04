@@ -1,7 +1,11 @@
 import { Resend } from 'resend'
 
-const resend = new Resend(process.env.RESEND_API_KEY)
 const FROM = 'MyGang <hello@mygang.ai>'
+
+function getResend() {
+    const apiKey = process.env.RESEND_API_KEY
+    return apiKey ? new Resend(apiKey) : null
+}
 
 export type SubscriptionTier = 'free' | 'basic' | 'pro'
 
@@ -99,7 +103,8 @@ function cta(label: string, url: string, accent: string) {
 // ─── Email: New purchase ──────────────────────────────────────────────────────
 
 export async function sendPurchaseEmail(opts: { to: string; plan: 'basic' | 'pro' }): Promise<void> {
-    if (!process.env.RESEND_API_KEY) return
+    const resend = getResend()
+    if (!resend) return
     const { to, plan } = opts
     const accent = TIER_ACCENT[plan]
     const label = TIER_LABEL[plan]
@@ -140,7 +145,8 @@ export async function sendPurchaseEmail(opts: { to: string; plan: 'basic' | 'pro
 // ─── Email: Plan changed (user-initiated upgrade or downgrade) ────────────────
 
 export async function sendPlanChangedEmail(opts: { to: string; newTier: SubscriptionTier; prevTier: SubscriptionTier }): Promise<void> {
-    if (!process.env.RESEND_API_KEY) return
+    const resend = getResend()
+    if (!resend) return
     const { to, newTier, prevTier } = opts
     const tierOrder = ['free', 'basic', 'pro']
     const isUpgrade = tierOrder.indexOf(newTier) > tierOrder.indexOf(prevTier)
@@ -184,7 +190,8 @@ export async function sendPlanChangedEmail(opts: { to: string; newTier: Subscrip
 // ─── Email: Admin gifted a plan upgrade ──────────────────────────────────────
 
 export async function sendAdminGiftEmail(opts: { to: string; newTier: SubscriptionTier; prevTier: SubscriptionTier }): Promise<void> {
-    if (!process.env.RESEND_API_KEY) return
+    const resend = getResend()
+    if (!resend) return
     const { to, newTier, prevTier } = opts
     const tierOrder = ['free', 'basic', 'pro']
     const isUpgrade = tierOrder.indexOf(newTier) > tierOrder.indexOf(prevTier)
@@ -235,7 +242,8 @@ export async function sendAdminGiftEmail(opts: { to: string; newTier: Subscripti
 // ─── Email: Cancellation (grace period) ──────────────────────────────────────
 
 export async function sendCancellationEmail(opts: { to: string; plan: 'basic' | 'pro'; periodEnd?: string | null }): Promise<void> {
-    if (!process.env.RESEND_API_KEY) return
+    const resend = getResend()
+    if (!resend) return
     const { to, plan, periodEnd } = opts
     const label = TIER_LABEL[plan]
 
@@ -281,7 +289,8 @@ export async function sendCancellationEmail(opts: { to: string; plan: 'basic' | 
 // ─── Email: Subscription expired (now on Free) ───────────────────────────────
 
 export async function sendSubscriptionExpiredEmail(opts: { to: string; prevPlan: 'basic' | 'pro' }): Promise<void> {
-    if (!process.env.RESEND_API_KEY) return
+    const resend = getResend()
+    if (!resend) return
     const { to, prevPlan } = opts
     const prevLabel = TIER_LABEL[prevPlan]
 
@@ -312,7 +321,8 @@ export async function sendSubscriptionExpiredEmail(opts: { to: string; prevPlan:
 // ─── Email: Win-back (free users who've gone dormant) ─────────────────────────
 
 export async function sendWinBackEmail(opts: { to: string; username?: string | null; daysSinceActive: number }): Promise<void> {
-    if (!process.env.RESEND_API_KEY) return
+    const resend = getResend()
+    if (!resend) return
     const { to, username, daysSinceActive } = opts
     const weeksAgo = daysSinceActive >= 14 ? `${Math.floor(daysSinceActive / 7)} weeks` : `${daysSinceActive} days`
     const greeting = username ? `Hey ${username},` : `Hey,`
@@ -363,7 +373,8 @@ export async function sendWinBackEmail(opts: { to: string; username?: string | n
 // ─── Email: Upgrade nudge (active free users) ─────────────────────────────────
 
 export async function sendUpgradeNudgeEmail(opts: { to: string; username?: string | null }): Promise<void> {
-    if (!process.env.RESEND_API_KEY) return
+    const resend = getResend()
+    if (!resend) return
     const { to, username } = opts
     const greeting = username ? `Hey ${username},` : `Hey,`
 
