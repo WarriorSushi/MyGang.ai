@@ -45,10 +45,27 @@ The native app already contains the core MyGang product and most user-facing web
 | Monetization | Plans, authenticated portal, purchase celebration; native Android purchase/restore required repair |
 | Reliability | Sentry boundary, local chat cache, API timeout/retry; offline/profile/history gaps required repair |
 
+## Remediation completed
+
+- Replaced Android web checkout with native Google Play purchase, restore, pending-purchase, acknowledgement, upgrade-proration, and server verification flows.
+- Separated “profile missing” from “profile request failed,” added a recoverable account screen, and prevented network failures from routing existing users into onboarding.
+- Added per-user composer drafts, explicit offline state, bounded history reads, foreground refresh, reaction rollback, clickable message links, and the web app's Fast/Normal/Relaxed ecosystem pacing.
+- Kept the composer editable while a turn is sending and limited only the send action, with transient inline guidance for repeated send attempts.
+- Replaced Android browser OAuth with native device-account selection and Supabase ID-token exchange. Browser OAuth remains the Expo Go/iOS fallback.
+- Added responsive width limits, narrow-header behavior, reduced-motion handling, selection/expansion semantics, and 44-point interaction targets across the audited surfaces.
+- Added an executable mobile test suite and passed mobile typecheck, lint, tests, Expo Doctor (18/18), Android export, the web fast suite (22 files), and the web production build.
+
 ## External proof still required
 
 - Google Play products, tester eligibility, service-account permissions, and purchase/cancel/refund behavior must be exercised from an approved Play testing track. A sideloaded APK cannot prove store ownership or product visibility.
+- Native Google sign-in requires an Android OAuth client for `ai.mygang.app` with EAS signing SHA-1 `34:EA:F2:BA:2D:6B:04:D7:3F:AC:F2:FB:FD:49:0B:B5:01:F8:6A:E6`; final token exchange still needs a real device account test.
 - Background push delivery still needs configured Firebase/EAS credentials and a physical-device test.
 - Play Integrity remains a store/backend rollout task requiring Play Console and Google Cloud configuration.
 - A dedicated mobile Sentry project is still preferable before broad production rollout.
 
+## Release evidence
+
+- Final preview APK: EAS build `85fc9cc9-d4f9-4b6d-82dd-27aef9f80054`, commit `b42e0e5c353c7ed859ffc55c064f860860c0fb62`.
+- Installed on the Android emulator as `ai.mygang.app` version `0.1.0` (`versionCode 1`); launch completed with no fatal Android/React Native exception.
+- Tapping Continue with Google opened Google Play services' native device-account flow and returned safely to MyGang on cancellation; it did not open the browser or website.
+- Production smoke check: `https://www.mygang.ai` returned 200 and the unauthenticated Android billing verifier returned the expected 401.

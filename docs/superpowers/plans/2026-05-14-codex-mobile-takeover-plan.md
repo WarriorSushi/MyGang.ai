@@ -22,6 +22,8 @@
 - [x] EAS preview build completed successfully on 2026-07-18 (build `135c5488-6a31-4b0e-a91b-d05e73cd7f48`) and produced a signed Android APK.
 - [x] Device-feedback replacement preview build completed successfully on 2026-07-18 (build `27f1db64-3ce2-4466-a9f6-f23c1edda980`) with the native keyboard fix.
 - [x] Final chat-reliability preview build completed successfully on 2026-07-18 (build `554bd369-51cd-4d00-848b-7364dda57ad2`) with the editable composer, bounded send lifecycle, and purchase celebration.
+- [x] The 2026-08-04 release-candidate gate passes mobile typecheck/lint/tests, Expo Doctor 18/18, Android export, all 22 web fast-test files, and the web production build.
+- [x] Final native-auth preview build `85fc9cc9-d4f9-4b6d-82dd-27aef9f80054` installed and launched on Android; Google opens the Google Play services device-account flow with no browser/landing-page redirect.
 
 ## Immediate Fixes Completed
 
@@ -32,7 +34,7 @@
   - `chat-arrival` starter chips now satisfy the intended honest-vibe personalization.
   - `squad-persistence` test imports from `@mygang/shared`.
   - `system-prompt` test expects the current responder-restraint wording.
-- [x] **Google OAuth landing-page fallback:** mobile now requests Google's account chooser and returns through a tested HTTPS-to-app auth relay instead of leaving the user on the website.
+- [x] **Native Android Google sign-in:** standalone Android builds now select an account through Google Play services and exchange its ID token directly with Supabase; Expo Go/iOS retain the browser relay fallback.
 - [x] **Android keyboard overlap:** chat now uses Expo's recommended native Keyboard Controller and a chat-specific `translate-with-padding` behavior.
 - [x] **False free-tier limit:** production logs proved the configured Upstash hostname no longer resolves; Redis outages now retain a bounded local limiter, while mobile distinguishes real hourly quota responses from rapid-send/infrastructure failures.
 
@@ -63,16 +65,16 @@
 - [x] **Reset password route guard:** the mobile route gate now allows the reset-password screen to finish after Supabase sets its temporary recovery session.
 - [x] **Free-tier custom names:** onboarding and chat now respect the paid custom-name gate; old names are preserved but not displayed on Free.
 - [x] **Chat history prepend polish:** loading older chat history no longer increments the unread/latest-message badge or forces bottom scrolling.
-- [ ] **External setup not proven here:** Play Console products, Play Billing service account, dedicated Sentry mobile project, Play Integrity, and push credentials require user-owned dashboards. EAS project linkage, the live `mobile_push_tokens` table, and preview builds are proven.
-- [ ] **Device regression verification required:** the first preview exposed OAuth, keyboard, and false-quota blockers; their replacement APK is built but still needs the focused Android retest after web deployment.
-- [ ] **Production web deployment pending permission:** the auth relay and Redis-outage recovery pass tests/build locally but are not live until the current worktree is explicitly authorized for commit/push/deployment.
+- [ ] **External setup not proven here:** Play Console products, Play Billing service account, Google Android OAuth signing registration, dedicated Sentry mobile project, Play Integrity, and push credentials require user-owned dashboards. EAS project linkage, the live `mobile_push_tokens` table, and signed preview builds are proven.
+- [ ] **Physical-device regression verification required:** emulator verification covers install, startup, auth input focus, and the native Google account surface; a real account, chat turn, keyboard/composer behavior, push, and Play purchase still require a physical device/approved Play track.
+- [x] **Production changes published:** the authorized release-candidate changes and backend billing verification are committed and pushed to `master`; web tests and production build pass.
 - [x] **Upstash service replacement:** the deleted `hot-mullet-32833.upstash.io` database was replaced, the Vercel production variables were updated, and production was redeployed on 2026-07-18.
 - [ ] **Web seeded Playwright blocked locally:** Chromium is installed, but seeded auth tests currently stop at the web auth wall because Cloudflare human verification cannot start in this local environment.
 - [ ] **Docs drift:** master/phase plans still contain old unchecked tasks. Reconcile only after phone smoke testing confirms what is actually shippable.
 
 ## Parity Gaps Found So Far
 
-- [x] Mobile auth now includes Google OAuth via Expo `openAuthSessionAsync`, matching the web login route.
+- [x] Mobile auth uses native Android device-account selection with Supabase ID-token exchange, with `openAuthSessionAsync` retained for Expo Go/iOS.
 - [x] Mobile now has bounded ecosystem autonomous follow-up and one idle continuation after a user turn.
 - [x] Mobile now renders “while you were away” history rows with a divider instead of filtering them out.
 - [x] Mobile now shows a low-message/cooldown banner and disables input during cooldown.
@@ -86,17 +88,6 @@
 
 ## Next Work Order
 
-1. Get explicit permission to commit/push the current verified worktree, then confirm Vercel deploys the mobile auth relay and Redis-outage recovery.
-2. Install replacement Android preview build `27f1db64-3ce2-4466-a9f6-f23c1edda980` and retest:
-   - Google account chooser returns to an authenticated app session,
-   - chat composer stays above the keyboard,
-   - a first chat message receives a gang response without a false quota alert.
-3. Prepare beta blockers:
-   - dedicated Sentry mobile project,
-   - Supabase migration status check for `mobile_push_tokens`,
-   - Play Billing sandbox checklist.
-4. Polish only after the app is stable:
-   - phone-specific visual bugs,
-   - delivery/retry state for messages,
-   - restore purchases UI,
-   - notification settings and real push QA.
+1. Register/confirm the Android OAuth client for package `ai.mygang.app` and the EAS/Play signing SHA-1 fingerprints.
+2. Install from an approved Play internal-testing track and verify a real Google account, first chat reply, purchase/restore/upgrade/cancel/refund, and push delivery.
+3. Complete the remaining external beta setup: dedicated mobile Sentry project, Play Integrity, and production push credentials.
