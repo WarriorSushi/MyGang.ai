@@ -45,6 +45,12 @@
     "plugins": [
       "expo-router",
       [
+        "@react-native-google-signin/google-signin",
+        {
+          "iosUrlScheme": "com.googleusercontent.apps.845769230476-cch7bs3ni3it919pckuhu2rhpjvpq511"
+        }
+      ],
+      [
         "expo-splash-screen",
         {
           "image": "./assets/images/splash-icon.png",
@@ -98,6 +104,7 @@
       "supabaseAnonKey": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhpZWtjdGZoYnFraG9xcGxvYmVwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzAxMzU1NTUsImV4cCI6MjA4NTcxMTU1NX0.zYYa7oFqgVBT-gJJc_fB0UfkTTRHsWIyYKFoowPdvLM",
       "siteUrl": "https://mygang.ai",
       "apiBaseUrl": "https://www.mygang.ai/api",
+      "googleWebClientId": "845769230476-cch7bs3ni3it919pckuhu2rhpjvpq511.apps.googleusercontent.com",
       "sentryDsn": "https://fc3d4fa4e1faca7a60d2c50fa2f4fd62@o4511054461927424.ingest.us.sentry.io/4511056086958081",
       "router": {},
       "eas": {

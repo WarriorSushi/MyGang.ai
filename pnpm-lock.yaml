@@ -30,6 +30,9 @@ importers:
       '@react-native-async-storage/async-storage':
         specifier: 2.2.0
         version: 2.2.0(react-native@0.81.5(@babel/core@7.29.0)(@types/react@19.1.17)(react@19.1.0))
+      '@react-native-google-signin/google-signin':
+        specifier: 16.1.4
+        version: 16.1.4(expo@54.0.36)(react-native@0.81.5(@babel/core@7.29.0)(@types/react@19.1.17)(react@19.1.0))(react@19.1.0)
       '@react-native-masked-view/masked-view':
         specifier: ^0.3.2
         version: 0.3.2(react-native@0.81.5(@babel/core@7.29.0)(@types/react@19.1.17)(react@19.1.0))(react@19.1.0)
@@ -2491,6 +2494,16 @@ packages:
     resolution: {integrity: sha512-gvRvjR5JAaUZF8tv2Kcq/Gbt3JHwbKFYfmb445rhOj6NUMx3qPLixmDx5pZAyb9at1bYvJ4/eTUipU5aki45xw==}
     peerDependencies:
       react-native: ^0.0.0-0 || >=0.65 <1.0
+
+  '@react-native-google-signin/google-signin@16.1.4':
+    resolution: {integrity: sha512-Lt4vjihJ+Nk9I4HjScWHzch3ebtIlP3QIea0XEHVN0PJumwUwiK/J2tU8qs7H9DIqNblC0qlXkR0Ts4ELvq7yA==}
+    peerDependencies:
+      expo: '>=52.0.40'
+      react: 19.1.0
+      react-native: '*'
+    peerDependenciesMeta:
+      expo:
+        optional: true
 
   '@react-native-masked-view/masked-view@0.3.2':
     resolution: {integrity: sha512-XwuQoW7/GEgWRMovOQtX3A4PrXhyaZm0lVUiY8qJDvdngjLms9Cpdck6SmGAUNqQwcj2EadHC1HwL0bEyoa/SQ==}
@@ -10390,6 +10403,13 @@ snapshots:
     dependencies:
       merge-options: 3.0.4
       react-native: 0.81.5(@babel/core@7.29.0)(@types/react@19.1.17)(react@19.1.0)
+
+  '@react-native-google-signin/google-signin@16.1.4(expo@54.0.36)(react-native@0.81.5(@babel/core@7.29.0)(@types/react@19.1.17)(react@19.1.0))(react@19.1.0)':
+    dependencies:
+      react: 19.1.0
+      react-native: 0.81.5(@babel/core@7.29.0)(@types/react@19.1.17)(react@19.1.0)
+    optionalDependencies:
+      expo: 54.0.36(@babel/core@7.29.0)(@expo/metro-runtime@6.1.2)(expo-router@6.0.24)(react-native@0.81.5(@babel/core@7.29.0)(@types/react@19.1.17)(react@19.1.0))(react@19.1.0)(typescript@5.9.3)
 
   '@react-native-masked-view/masked-view@0.3.2(react-native@0.81.5(@babel/core@7.29.0)(@types/react@19.1.17)(react@19.1.0))(react@19.1.0)':
     dependencies:

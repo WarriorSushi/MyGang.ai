@@ -70,7 +70,7 @@ export default function SignUpScreen() {
     setIsGoogleSubmitting(true);
     const result = await signInWithGoogle();
     setIsGoogleSubmitting(false);
-    if (!result.ok) {
+    if (!result.ok && !result.cancelled) {
       Alert.alert("Google sign-in failed", result.error ?? "Please try again.");
     }
   }
