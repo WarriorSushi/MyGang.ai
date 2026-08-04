@@ -5,6 +5,7 @@ import { createClient } from '@/lib/supabase/server'
 import type { Database } from '@mygang/shared/database/types'
 import { openRouterModel } from '@/lib/ai/openrouter'
 import { getMemoryMaxCount, getMemoryInPromptLimit, type SubscriptionTier } from '@mygang/shared'
+import { areLexicallySimilarMemories, isUsefulMemoryContent } from '@/lib/ai/memory-quality'
 
 const embeddingModel = google.textEmbeddingModel('text-embedding-004')
 
@@ -114,11 +115,12 @@ export async function storeMemory(
         const supabase = await createClient()
         const { kind = 'episodic', tags = [], importance = 1, useEmbedding = true, category, expires_at } = options || {}
         const normalizedContent = content.trim().replace(/\s+/g, ' ')
+        if (!isUsefulMemoryContent(normalizedContent)) return
         const embedding = useEmbedding ? await generateEmbedding(normalizedContent) : null
 
         const { data: existing } = await supabase
             .from('memories')
-            .select('id, content, created_at')
+            .select('id, content, created_at, category')
             .eq('user_id', userId)
             .eq('kind', kind)
             .order('created_at', { ascending: false })
@@ -126,8 +128,11 @@ export async function storeMemory(
 
         const duplicate = existing?.find((m) => {
             if (!m?.content) return false
-            const recent = m.created_at ? (Date.now() - new Date(m.created_at).getTime()) < 10 * 60 * 1000 : false
-            return recent && m.content.trim().replace(/\s+/g, ' ') === normalizedContent
+            const existingContent = m.content.trim().replace(/\s+/g, ' ')
+            if (existingContent === normalizedContent) return true
+            return importance < 2
+                && m.category === category
+                && areLexicallySimilarMemories(existingContent, normalizedContent)
         })
 
         if (duplicate) {
@@ -214,13 +219,7 @@ export async function storeMemories(
             ...m,
             normalizedContent: m.content.trim().replace(/\s+/g, ' '),
             kind: m.kind || 'episodic',
-        })).filter(m => {
-            // Safety net: reject short or gibberish content
-            if (m.normalizedContent.length < 10) return false
-            const realWords = m.normalizedContent.match(/[a-zA-Z\u00C0-\u024F]{3,}/g)
-            if (!realWords || realWords.length < 2) return false
-            return true
-        })
+        })).filter(m => isUsefulMemoryContent(m.normalizedContent))
 
         if (!normalized.length) return
 
@@ -242,12 +241,38 @@ export async function storeMemories(
             category: m.category,
         }))
 
-        // Filter out duplicates
-        const nonDuplicates = normalized.filter(mem => {
-            return !existingNormalized.some(ex =>
-                ex.recent && ex.kind === mem.kind && ex.content === mem.normalizedContent
+        // Filter exact duplicates at every age. For ordinary memories, also use
+        // deterministic lexical similarity so free-tier users get deduplication
+        // even though their memory writes intentionally skip embeddings.
+        const nonDuplicates = normalized.reduce<typeof normalized>((accepted, mem) => {
+            const exactDuplicate = [...existingNormalized, ...accepted.map((item) => ({
+                id: '',
+                content: item.normalizedContent,
+                recent: true,
+                kind: item.kind,
+                category: item.category ?? null,
+            }))].some((candidate) =>
+                candidate.kind === mem.kind
+                && candidate.content === mem.normalizedContent
             )
-        })
+            if (exactDuplicate) return accepted
+
+            const acceptedLexicalDuplicate = accepted.some((candidate) =>
+                candidate.kind === mem.kind
+                && candidate.category === mem.category
+                && areLexicallySimilarMemories(candidate.normalizedContent, mem.normalizedContent)
+            )
+            if (acceptedLexicalDuplicate) return accepted
+
+            const existingLexicalDuplicate = (mem.importance ?? 1) < 2
+                && existingNormalized.some((candidate) =>
+                    candidate.kind === mem.kind
+                    && candidate.category === mem.category
+                    && areLexicallySimilarMemories(candidate.content, mem.normalizedContent)
+                )
+            if (!existingLexicalDuplicate) accepted.push(mem)
+            return accepted
+        }, [])
 
         if (!nonDuplicates.length) return
 

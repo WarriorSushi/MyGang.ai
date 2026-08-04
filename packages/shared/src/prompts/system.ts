@@ -75,8 +75,10 @@ IDENTITY:
 }
 
 function buildUserBlock(userName: string, userNickname: string | null): string {
+    const preferredAddress = userNickname || userName || 'User'
     return `USER:
 - User: ${userName || 'User'}${userNickname ? ` (called "${userNickname}")` : ''}.
+- The current profile name is authoritative. Address the user as "${preferredAddress}". Treat other names in older messages or memory as stale unless the latest user message explicitly changes their name.
 - Messages from user have speaker: "user" in the conversation history.`
 }
 

@@ -24,6 +24,7 @@
 - [x] Final chat-reliability preview build completed successfully on 2026-07-18 (build `554bd369-51cd-4d00-848b-7364dda57ad2`) with the editable composer, bounded send lifecycle, and purchase celebration.
 - [x] The 2026-08-04 release-candidate gate passes mobile typecheck/lint/tests, Expo Doctor 18/18, Android export, all 22 web fast-test files, and the web production build.
 - [x] Final native-auth preview build `85fc9cc9-d4f9-4b6d-82dd-27aef9f80054` installed and launched on Android; Google opens the Google Play services device-account flow with no browser/landing-page redirect.
+- [x] Authenticated 411dp emulator audit completed on 2026-08-04 across chat, active send, offline failure, settings, themes, Memory Vault, and Edit Gang; findings are recorded in `docs/superpowers/2026-08-04-authenticated-mobile-emulator-audit.md`.
 
 ## Immediate Fixes Completed
 
@@ -37,6 +38,8 @@
 - [x] **Native Android Google sign-in:** standalone Android builds now select an account through Google Play services and exchange its ID token directly with Supabase; Expo Go/iOS retain the browser relay fallback.
 - [x] **Android keyboard overlap:** chat now uses Expo's recommended native Keyboard Controller and a chat-specific `translate-with-padding` behavior.
 - [x] **False free-tier limit:** production logs proved the configured Upstash hostname no longer resolves; Redis outages now retain a bounded local limiter, while mobile distinguishes real hourly quota responses from rapid-send/infrastructure failures.
+- [x] **Narrow-screen message clipping:** message width is now derived once per list from the live viewport, with percentage caps on phones and a 560dp ceiling on tablets.
+- [x] **Conversation-state polish:** network loss is reconciled before sending, transport failures stay inline and retryable, stale relative timestamps are gone, the current profile name wins over old context, and low-value/duplicate memory writes are filtered for every tier.
 
 ## Risks To Resolve Before Beta
 

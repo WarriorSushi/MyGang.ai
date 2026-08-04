@@ -6,7 +6,7 @@ import { useRouter } from "expo-router";
 import { Gesture, GestureDetector } from "react-native-gesture-handler";
 import * as Clipboard from "expo-clipboard";
 import { runOnJS } from "react-native-reanimated";
-import { useNetworkState } from "expo-network";
+import { getNetworkStateAsync, useNetworkState } from "expo-network";
 import {
   CHARACTERS,
   applyAvatarStyleToGang,
@@ -85,7 +85,9 @@ export default function ChatScreen() {
   const [ecosystemSpeed, setEcosystemSpeed] =
     useState<EcosystemSpeed>("normal");
   const networkState = useNetworkState();
+  const [confirmedOffline, setConfirmedOffline] = useState(false);
   const isOffline =
+    confirmedOffline ||
     networkState.isConnected === false ||
     networkState.isInternetReachable === false;
   const userIdRef = useRef<string | null>(null);
@@ -122,6 +124,30 @@ export default function ChatScreen() {
   useEffect(() => {
     messagesRef.current = messages;
   }, [messages]);
+
+  useEffect(() => {
+    let mounted = true;
+    const reconcileNetworkState = async () => {
+      try {
+        const state = await getNetworkStateAsync();
+        if (!mounted) return;
+        setConfirmedOffline(
+          state.isConnected === false || state.isInternetReachable === false,
+        );
+      } catch {
+        // Keep the last confirmed value; a failed check is not proof of loss.
+      }
+    };
+
+    void reconcileNetworkState();
+    const interval = setInterval(() => {
+      void reconcileNetworkState();
+    }, 4_000);
+    return () => {
+      mounted = false;
+      clearInterval(interval);
+    };
+  }, []);
 
   useEffect(() => {
     let mounted = true;
@@ -602,7 +628,7 @@ export default function ChatScreen() {
               : result.status === 429
                 ? result.message
                 : result.status === 0
-                  ? result.message
+                  ? "No connection. Your message is saved here — retry when you're back online."
               : `${result.message} (HTTP ${result.status})`;
         setMessages((prev) =>
           prev.map((m) =>
@@ -627,6 +653,7 @@ export default function ChatScreen() {
         if (result.status >= 500 || result.status === 0) {
           autonomousBackoffUntilRef.current = Date.now() + 30_000;
         }
+        if (result.status === 0) setConfirmedOffline(true);
         if (result.status === 402 && result.cooldownSeconds) {
           Alert.alert(
             "Message limit reached",
@@ -645,9 +672,7 @@ export default function ChatScreen() {
           );
         } else if (result.status === 429) {
           Alert.alert("Slow down a sec", result.message);
-        } else if (result.status === 0) {
-          Alert.alert("Couldn't send", result.message);
-        } else {
+        } else if (result.status !== 0) {
           Alert.alert("Send failed", `${result.message} (HTTP ${result.status})`);
         }
         updateWaiting(false);
@@ -679,6 +704,7 @@ export default function ChatScreen() {
       if (typeof result.data.messages_remaining === "number") {
         setMessagesRemaining(result.data.messages_remaining);
       }
+      setConfirmedOffline(false);
 
       setMessages((prev) =>
         prev.map((m) =>

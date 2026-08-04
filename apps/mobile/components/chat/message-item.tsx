@@ -1,5 +1,11 @@
 import { memo, useMemo } from "react";
-import { Alert, Linking, Pressable, Text, View } from "react-native";
+import {
+  Alert,
+  Linking,
+  Pressable,
+  Text,
+  View,
+} from "react-native";
 import { Image } from "expo-image";
 import { Heart, RefreshCcw, Reply } from "lucide-react-native";
 import { useColorScheme } from "nativewind";
@@ -35,6 +41,7 @@ type MessageItemProps = {
   customName?: string | null;
   avatarStyle: AvatarStyle;
   isUser: boolean;
+  bubbleMaxWidth: number;
   groupPosition?: GroupPosition;
   isContinued?: boolean;
   onLongPress?: () => void;
@@ -134,25 +141,13 @@ function formatTime(iso: string): string {
   return `${h}:${m.toString().padStart(2, "0")} ${am ? "AM" : "PM"}`;
 }
 
-function formatRelative(iso: string): string {
-  const t = new Date(iso).getTime();
-  if (!Number.isFinite(t)) return "";
-  const diffSec = Math.max(0, (Date.now() - t) / 1000);
-  if (diffSec < 60) return "just now";
-  const diffMin = diffSec / 60;
-  if (diffMin < 60) return `${Math.floor(diffMin)}m ago`;
-  const diffH = diffMin / 60;
-  if (diffH < 24) return `${Math.floor(diffH)}h ago`;
-  const diffD = diffH / 24;
-  return `${Math.floor(diffD)}d ago`;
-}
-
 function MessageItemBase({
   message,
   character,
   customName,
   avatarStyle,
   isUser,
+  bubbleMaxWidth,
   groupPosition = "single",
   isContinued = false,
   onLongPress,
@@ -169,15 +164,8 @@ function MessageItemBase({
     () => getBubbleRadii(groupPosition, isUser),
     [groupPosition, isUser],
   );
-  // Memoize date formatting: created_at is stable per message, and these
-  // string ops add up across 50+ rows during virtualized re-renders.
-  // The relative label intentionally won't live-update — we already accept that.
   const timeLabel = useMemo(
     () => formatTime(message.created_at),
-    [message.created_at],
-  );
-  const relativeLabel = useMemo(
-    () => formatRelative(message.created_at),
     [message.created_at],
   );
   const isHearted = message.reaction === HEART_EMOJI;
@@ -247,7 +235,8 @@ function MessageItemBase({
     >
       <Pressable
         onPress={handleHeartPress}
-        className="h-11 w-11 items-center justify-center rounded-full active:bg-muted/50"
+        className="h-9 w-9 items-center justify-center rounded-full active:bg-muted/50"
+        hitSlop={4}
         accessibilityRole="button"
         accessibilityLabel={isHearted ? "Remove heart" : "Heart message"}
       >
@@ -259,7 +248,8 @@ function MessageItemBase({
       </Pressable>
       <Pressable
         onPress={handleReplyPress}
-        className="h-11 w-11 items-center justify-center rounded-full active:bg-muted/50"
+        className="h-9 w-9 items-center justify-center rounded-full active:bg-muted/50"
+        hitSlop={4}
         accessibilityRole="button"
         accessibilityLabel="Reply"
       >
@@ -274,8 +264,8 @@ function MessageItemBase({
         <Pressable
           onLongPress={onLongPress}
           delayLongPress={350}
-          style={{ ...radii, maxWidth: 560 }}
-          className={`max-w-[80%] px-4 py-2 active:opacity-90 ${
+          style={{ ...radii, maxWidth: bubbleMaxWidth }}
+          className={`px-4 py-2 active:opacity-90 ${
             isSending ? "bg-muted" : "bg-primary"
           }`}
         >
@@ -292,16 +282,8 @@ function MessageItemBase({
           ) : null}
         </Pressable>
         {inlineActionsRow}
-        <View className="mt-1 flex-row items-baseline gap-1 px-1">
+        <View className="mt-1 flex-row items-baseline px-1">
           <Text className="text-[10px] text-muted-foreground/60">{timeLabel}</Text>
-          {relativeLabel ? (
-            <>
-              <Text className="text-[10px] text-muted-foreground/40"> </Text>
-              <Text className="text-[10px] text-muted-foreground/60">
-                {relativeLabel}
-              </Text>
-            </>
-          ) : null}
         </View>
         {isSending ? (
           <Text className="mt-1 px-1 text-[10px] text-muted-foreground/70">
@@ -362,7 +344,9 @@ function MessageItemBase({
       ) : (
         <View className="h-8 w-8" />
       )}
-      <View className="max-w-[78%]" style={{ maxWidth: 560 }}>
+      <View
+        style={{ maxWidth: bubbleMaxWidth, minWidth: 0, flexShrink: 1 }}
+      >
         {showHeader ? (
           <View className="mb-1 flex-row items-baseline gap-1.5">
             <Text
@@ -391,16 +375,8 @@ function MessageItemBase({
           ) : null}
         </Pressable>
         {inlineActionsRow}
-        <View className="mt-1 flex-row items-baseline gap-1 px-1">
+        <View className="mt-1 flex-row items-baseline px-1">
           <Text className="text-[10px] text-muted-foreground/60">{timeLabel}</Text>
-          {relativeLabel ? (
-            <>
-              <Text className="text-[10px] text-muted-foreground/40"> </Text>
-              <Text className="text-[10px] text-muted-foreground/60">
-                {relativeLabel}
-              </Text>
-            </>
-          ) : null}
         </View>
       </View>
     </View>
@@ -423,6 +399,7 @@ function arePropsEqual(prev: MessageItemProps, next: MessageItemProps): boolean 
   if (prev.groupPosition !== next.groupPosition) return false;
   if (prev.isContinued !== next.isContinued) return false;
   if (prev.isUser !== next.isUser) return false;
+  if (prev.bubbleMaxWidth !== next.bubbleMaxWidth) return false;
   if (prev.avatarStyle !== next.avatarStyle) return false;
   if (prev.customName !== next.customName) return false;
   if (prev.character?.id !== next.character?.id) return false;

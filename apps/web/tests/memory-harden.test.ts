@@ -9,6 +9,10 @@ import {
     getMemoryRecallLimit,
 } from '../src/lib/ai/memory'
 import {
+    areLexicallySimilarMemories,
+    isUsefulMemoryContent,
+} from '../src/lib/ai/memory-quality'
+import {
     createMemoryMutationFailure,
     createMemoryMutationSuccess,
 } from '../src/lib/memory-mutation'
@@ -78,6 +82,33 @@ console.log('\n4. Memory mutation helpers return typed success and failure resul
         assert(failure.errorCode === 'rate_limited', 'failure exposes a stable error code')
         assert(failure.message === 'Too many attempts. Please wait.', 'failure exposes the message')
     }
+}
+
+console.log('\n5. Conversation mechanics do not become user memories')
+{
+    assert(!isUsefulMemoryContent('User asked for introductions.'), 'generic request is rejected')
+    assert(!isUsefulMemoryContent('User asked for introductions, and the gang responded.'), 'gang response metadata is rejected')
+    assert(isUsefulMemoryContent('User asked to be called Sam.'), 'explicit naming preference is kept')
+    assert(isUsefulMemoryContent('User is developing an AI friends app to combat loneliness.'), 'durable personal goal is kept')
+    assert(isUsefulMemoryContent('User loves jazz and listens while working.'), 'durable preference is kept')
+}
+
+console.log('\n6. Free-tier memories receive deterministic lexical deduplication')
+{
+    assert(
+        areLexicallySimilarMemories(
+            'User is developing an app about AI friends for lonely people.',
+            'User develops an AI friends app to help lonely people.',
+        ),
+        'near-equivalent personal facts are duplicates',
+    )
+    assert(
+        !areLexicallySimilarMemories(
+            'User loves jazz and listens while working.',
+            'User is planning a trip to Delhi next month.',
+        ),
+        'unrelated memories stay distinct',
+    )
 }
 
 console.log(`\n=== Results: ${passed} passed, ${failed} failed ===`)

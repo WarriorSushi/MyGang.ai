@@ -7,6 +7,7 @@ import {
   Platform,
   Pressable,
   Text,
+  useWindowDimensions,
   View,
   type NativeScrollEvent,
   type NativeSyntheticEvent,
@@ -17,6 +18,7 @@ import {
   type CharacterCatalogEntry,
 } from "@mygang/shared";
 import { MessageItem, type ChatMessage, type GroupPosition } from "./message-item";
+import { getMessageBubbleMaxWidth } from "../../lib/message-layout";
 
 type MessageListProps = {
   messages: ChatMessage[];
@@ -78,6 +80,9 @@ function MessageListBase({
   onLoadOlder,
   onRetryHistory,
 }: MessageListProps) {
+  const { width: viewportWidth } = useWindowDimensions();
+  const userBubbleMaxWidth = getMessageBubbleMaxWidth(viewportWidth, true);
+  const assistantBubbleMaxWidth = getMessageBubbleMaxWidth(viewportWidth, false);
   const listRef = useRef<FlatList<MessageRow>>(null);
   const [isAtBottom, setIsAtBottom] = useState(true);
   const [unreadCount, setUnreadCount] = useState(0);
@@ -239,6 +244,9 @@ function MessageListBase({
             customName={customName}
             avatarStyle={avatarStyle}
             isUser={isUser}
+            bubbleMaxWidth={
+              isUser ? userBubbleMaxWidth : assistantBubbleMaxWidth
+            }
             groupPosition={row.groupPosition}
             isContinued={row.isContinued}
             onLongPress={
@@ -262,6 +270,8 @@ function MessageListBase({
       onReactPress,
       onReplyPress,
       onRetryPress,
+      userBubbleMaxWidth,
+      assistantBubbleMaxWidth,
     ],
   );
 
