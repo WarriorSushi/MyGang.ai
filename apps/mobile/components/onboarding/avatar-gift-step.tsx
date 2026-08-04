@@ -14,6 +14,7 @@ import { LinearGradient } from "expo-linear-gradient";
 import { ArrowRight, Gift } from "lucide-react-native";
 import { CHARACTERS, resolveAvatarUrl } from "@mygang/shared";
 import { PrimaryButton } from "../primary-button";
+import { useReducedMotion } from "../../lib/use-reduced-motion";
 
 const SITE_URL = "https://mygang.ai";
 const TILE_W = 64;
@@ -40,12 +41,14 @@ function MarqueeRow({
   // Render the tiles twice so the loop is seamless.
   const tiles = [...characterIds, ...characterIds];
   const offset = useSharedValue(0);
+  const reducedMotion = useReducedMotion();
 
   useEffect(() => {
     const total = characterIds.length * (TILE_W + TILE_GAP);
     const from = direction === "left" ? 0 : -total;
     const to = direction === "left" ? -total : 0;
     offset.value = from;
+    if (reducedMotion) return;
     offset.value = withRepeat(
       withTiming(to, {
         duration: MARQUEE_DURATION_MS,
@@ -54,7 +57,7 @@ function MarqueeRow({
       -1,
       false,
     );
-  }, [characterIds.length, direction, offset]);
+  }, [characterIds.length, direction, offset, reducedMotion]);
 
   const animatedStyle = useAnimatedStyle(() => ({
     transform: [{ translateX: offset.value }],
@@ -139,11 +142,17 @@ function MarqueeRow({
 function AnimatedGiftIcon() {
   const scale = useSharedValue(0);
   const rotate = useSharedValue(-20);
+  const reducedMotion = useReducedMotion();
 
   useEffect(() => {
+    if (reducedMotion) {
+      scale.value = 1;
+      rotate.value = 0;
+      return;
+    }
     scale.value = withDelay(100, withTiming(1, { duration: 380 }));
     rotate.value = withDelay(100, withTiming(0, { duration: 380 }));
-  }, [rotate, scale]);
+  }, [rotate, scale, reducedMotion]);
 
   const animatedStyle = useAnimatedStyle(() => ({
     transform: [{ scale: scale.value }, { rotate: `${rotate.value}deg` }],

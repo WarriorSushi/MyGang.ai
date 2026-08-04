@@ -2,13 +2,14 @@ import { Modal, Pressable, ScrollView, StyleSheet, Text, View } from "react-nati
 import { BlurView } from "expo-blur";
 import { Image } from "expo-image";
 import { X } from "lucide-react-native";
+import { useColorScheme } from "nativewind";
 import {
   resolveAvatarUrl,
   type AvatarStyle,
   type CharacterCatalogEntry,
 } from "@mygang/shared";
 
-const SITE_URL = "https://mygang.ai";
+import { SITE_URL } from "../../lib/config";
 
 type CharacterDetailModalProps = {
   character: CharacterCatalogEntry | null;
@@ -24,20 +25,31 @@ export function CharacterDetailModal({
   onClose,
 }: CharacterDetailModalProps) {
   const visible = character !== null;
+  const { colorScheme } = useColorScheme();
+  const isDark = colorScheme !== "light";
 
   return (
     <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
-      <Pressable className="flex-1" onPress={onClose}>
-        <BlurView intensity={20} tint="dark" style={StyleSheet.absoluteFill} />
-        <View className="absolute inset-0 bg-black/60" />
+      <View className="flex-1">
+        <Pressable
+          onPress={onClose}
+          style={StyleSheet.absoluteFill}
+          accessibilityRole="button"
+          accessibilityLabel="Close character details"
+        >
+          <BlurView
+            intensity={20}
+            tint={isDark ? "dark" : "light"}
+            style={StyleSheet.absoluteFill}
+          />
+          <View className={isDark ? "absolute inset-0 bg-black/60" : "absolute inset-0 bg-black/20"} />
+        </Pressable>
         <View className="flex-1 items-center justify-center px-6">
-          <Pressable
-            onPress={(e) => e.stopPropagation()}
-            className="w-full max-w-md overflow-hidden rounded-3xl border border-white/10"
+          <View
+            className="w-full max-w-md overflow-hidden rounded-3xl border border-border bg-card"
             style={{
-              backgroundColor: "rgba(7,12,20,0.95)",
               shadowColor: "#000",
-              shadowOpacity: 0.5,
+              shadowOpacity: isDark ? 0.5 : 0.18,
               shadowRadius: 32,
               shadowOffset: { width: 0, height: 16 },
               elevation: 16,
@@ -54,8 +66,9 @@ export function CharacterDetailModal({
                   />
                   <Pressable
                     onPress={onClose}
-                    className="absolute right-3 top-3 h-8 w-8 items-center justify-center rounded-full"
+                    className="absolute right-3 top-3 h-11 w-11 items-center justify-center rounded-full"
                     style={{ backgroundColor: "rgba(0,0,0,0.6)" }}
+                    accessibilityRole="button"
                     accessibilityLabel="Close character details"
                   >
                     <X size={16} color="#fff" strokeWidth={2.5} />
@@ -108,9 +121,9 @@ export function CharacterDetailModal({
                 </View>
               </ScrollView>
             ) : null}
-          </Pressable>
+          </View>
         </View>
-      </Pressable>
+      </View>
     </Modal>
   );
 }

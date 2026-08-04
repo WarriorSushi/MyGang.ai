@@ -13,7 +13,9 @@ const projectRoot = __dirname;
 const config = getDefaultConfig(projectRoot);
 
 // Watch the whole workspace so Metro picks up changes in packages/shared.
-config.watchFolders = [workspaceRoot];
+config.watchFolders = Array.from(
+  new Set([...(config.watchFolders ?? []), workspaceRoot]),
+);
 
 // Resolve modules from BOTH the project's and the workspace's node_modules.
 config.resolver.nodeModulesPaths = [
@@ -29,7 +31,5 @@ config.resolver.extraNodeModules = {
   react: path.resolve(workspaceRoot, "node_modules/react"),
   "react-dom": path.resolve(workspaceRoot, "node_modules/react-dom"),
 };
-
-config.resolver.disableHierarchicalLookup = true;
 
 module.exports = withNativeWind(config, { input: "./global.css" });

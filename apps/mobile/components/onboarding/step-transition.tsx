@@ -13,7 +13,7 @@ type StepTransitionProps = {
 /**
  * No-op pass-through. Onboarding step swaps render instantly without animation.
  * (Original implementation animated horizontal slide; removed per user feedback —
- * the springy side-to-side on every screen was excessive.)
+ * the side-to-side motion on every screen was excessive.)
  */
 export function StepTransition({
   stepKey,

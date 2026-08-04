@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { ActivityIndicator, ScrollView, Text, View, Alert } from "react-native";
+import { ActivityIndicator, Text, View, Alert } from "react-native";
 import { Link, useRouter } from "expo-router";
 import * as Linking from "expo-linking";
 import { useForm } from "react-hook-form";
@@ -16,6 +16,7 @@ import { PrimaryButton } from "../../components/primary-button";
 import { GlassCard } from "../../components/glass-card";
 import { EyebrowPill } from "../../components/eyebrow-pill";
 import { parseSupabaseHashParams } from "../../lib/deep-links";
+import { AuthScreenFrame } from "../../components/auth-screen-frame";
 
 export default function ResetPasswordScreen() {
   const router = useRouter();
@@ -36,9 +37,7 @@ export default function ResetPasswordScreen() {
   useEffect(() => {
     let mounted = true;
 
-    async function attachSession() {
-      const initialUrl = await Linking.getInitialURL();
-      const url = initialUrl ?? "";
+    async function attachSession(url: string) {
       const params = parseSupabaseHashParams(url);
       const accessToken = params.access_token;
       const refreshToken = params.refresh_token;
@@ -68,10 +67,18 @@ export default function ResetPasswordScreen() {
       setHasSession(true);
     }
 
-    attachSession();
+    Linking.getInitialURL().then((url) => {
+      if (!mounted) return;
+      void attachSession(url ?? "");
+    });
+
+    const sub = Linking.addEventListener("url", ({ url }) => {
+      void attachSession(url);
+    });
 
     return () => {
       mounted = false;
+      sub.remove();
     };
   }, [router]);
 
@@ -91,11 +98,7 @@ export default function ResetPasswordScreen() {
 
   if (done) {
     return (
-      <ScrollView
-        className="flex-1 bg-background"
-        contentContainerClassName="flex-grow justify-center px-5"
-        keyboardShouldPersistTaps="handled"
-      >
+      <AuthScreenFrame contentClassName="flex-grow justify-center px-5 py-8">
         <GlassCard>
           <View className="items-center">
             <View
@@ -119,17 +122,13 @@ export default function ResetPasswordScreen() {
             </Link>
           </View>
         </GlassCard>
-      </ScrollView>
+      </AuthScreenFrame>
     );
   }
 
   if (!hasSession) {
     return (
-      <ScrollView
-        className="flex-1 bg-background"
-        contentContainerClassName="flex-grow justify-center px-5"
-        keyboardShouldPersistTaps="handled"
-      >
+      <AuthScreenFrame contentClassName="flex-grow justify-center px-5 py-8">
         <GlassCard>
           <View className="items-center">
             <View
@@ -147,23 +146,19 @@ export default function ResetPasswordScreen() {
             </Text>
           </View>
         </GlassCard>
-      </ScrollView>
+      </AuthScreenFrame>
     );
   }
 
   return (
-    <ScrollView
-      className="flex-1 bg-background"
-      contentContainerClassName="flex-grow justify-center px-5 py-12"
-      keyboardShouldPersistTaps="handled"
-    >
+    <AuthScreenFrame>
       <GlassCard>
         <EyebrowPill label="NEW PASSWORD" tint="teal" icon={LockKeyhole} />
         <Text className="mt-3 text-3xl font-bold tracking-tight text-foreground">
           New password
         </Text>
         <Text className="mb-6 mt-1 text-muted-foreground">
-          Pick something you'll remember.
+          {"Pick something you'll remember."}
         </Text>
 
         <FormField
@@ -196,6 +191,6 @@ export default function ResetPasswordScreen() {
           />
         </View>
       </GlassCard>
-    </ScrollView>
+    </AuthScreenFrame>
   );
 }

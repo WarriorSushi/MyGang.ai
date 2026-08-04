@@ -8,8 +8,9 @@ import {
 import { ANDROID_SKU, type AndroidSku } from "@mygang/shared";
 
 import { supabase } from "./supabase";
+import { apiUrl } from "./config";
 
-const VERIFY_URL = "https://www.mygang.ai/api/billing/verify-android";
+const VERIFY_URL = apiUrl("billing/verify-android");
 
 const ANDROID_SKU_LIST: string[] = Object.values(ANDROID_SKU);
 

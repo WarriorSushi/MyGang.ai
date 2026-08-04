@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Alert, Linking, Platform, Pressable, ScrollView, Text, TextInput, View } from "react-native";
+import { Alert, Linking, Pressable, ScrollView, Text, TextInput, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Link, useRouter } from "expo-router";
 import { LinearGradient } from "expo-linear-gradient";
@@ -36,6 +36,8 @@ import {
 import { useAuth } from "../../lib/auth-context";
 import { supabase } from "../../lib/supabase";
 import { clearPersistedMessages } from "../../lib/chat-storage";
+import { SITE_URL, apiUrl } from "../../lib/config";
+import { openBillingPortal } from "../../lib/billing-portal";
 import { ConfirmDialog } from "../../components/confirm-dialog";
 import {
   getExpoPushToken,
@@ -141,6 +143,18 @@ export default function SettingsScreen() {
     (profile?.chat_wallpaper as ChatWallpaper) ?? "default";
   const currentChatMode: ChatMode =
     (profile?.chat_mode as ChatMode) ?? "gang_focus";
+  const personalizationLocked = tier === "free";
+
+  function openLockedPersonalization() {
+    Alert.alert(
+      "Unlock personalization",
+      "Wallpaper and custom character names unlock with Basic or Pro.",
+      [
+        { text: "Not now", style: "cancel" },
+        { text: "See plans", onPress: () => router.push("/(app)/pricing") },
+      ],
+    );
+  }
 
   async function updateProfileField(
     field: string,
@@ -148,6 +162,13 @@ export default function SettingsScreen() {
     label: string
   ) {
     if (!user) return;
+    if (
+      tier === "free" &&
+      (field === "chat_wallpaper" || field === "custom_character_names")
+    ) {
+      openLockedPersonalization();
+      return;
+    }
     setSavingField(field);
     const { error } = await supabase
       .from("profiles")
@@ -168,17 +189,8 @@ export default function SettingsScreen() {
     await supabase.auth.signOut();
   }
 
-  // Subscription management deep-link. On Android, jump straight to Google
-  // Play's subscription center (cancel/upgrade live there, not in our app).
-  // On other platforms, fall back to the web pricing page.
   function manageSubscription() {
-    if (Platform.OS === "android") {
-      void Linking.openURL(
-        "https://play.google.com/store/account/subscriptions?package=ai.mygang.app",
-      );
-    } else {
-      void Linking.openURL("https://mygang.ai/pricing");
-    }
+    void openBillingPortal();
   }
 
   async function submitChangeEmail() {
@@ -232,7 +244,9 @@ export default function SettingsScreen() {
       return;
     }
     await clearPersistedMessages(user.id);
-    Alert.alert("Chat cleared", "Your chat history has been deleted.");
+    Alert.alert("Chat cleared", "Your chat history has been deleted.", [
+      { text: "OK", onPress: () => router.replace("/(app)/chat") },
+    ]);
   }
 
   // Destructive: delete all memory rows for this user.
@@ -253,10 +267,22 @@ export default function SettingsScreen() {
   // Route gate redirects to /(app)/onboarding once onboarding_completed flips.
   async function runStartFresh() {
     if (!user) return;
+    const { data: userGangs, error: gangFetchError } = await supabase
+      .from("gangs")
+      .select("id")
+      .eq("user_id", user.id);
+    if (gangFetchError) {
+      Alert.alert("Could not start fresh", gangFetchError.message);
+      return;
+    }
+    const gangIds = (userGangs ?? []).map((gang) => gang.id);
     const purges = [
       supabase.from("chat_history").delete().eq("user_id", user.id),
       supabase.from("memories").delete().eq("user_id", user.id),
-      supabase.from("gang_members").delete().eq("user_id", user.id),
+      ...(gangIds.length > 0
+        ? [supabase.from("gang_members").delete().in("gang_id", gangIds)]
+        : []),
+      supabase.from("gangs").delete().eq("user_id", user.id),
     ];
     const results = await Promise.all(purges);
     const purgeError = results.find((r) => r.error)?.error;
@@ -300,7 +326,7 @@ export default function SettingsScreen() {
     }
     let response: Response;
     try {
-      response = await fetch("https://www.mygang.ai/api/account/delete", {
+      response = await fetch(apiUrl("account/delete"), {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -393,7 +419,9 @@ export default function SettingsScreen() {
                       setEmailOpen(true);
                       setEmailSentTo(null);
                     }}
-                    className="flex-row items-center gap-1.5 rounded-full border border-border bg-card px-3 py-1.5"
+                    className="min-h-11 flex-row items-center gap-1.5 rounded-full border border-border bg-card px-3 py-1.5"
+                    accessibilityRole="button"
+                    accessibilityLabel="Change email"
                   >
                     <Mail size={12} color="#a1a1aa" strokeWidth={2.5} />
                     <Text className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
@@ -420,16 +448,24 @@ export default function SettingsScreen() {
                         setEmailOpen(false);
                         setNewEmail("");
                       }}
-                      className="h-10 flex-1 items-center justify-center rounded-xl border border-border bg-card"
+                      className="min-h-11 flex-1 items-center justify-center rounded-xl border border-border bg-card"
+                      accessibilityRole="button"
+                      accessibilityLabel="Cancel email change"
                     >
                       <Text className="text-xs font-semibold text-muted-foreground">Cancel</Text>
                     </Pressable>
                     <Pressable
                       onPress={submitChangeEmail}
                       disabled={emailSubmitting || !newEmail.trim()}
-                      className={`h-10 flex-1 items-center justify-center rounded-xl ${
+                      className={`min-h-11 flex-1 items-center justify-center rounded-xl ${
                         emailSubmitting || !newEmail.trim() ? "bg-muted" : "bg-primary"
                       }`}
+                      accessibilityRole="button"
+                      accessibilityLabel="Send email change link"
+                      accessibilityState={{
+                        disabled: emailSubmitting || !newEmail.trim(),
+                        busy: emailSubmitting,
+                      }}
                     >
                       <Text
                         className={`text-xs font-bold uppercase tracking-wider ${
@@ -469,7 +505,9 @@ export default function SettingsScreen() {
                       setPasswordOpen(true);
                       setPasswordSuccess(false);
                     }}
-                    className="flex-row items-center gap-1.5 rounded-full border border-border bg-card px-3 py-1.5"
+                    className="min-h-11 flex-row items-center gap-1.5 rounded-full border border-border bg-card px-3 py-1.5"
+                    accessibilityRole="button"
+                    accessibilityLabel="Change password"
                   >
                     <Lock size={12} color="#a1a1aa" strokeWidth={2.5} />
                     <Text className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
@@ -504,16 +542,24 @@ export default function SettingsScreen() {
                         setNewPassword("");
                         setConfirmPassword("");
                       }}
-                      className="h-10 flex-1 items-center justify-center rounded-xl border border-border bg-card"
+                      className="min-h-11 flex-1 items-center justify-center rounded-xl border border-border bg-card"
+                      accessibilityRole="button"
+                      accessibilityLabel="Cancel password change"
                     >
                       <Text className="text-xs font-semibold text-muted-foreground">Cancel</Text>
                     </Pressable>
                     <Pressable
                       onPress={submitChangePassword}
                       disabled={passwordSubmitting || newPassword.length < 6}
-                      className={`h-10 flex-1 items-center justify-center rounded-xl ${
+                      className={`min-h-11 flex-1 items-center justify-center rounded-xl ${
                         passwordSubmitting || newPassword.length < 6 ? "bg-muted" : "bg-primary"
                       }`}
+                      accessibilityRole="button"
+                      accessibilityLabel="Save new password"
+                      accessibilityState={{
+                        disabled: passwordSubmitting || newPassword.length < 6,
+                        busy: passwordSubmitting,
+                      }}
                     >
                       <Text
                         className={`text-xs font-bold uppercase tracking-wider ${
@@ -544,6 +590,8 @@ export default function SettingsScreen() {
             <Pressable
               onPress={() => router.push("/(app)/pricing")}
               className="overflow-hidden rounded-3xl"
+              accessibilityRole="button"
+              accessibilityLabel="View plans"
             >
               <LinearGradient
                 colors={["rgba(62,221,192,0.18)", "rgba(213,109,181,0.10)"]}
@@ -562,7 +610,7 @@ export default function SettingsScreen() {
                     Unlock the full gang experience
                   </Text>
                   <Text className="mt-1 text-xs text-muted-foreground">
-                    You're on the free tier (25/hr, preview memory + light recall). The full vault opens up when you're ready.
+                    {"You're on the free tier (25/hr, preview memory + light recall). The full vault opens up when you're ready."}
                   </Text>
                   <View className="mt-3 gap-1">
                     <FeatureRow text="Higher message limits" />
@@ -607,7 +655,9 @@ export default function SettingsScreen() {
               </Text>
               <Pressable
                 onPress={manageSubscription}
-                className="mt-3 self-start rounded-full border border-primary/40 bg-primary/10 px-3 py-1.5"
+                className="mt-3 min-h-11 self-start justify-center rounded-full border border-primary/40 bg-primary/10 px-3 py-1.5"
+                accessibilityRole="button"
+                accessibilityLabel="Manage plan"
               >
                 <Text className="text-xs font-semibold text-primary">Manage plan →</Text>
               </Pressable>
@@ -673,7 +723,9 @@ export default function SettingsScreen() {
               ) : notifPermission === "denied" ? (
                 <Pressable
                   onPress={() => void Linking.openSettings()}
-                  className="flex-row items-center gap-1.5 rounded-full border border-border bg-card px-3 py-1.5"
+                  className="min-h-11 flex-row items-center justify-center gap-1.5 rounded-full border border-border bg-card px-3"
+                  accessibilityRole="button"
+                  accessibilityLabel="Open system notification settings"
                 >
                   <Text className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
                     Open Settings
@@ -683,9 +735,11 @@ export default function SettingsScreen() {
                 <Pressable
                   onPress={enableNotifications}
                   disabled={notifBusy}
-                  className={`rounded-full px-3 py-1.5 ${
+                  className={`min-h-11 justify-center rounded-full px-3 ${
                     notifBusy ? "bg-muted" : "bg-primary"
                   }`}
+                  accessibilityRole="button"
+                  accessibilityLabel="Enable notifications"
                 >
                   <Text
                     className={`text-[11px] font-bold uppercase tracking-wider ${
@@ -710,7 +764,7 @@ export default function SettingsScreen() {
           <View className="overflow-hidden rounded-3xl border border-border/50 bg-muted/40">
             <Link href="/(app)/edit-gang" asChild>
               <Pressable className="border-b border-border active:bg-muted/50">
-                <View className="flex-row items-center justify-between px-4 py-3">
+                <View className="min-h-[56px] flex-row items-center justify-between px-4 py-3">
                   <View className="flex-1">
                     <Text className="text-base text-foreground">Manage gang</Text>
                     <Text className="text-xs text-muted-foreground/70">
@@ -721,19 +775,43 @@ export default function SettingsScreen() {
                 </View>
               </Pressable>
             </Link>
-            <Link href="/(app)/custom-names" asChild>
-              <Pressable className="active:bg-muted/50">
-                <View className="flex-row items-center justify-between px-4 py-3">
+            {personalizationLocked ? (
+              <Pressable
+                onPress={openLockedPersonalization}
+                className="active:bg-muted/50"
+                accessibilityRole="button"
+                accessibilityLabel="Unlock custom names"
+              >
+                <View className="min-h-[56px] flex-row items-center justify-between px-4 py-3">
                   <View className="flex-1">
-                    <Text className="text-base text-foreground">Custom names</Text>
+                    <View className="flex-row items-center gap-2">
+                      <Text className="text-base text-muted-foreground/70">
+                        Custom names
+                      </Text>
+                      <Lock size={12} color="#71717a" strokeWidth={2.5} />
+                    </View>
                     <Text className="text-xs text-muted-foreground/70">
-                      Rename characters in your chat
+                      Unlock with Basic or Pro
                     </Text>
                   </View>
                   <Text className="text-muted-foreground/70">›</Text>
                 </View>
               </Pressable>
-            </Link>
+            ) : (
+              <Link href="/(app)/custom-names" asChild>
+                <Pressable className="active:bg-muted/50">
+                  <View className="min-h-[56px] flex-row items-center justify-between px-4 py-3">
+                    <View className="flex-1">
+                      <Text className="text-base text-foreground">Custom names</Text>
+                      <Text className="text-xs text-muted-foreground/70">
+                        Rename characters in your chat
+                      </Text>
+                    </View>
+                    <Text className="text-muted-foreground/70">›</Text>
+                  </View>
+                </Pressable>
+              </Link>
+            )}
           </View>
         </View>
 
@@ -761,9 +839,15 @@ export default function SettingsScreen() {
                       void updateProfileField("chat_mode", mode, label);
                     }}
                     disabled={savingField !== null}
-                    className={`flex-1 flex-row items-center justify-center gap-1.5 rounded-full py-2 ${
+                    className={`min-h-11 flex-1 flex-row items-center justify-center gap-1.5 rounded-full px-3 py-2 ${
                       isCurrent ? "bg-primary" : ""
                     }`}
+                    accessibilityRole="button"
+                    accessibilityLabel={`Use ${label} chat mode`}
+                    accessibilityState={{
+                      selected: isCurrent,
+                      disabled: savingField !== null,
+                    }}
                   >
                     <Text
                       className={`text-sm font-semibold ${
@@ -816,11 +900,17 @@ export default function SettingsScreen() {
                     )
                   }
                   disabled={savingField !== null}
-                  className={`flex-row items-center justify-between px-4 py-3 active:bg-muted/50 ${
+                  className={`min-h-11 flex-row items-center justify-between px-4 py-3 active:bg-muted/50 ${
                     index < AVATAR_STYLES.length - 1
                       ? "border-b border-border"
                       : ""
                   }`}
+                  accessibilityRole="button"
+                  accessibilityLabel={`Use ${STYLE_LABELS[style]} avatar pack`}
+                  accessibilityState={{
+                    selected: isCurrent,
+                    disabled: savingField !== null,
+                  }}
                 >
                   <Text className="text-base text-foreground">
                     {STYLE_LABELS[style]}
@@ -847,21 +937,46 @@ export default function SettingsScreen() {
               return (
                 <Pressable
                   key={w.id}
-                  onPress={() =>
-                    void updateProfileField("chat_wallpaper", w.id, w.label)
-                  }
+                  onPress={() => {
+                    if (personalizationLocked) {
+                      openLockedPersonalization();
+                      return;
+                    }
+                    void updateProfileField("chat_wallpaper", w.id, w.label);
+                  }}
                   disabled={savingField !== null}
-                  className={`px-4 py-3 active:bg-muted/50 ${
+                  className={`min-h-11 px-4 py-3 active:bg-muted/50 ${
                     idx < CHAT_WALLPAPERS.length - 1
                       ? "border-b border-border"
                       : ""
                   }`}
+                  accessibilityRole="button"
+                  accessibilityLabel={`Use ${w.label} wallpaper`}
+                  accessibilityState={{
+                    selected: isCurrent,
+                    disabled: savingField !== null,
+                  }}
                 >
                   <View className="flex-row items-center justify-between">
                     <View className="flex-1">
-                      <Text className="text-base text-foreground">{w.label}</Text>
+                      <View className="flex-row items-center gap-2">
+                        <Text
+                          className={`text-base ${
+                            personalizationLocked
+                              ? "text-muted-foreground/70"
+                              : "text-foreground"
+                          }`}
+                        >
+                          {w.label}
+                        </Text>
+                        {personalizationLocked ? (
+                          <Lock size={12} color="#71717a" strokeWidth={2.5} />
+                        ) : null}
+                      </View>
                       <Text className="text-xs text-muted-foreground/70">
-                        {w.description}
+                        {personalizationLocked
+                          ? "Unlock wallpapers with Basic or Pro"
+                          : w.description}
                       </Text>
                     </View>
                     {isCurrent ? (
@@ -883,8 +998,10 @@ export default function SettingsScreen() {
           </Text>
           <View className="overflow-hidden rounded-3xl border border-border/50 bg-muted/40">
             <Pressable
-              onPress={() => router.push("/(app)/onboarding")}
+              onPress={() => router.push("/(app)/onboarding?retake=true")}
               className="flex-row items-center justify-between gap-3 border-b border-border/40 px-5 py-4 active:bg-muted/30"
+              accessibilityRole="button"
+              accessibilityLabel="Retake vibe quiz"
             >
               <View className="flex-1">
                 <Text className="text-base font-semibold text-foreground">Retake Vibe Quiz</Text>
@@ -992,11 +1109,11 @@ export default function SettingsScreen() {
             Legal & Info
           </Text>
           <View className="overflow-hidden rounded-3xl border border-border/50 bg-muted/40">
-            <LegalRow icon={Info} label="About" url="https://mygang.ai/about" />
+            <LegalRow icon={Info} label="About" url={`${SITE_URL}/about`} />
             <View className="border-t border-border/40" />
-            <LegalRow icon={Shield} label="Privacy Policy" url="https://mygang.ai/privacy" />
+            <LegalRow icon={Shield} label="Privacy Policy" url={`${SITE_URL}/privacy`} />
             <View className="border-t border-border/40" />
-            <LegalRow icon={FileText} label="Terms of Service" url="https://mygang.ai/terms" />
+            <LegalRow icon={FileText} label="Terms of Service" url={`${SITE_URL}/terms`} />
           </View>
           <Text className="mt-4 text-center text-[10px] uppercase tracking-[0.18em] text-muted-foreground/50">
             MyGang.ai · v0.0.1
@@ -1103,6 +1220,9 @@ function DestructiveRow({
     <Pressable
       onPress={onPress}
       className="flex-row items-center justify-between gap-3 px-4 py-3 active:bg-destructive/10"
+      accessibilityRole="button"
+      accessibilityLabel={title}
+      accessibilityHint={subtitle}
     >
       <View className="flex-1">
         <Text className="text-sm font-semibold text-destructive">{title}</Text>
@@ -1130,7 +1250,9 @@ function LegalRow({
   return (
     <Pressable
       onPress={() => void Linking.openURL(url)}
-      className="flex-row items-center gap-3 px-5 py-3.5 active:bg-muted/30"
+      className="min-h-11 flex-row items-center gap-3 px-5 py-3.5 active:bg-muted/30"
+      accessibilityRole="link"
+      accessibilityLabel={label}
     >
       <Icon size={16} color="#a1a1aa" strokeWidth={2.4} />
       <Text className="flex-1 text-sm text-foreground">{label}</Text>

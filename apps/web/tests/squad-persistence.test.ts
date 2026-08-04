@@ -2,7 +2,7 @@
  * Run: pnpm exec tsx tests/squad-persistence.test.ts
  */
 
-import { persistGangMembership, SquadPersistenceError } from '@/lib/supabase/squad-persistence'
+import { persistGangMembership, SquadPersistenceError } from '@mygang/shared'
 
 function assert(condition: boolean, label: string) {
     if (!condition) {

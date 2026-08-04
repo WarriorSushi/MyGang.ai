@@ -1,5 +1,6 @@
 import { View, type ViewProps } from "react-native";
 import { BlurView } from "expo-blur";
+import { useColorScheme } from "nativewind";
 
 type GlassCardProps = ViewProps & {
   withShadow?: boolean;
@@ -15,6 +16,8 @@ export function GlassCard({
   style,
   ...rest
 }: GlassCardProps) {
+  const { colorScheme } = useColorScheme();
+  const isLight = colorScheme === "light";
   return (
     <View
       {...rest}
@@ -34,16 +37,20 @@ export function GlassCard({
         },
         style,
       ]}
-      className="border border-white/10"
+      className="border border-border"
     >
       <BlurView
-        intensity={40}
-        tint="dark"
+        intensity={isLight ? 28 : 40}
+        tint={isLight ? "light" : "dark"}
         experimentalBlurMethod="dimezisBlurView"
         style={{ flex: 1 }}
       >
         <View
-          style={{ backgroundColor: "rgba(7,12,20,0.74)" }}
+          style={{
+            backgroundColor: isLight
+              ? "rgba(255,255,255,0.82)"
+              : "rgba(7,12,20,0.74)",
+          }}
           className="p-6"
         >
           {children}

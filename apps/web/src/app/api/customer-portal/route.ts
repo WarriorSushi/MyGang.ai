@@ -1,4 +1,4 @@
-import { createClient } from '@/lib/supabase/server'
+import { createClientFromRequest } from '@/lib/supabase/server'
 import { rateLimit } from '@/lib/rate-limit'
 import { NextRequest, NextResponse } from 'next/server'
 import { CustomerPortal } from '@dodopayments/nextjs'
@@ -17,7 +17,7 @@ function getPortalHandler() {
 
 export async function GET(req: NextRequest) {
     // Always require authentication — never trust client-supplied customer_id
-    const supabase = await createClient()
+    const supabase = await createClientFromRequest(req)
     const { data: { user } } = await supabase.auth.getUser()
 
     if (!user) {
@@ -48,5 +48,13 @@ export async function GET(req: NextRequest) {
         headers: req.headers,
     })
 
-    return getPortalHandler()(newReq)
+    const portalResponse = await getPortalHandler()(newReq)
+    const wantsJson = req.headers.get('accept')?.includes('application/json')
+    const portalUrl = portalResponse.headers.get('location')
+
+    if (wantsJson && portalUrl) {
+        return NextResponse.json({ url: portalUrl })
+    }
+
+    return portalResponse
 }

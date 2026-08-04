@@ -887,7 +887,11 @@ async function handlePost(req: Request, routeSignal?: AbortSignal) {
         ) as [{ success: boolean; remaining: number; reset: number }, { success: boolean; remaining: number; reset: number } | null]
 
         if (!rate.success) {
+            const cooldownSeconds = Math.max(1, Math.ceil((rate.reset - Date.now()) / 1000))
             return Response.json({
+                error: "You're sending messages too fast. Give it a moment and try again.",
+                reason: 'rapid_requests',
+                cooldown_seconds: cooldownSeconds,
                 events: [{
                     type: 'message',
                     character: 'system',
@@ -925,6 +929,8 @@ async function handlePost(req: Request, routeSignal?: AbortSignal) {
                         const cooldownSeconds = Math.max(1, Math.ceil((tierRate.reset - Date.now()) / 1000))
                         if (tier === 'basic') {
                             return Response.json({
+                                error: "You've hit your hourly message limit. Try again soon or upgrade to Pro for unlimited.",
+                                reason: 'hourly_quota',
                                 events: [{
                                     type: 'message',
                                     character: 'system',
@@ -938,6 +944,8 @@ async function handlePost(req: Request, routeSignal?: AbortSignal) {
                             }, { status: 429 })
                         } else {
                             return Response.json({
+                                error: "You've reached your free message limit for this hour. Upgrade to keep chatting!",
+                                reason: 'hourly_quota',
                                 events: [{
                                     type: 'message',
                                     character: 'system',

@@ -3,10 +3,11 @@ import { Pressable, ScrollView, Text, View } from "react-native";
 import Animated, {
   useAnimatedStyle,
   useSharedValue,
-  withSpring,
+  withTiming,
 } from "react-native-reanimated";
 import type { VibeProfile } from "@mygang/shared";
 import { PrimaryButton } from "../primary-button";
+import { useReducedMotion } from "../../lib/use-reduced-motion";
 
 type QuestionKey = keyof VibeProfile;
 
@@ -75,6 +76,7 @@ type OptionButtonProps = {
 
 function OptionButton({ option, isSelected, onPress }: OptionButtonProps) {
   const scale = useSharedValue(1);
+  const reducedMotion = useReducedMotion();
 
   const animatedStyle = useAnimatedStyle(() => ({
     transform: [{ scale: scale.value }],
@@ -85,15 +87,20 @@ function OptionButton({ option, isSelected, onPress }: OptionButtonProps) {
       <Pressable
         onPress={onPress}
         onPressIn={() => {
-          scale.value = withSpring(0.98, { damping: 18, stiffness: 320 });
+          if (reducedMotion) return;
+          scale.value = withTiming(0.98, { duration: 90 });
         }}
         onPressOut={() => {
-          scale.value = withSpring(1, { damping: 16, stiffness: 260 });
+          if (reducedMotion) return;
+          scale.value = withTiming(1, { duration: 120 });
         }}
         style={isSelected ? SELECTED_TINT : undefined}
-        className={`flex-row items-center gap-3 rounded-2xl border px-4 py-3 ${
+        className={`min-h-11 flex-row items-center gap-3 rounded-2xl border px-4 py-3 ${
           isSelected ? "border-primary/40" : "border-border bg-card"
         }`}
+        accessibilityRole="button"
+        accessibilityLabel={option.label}
+        accessibilityState={{ selected: isSelected }}
       >
         <View className="h-9 w-9 items-center justify-center rounded-xl bg-muted">
           <Text className="text-lg">{option.emoji}</Text>
@@ -165,7 +172,9 @@ export function VibeQuizStep({ onNext }: VibeQuizStepProps) {
               {currentIndex > 0 ? (
                 <Pressable
                   onPress={() => jumpTo(currentIndex - 1)}
-                  className="rounded-full border border-border bg-card px-3 py-1.5"
+                  className="min-h-11 justify-center rounded-full border border-border bg-card px-3 py-1.5"
+                  accessibilityRole="button"
+                  accessibilityLabel="Previous question"
                 >
                   <Text className="text-xs font-semibold text-muted-foreground">
                     ← Back
@@ -203,15 +212,17 @@ export function VibeQuizStep({ onNext }: VibeQuizStepProps) {
                   Review
                 </Text>
                 <Text className="mt-1.5 text-2xl font-black text-foreground">
-                  You're all set
+                  {"You're all set"}
                 </Text>
                 <Text className="mt-1 text-sm text-muted-foreground">
-                  We'll use these answers to build your first crew.
+                  {"We'll use these answers to build your first crew."}
                 </Text>
               </View>
               <Pressable
                 onPress={() => jumpTo(QUESTIONS.length - 1)}
-                className="rounded-full border border-border bg-card px-3 py-1.5"
+                className="min-h-11 justify-center rounded-full border border-border bg-card px-3 py-1.5"
+                accessibilityRole="button"
+                accessibilityLabel="Previous question"
               >
                 <Text className="text-xs font-semibold text-muted-foreground">
                   ← Back
@@ -243,7 +254,9 @@ export function VibeQuizStep({ onNext }: VibeQuizStepProps) {
                     </View>
                     <Pressable
                       onPress={() => jumpTo(index)}
-                      className="rounded-full border border-border bg-card px-3 py-1.5"
+                      className="min-h-11 justify-center rounded-full border border-border bg-card px-3 py-1.5"
+                      accessibilityRole="button"
+                      accessibilityLabel={`Edit ${question.reviewLabel}`}
                     >
                       <Text className="text-xs font-semibold text-muted-foreground">
                         Edit

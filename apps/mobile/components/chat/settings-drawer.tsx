@@ -2,7 +2,6 @@ import { useState } from "react";
 import {
   Alert,
   Dimensions,
-  type GestureResponderEvent,
   Modal,
   Pressable,
   ScrollView,
@@ -18,8 +17,6 @@ import Animated, {
   SlideInRight,
   SlideOutRight,
 } from "react-native-reanimated";
-
-const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
 import {
   ArrowRight,
   Check,
@@ -29,13 +26,16 @@ import {
   Image as ImageIcon,
   Lock,
   LogOut,
+  Moon,
   Sparkles,
+  Sun,
   Tag,
   Trash2,
   Users,
   X,
   type LucideIcon,
 } from "lucide-react-native";
+import { useColorScheme } from "nativewind";
 import {
   AVATAR_STYLES,
   CHAT_WALLPAPERS,
@@ -83,7 +83,8 @@ type SettingsDrawerProps = {
 
 export function SettingsDrawer({ visible, onClose }: SettingsDrawerProps) {
   const router = useRouter();
-  const { user, profile, refreshProfile } = useAuth();
+  const { user, profile, refreshProfile, applyProfilePatch } = useAuth();
+  const { colorScheme, setColorScheme } = useColorScheme();
   const [savingField, setSavingField] = useState<string | null>(null);
   const [signOutOpen, setSignOutOpen] = useState(false);
   const [subPanel, setSubPanel] = useState<"wallpaper" | "avatar-pack" | null>(
@@ -98,11 +99,18 @@ export function SettingsDrawer({ visible, onClose }: SettingsDrawerProps) {
     (profile?.chat_wallpaper as ChatWallpaper) ?? "default";
   const currentChatMode: ChatMode =
     (profile?.chat_mode as ChatMode) ?? "gang_focus";
+  const currentTheme = colorScheme === "light" ? "light" : "dark";
+  const personalizationLocked = tier === "free";
+
+  function openLockedPersonalization() {
+    navigate("/(app)/pricing");
+  }
+
   async function updateProfileField(
     field: string,
     value: string | boolean,
-  ) {
-    if (!user) return;
+  ): Promise<boolean> {
+    if (!user) return false;
     setSavingField(field);
     const { error } = await supabase
       .from("profiles")
@@ -111,9 +119,23 @@ export function SettingsDrawer({ visible, onClose }: SettingsDrawerProps) {
     setSavingField(null);
     if (error) {
       Alert.alert("Could not save", error.message);
-      return;
+      return false;
     }
+    applyProfilePatch({ [field]: value } as never);
     await refreshProfile();
+    return true;
+  }
+
+  async function updateTheme(nextTheme: "light" | "dark") {
+    if (nextTheme === currentTheme || savingField !== null) return;
+    const previousTheme = currentTheme;
+    applyProfilePatch({ theme: nextTheme });
+    setColorScheme(nextTheme);
+    const saved = await updateProfileField("theme", nextTheme);
+    if (!saved) {
+      applyProfilePatch({ theme: previousTheme });
+      setColorScheme(previousTheme);
+    }
   }
 
   async function signOut() {
@@ -125,9 +147,13 @@ export function SettingsDrawer({ visible, onClose }: SettingsDrawerProps) {
     setSignOutOpen(true);
   }
 
-  function navigate(path: string) {
-    onClose();
+  function closeDrawer() {
     setSubPanel(null);
+    onClose();
+  }
+
+  function navigate(path: string) {
+    closeDrawer();
     router.push(path as never);
   }
 
@@ -145,19 +171,28 @@ export function SettingsDrawer({ visible, onClose }: SettingsDrawerProps) {
       visible={visible}
       transparent
       animationType="none"
-      onRequestClose={onClose}
+      onRequestClose={closeDrawer}
     >
-      <Pressable className="flex-1" onPress={onClose}>
-        <Animated.View
-          entering={FadeIn.duration(180)}
-          style={[StyleSheet.absoluteFill, { backgroundColor: "rgba(0,0,0,0.6)" }]}
-        />
+      <View className="flex-1">
+        <Pressable
+          onPress={closeDrawer}
+          style={StyleSheet.absoluteFill}
+          accessibilityRole="button"
+          accessibilityLabel="Close settings"
+        >
+          <Animated.View
+            entering={FadeIn.duration(180)}
+            style={[
+              StyleSheet.absoluteFill,
+              { backgroundColor: "rgba(0,0,0,0.6)" },
+            ]}
+          />
+        </Pressable>
 
-        <AnimatedPressable
-          entering={SlideInRight.duration(220).springify().damping(22)}
-          onPress={(e: GestureResponderEvent) => e.stopPropagation()}
-          className="absolute bottom-0 right-0 top-0 overflow-hidden border-l border-border"
-          style={{ width: DRAWER_WIDTH, backgroundColor: "#0c1220" }}
+        <Animated.View
+          entering={SlideInRight.duration(220)}
+          style={{ width: DRAWER_WIDTH }}
+          className="absolute bottom-0 right-0 top-0 overflow-hidden border-l border-border bg-background"
         >
           {/* Header */}
           <View className="border-b border-border px-5 pt-14 pb-4">
@@ -190,8 +225,8 @@ export function SettingsDrawer({ visible, onClose }: SettingsDrawerProps) {
                 </View>
               </View>
               <Pressable
-                onPress={onClose}
-                className="h-8 w-8 items-center justify-center rounded-full active:bg-card"
+                onPress={closeDrawer}
+                className="h-11 w-11 items-center justify-center rounded-full active:bg-card"
                 accessibilityLabel="Close settings"
               >
                 <X size={20} color="#a1a1aa" strokeWidth={2.4} />
@@ -199,13 +234,15 @@ export function SettingsDrawer({ visible, onClose }: SettingsDrawerProps) {
             </View>
           </View>
 
-          <ScrollView contentContainerClassName="pb-12">
+          <ScrollView className="flex-1" contentContainerClassName="pb-12">
             {/* Promo / Pro status card */}
             <View>
               {tier === "free" ? (
                 <Pressable
                   onPress={() => navigate("/(app)/pricing")}
                   className="mt-4 mx-4 overflow-hidden rounded-3xl"
+                  accessibilityRole="button"
+                  accessibilityLabel="See plans"
                 >
                   <LinearGradient
                     colors={[
@@ -315,9 +352,19 @@ export function SettingsDrawer({ visible, onClose }: SettingsDrawerProps) {
                           void updateProfileField("chat_mode", mode);
                         }}
                         disabled={savingField !== null && !isLocked}
-                        className={`flex-1 flex-row items-center justify-center gap-1.5 rounded-full py-2 ${
+                        className={`min-h-11 flex-1 flex-row items-center justify-center gap-1.5 rounded-full py-2 ${
                           isCurrent ? "bg-primary" : ""
                         }`}
+                        accessibilityRole="button"
+                        accessibilityLabel={
+                          mode === "gang_focus"
+                            ? "Use gang focus mode"
+                            : "Use ecosystem mode"
+                        }
+                        accessibilityState={{
+                          selected: isCurrent,
+                          disabled: savingField !== null && !isLocked,
+                        }}
                       >
                         <Text
                           className={`text-sm font-semibold ${
@@ -354,6 +401,45 @@ export function SettingsDrawer({ visible, onClose }: SettingsDrawerProps) {
 
             {/* Preferences */}
             <View>
+              <Section title="Appearance">
+                <View className="m-3 flex-row rounded-full bg-muted p-1">
+                  {(["dark", "light"] as const).map((theme) => {
+                    const isCurrent = currentTheme === theme;
+                    const Icon = theme === "dark" ? Moon : Sun;
+                    return (
+                      <Pressable
+                        key={theme}
+                        onPress={() => void updateTheme(theme)}
+                        disabled={savingField !== null}
+                        className={`min-h-11 flex-1 flex-row items-center justify-center gap-2 rounded-full px-3 ${
+                          isCurrent ? "bg-primary" : ""
+                        }`}
+                        accessibilityRole="button"
+                        accessibilityState={{ selected: isCurrent }}
+                        accessibilityLabel={`Use ${theme} mode`}
+                      >
+                        <Icon
+                          size={14}
+                          color={isCurrent ? "#1a1d24" : "#a1a1aa"}
+                          strokeWidth={2.4}
+                        />
+                        <Text
+                          className={`text-sm font-semibold capitalize ${
+                            isCurrent
+                              ? "text-primary-foreground"
+                              : "text-foreground"
+                          }`}
+                        >
+                          {theme}
+                        </Text>
+                      </Pressable>
+                    );
+                  })}
+                </View>
+              </Section>
+            </View>
+
+            <View>
               <Section title="Preferences">
                 <ToggleRow
                   label="Low-cost mode"
@@ -375,10 +461,17 @@ export function SettingsDrawer({ visible, onClose }: SettingsDrawerProps) {
                   iconColor="#7dd3fc"
                   title="Wallpaper"
                   subtitle={
-                    CHAT_WALLPAPERS.find((w) => w.id === currentWallpaper)
-                      ?.label ?? "Default"
+                    personalizationLocked
+                      ? "Unlock with Basic or Pro"
+                      : CHAT_WALLPAPERS.find((w) => w.id === currentWallpaper)
+                          ?.label ?? "Default"
                   }
-                  onPress={() => setSubPanel("wallpaper")}
+                  locked={personalizationLocked}
+                  onPress={() =>
+                    personalizationLocked
+                      ? openLockedPersonalization()
+                      : setSubPanel("wallpaper")
+                  }
                 />
                 <View className="border-t border-border" />
                 <IconRow
@@ -404,8 +497,17 @@ export function SettingsDrawer({ visible, onClose }: SettingsDrawerProps) {
                   iconTint="rgba(245,158,11,0.18)"
                   iconColor="#fbbf24"
                   title="Custom names"
-                  subtitle="Rename characters in your chat"
-                  onPress={() => navigate("/(app)/custom-names")}
+                  subtitle={
+                    personalizationLocked
+                      ? "Unlock with Basic or Pro"
+                      : "Rename characters in your chat"
+                  }
+                  locked={personalizationLocked}
+                  onPress={() =>
+                    personalizationLocked
+                      ? openLockedPersonalization()
+                      : navigate("/(app)/custom-names")
+                  }
                 />
               </Section>
             </View>
@@ -453,13 +555,13 @@ export function SettingsDrawer({ visible, onClose }: SettingsDrawerProps) {
             <Animated.View
               entering={SlideInRight.duration(200)}
               exiting={SlideOutRight.duration(200)}
-              className="absolute inset-0"
-              style={{ backgroundColor: "#0c1220" }}
+              className="absolute inset-0 bg-background"
             >
               <View className="flex-row items-center gap-3 border-b border-border px-4 pt-14 pb-3">
                 <Pressable
                   onPress={() => setSubPanel(null)}
-                  className="h-8 w-8 items-center justify-center rounded-full active:bg-card"
+                  className="h-11 w-11 items-center justify-center rounded-full active:bg-card"
+                  accessibilityRole="button"
                   accessibilityLabel="Back"
                 >
                   <ChevronLeft
@@ -472,7 +574,7 @@ export function SettingsDrawer({ visible, onClose }: SettingsDrawerProps) {
                   Wallpaper
                 </Text>
               </View>
-              <ScrollView contentContainerClassName="px-4 py-4">
+              <ScrollView className="flex-1" contentContainerClassName="px-4 py-4">
                 {CHAT_WALLPAPERS.map((w) => {
                   const isCurrent = currentWallpaper === w.id;
                   return (
@@ -483,6 +585,12 @@ export function SettingsDrawer({ visible, onClose }: SettingsDrawerProps) {
                       }
                       disabled={savingField !== null}
                       className="mb-2 flex-row items-center gap-3 rounded-2xl border border-border bg-card-translucent px-3 py-3"
+                      accessibilityRole="button"
+                      accessibilityLabel={`Use ${w.label} wallpaper`}
+                      accessibilityState={{
+                        selected: isCurrent,
+                        disabled: savingField !== null,
+                      }}
                     >
                       <View className="h-12 w-9 overflow-hidden rounded-lg">
                         <LinearGradient
@@ -521,13 +629,13 @@ export function SettingsDrawer({ visible, onClose }: SettingsDrawerProps) {
             <Animated.View
               entering={SlideInRight.duration(200)}
               exiting={SlideOutRight.duration(200)}
-              className="absolute inset-0"
-              style={{ backgroundColor: "#0c1220" }}
+              className="absolute inset-0 bg-background"
             >
               <View className="flex-row items-center gap-3 border-b border-border px-4 pt-14 pb-3">
                 <Pressable
                   onPress={() => setSubPanel(null)}
-                  className="h-8 w-8 items-center justify-center rounded-full active:bg-card"
+                  className="h-11 w-11 items-center justify-center rounded-full active:bg-card"
+                  accessibilityRole="button"
                   accessibilityLabel="Back"
                 >
                   <ChevronLeft
@@ -540,7 +648,7 @@ export function SettingsDrawer({ visible, onClose }: SettingsDrawerProps) {
                   Avatar pack
                 </Text>
               </View>
-              <ScrollView contentContainerClassName="px-4 py-4">
+              <ScrollView className="flex-1" contentContainerClassName="px-4 py-4">
                 {AVATAR_STYLES.map((style) => {
                   const isCurrent = currentStyle === style;
                   return (
@@ -554,6 +662,12 @@ export function SettingsDrawer({ visible, onClose }: SettingsDrawerProps) {
                       }
                       disabled={savingField !== null}
                       className="mb-2 flex-row items-center gap-3 rounded-2xl border border-border bg-card-translucent px-4 py-3"
+                      accessibilityRole="button"
+                      accessibilityLabel={`Use ${STYLE_LABELS[style]} avatar pack`}
+                      accessibilityState={{
+                        selected: isCurrent,
+                        disabled: savingField !== null,
+                      }}
                     >
                       <View
                         className="h-9 w-9 items-center justify-center rounded-full"
@@ -602,8 +716,8 @@ export function SettingsDrawer({ visible, onClose }: SettingsDrawerProps) {
             }}
             onCancel={() => setSignOutOpen(false)}
           />
-        </AnimatedPressable>
-      </Pressable>
+        </Animated.View>
+      </View>
     </Modal>
   );
 }
@@ -634,6 +748,7 @@ function IconRow({
   title,
   subtitle,
   onPress,
+  locked = false,
 }: {
   icon: LucideIcon;
   iconTint: string;
@@ -641,11 +756,15 @@ function IconRow({
   title: string;
   subtitle?: string;
   onPress: () => void;
+  locked?: boolean;
 }) {
   return (
     <Pressable
       onPress={onPress}
-      className="flex-row items-center gap-3 px-4 py-3 active:bg-muted/30"
+      className="min-h-11 flex-row items-center gap-3 px-4 py-3 active:bg-muted/30"
+      accessibilityRole="button"
+      accessibilityLabel={title}
+      accessibilityHint={subtitle}
     >
       <View
         className="h-9 w-9 items-center justify-center rounded-full"
@@ -654,7 +773,12 @@ function IconRow({
         <Icon size={16} color={iconColor} strokeWidth={2.4} />
       </View>
       <View className="flex-1">
-        <Text className="text-base text-foreground">{title}</Text>
+        <View className="flex-row items-center gap-2">
+          <Text className={locked ? "text-base text-muted-foreground/70" : "text-base text-foreground"}>
+            {title}
+          </Text>
+          {locked ? <Lock size={12} color="#71717a" strokeWidth={2.5} /> : null}
+        </View>
         {subtitle ? (
           <Text className="text-xs text-muted-foreground/70">{subtitle}</Text>
         ) : null}

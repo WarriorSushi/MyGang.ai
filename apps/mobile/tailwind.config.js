@@ -17,6 +17,7 @@
  *   --destructive     oklch(0.704 0.191 22.216) → #ec5e5e
  */
 module.exports = {
+  darkMode: "class",
   content: [
     "./app/**/*.{js,jsx,ts,tsx}",
     "./components/**/*.{js,jsx,ts,tsx}",
@@ -25,24 +26,24 @@ module.exports = {
   theme: {
     extend: {
       colors: {
-        background: "#161924",
-        foreground: "#f3f5f9",
-        card: "#23272f",
-        "card-translucent": "rgba(35, 39, 47, 0.82)",
-        popover: "#1d212a",
-        "popover-foreground": "#f3f5f9",
-        primary: "#3eddc0",
-        "primary-foreground": "#1a1d24",
-        secondary: "#2b3041",
-        "secondary-foreground": "#f3f5f9",
-        muted: "#232732",
-        "muted-foreground": "#b8bcc4",
-        accent: "#d56db5",
-        "accent-foreground": "#f3f5f9",
-        destructive: "#ec5e5e",
-        border: "rgba(255,255,255,0.16)",
-        input: "rgba(255,255,255,0.20)",
-        ring: "#3eddc0",
+        background: "rgb(var(--background) / <alpha-value>)",
+        foreground: "rgb(var(--foreground) / <alpha-value>)",
+        card: "rgb(var(--card) / <alpha-value>)",
+        "card-translucent": "rgba(var(--card-translucent), 0.82)",
+        popover: "rgb(var(--popover) / <alpha-value>)",
+        "popover-foreground": "rgb(var(--popover-foreground) / <alpha-value>)",
+        primary: "rgb(var(--primary) / <alpha-value>)",
+        "primary-foreground": "rgb(var(--primary-foreground) / <alpha-value>)",
+        secondary: "rgb(var(--secondary) / <alpha-value>)",
+        "secondary-foreground": "rgb(var(--secondary-foreground) / <alpha-value>)",
+        muted: "rgb(var(--muted) / <alpha-value>)",
+        "muted-foreground": "rgb(var(--muted-foreground) / <alpha-value>)",
+        accent: "rgb(var(--accent) / <alpha-value>)",
+        "accent-foreground": "rgb(var(--accent-foreground) / <alpha-value>)",
+        destructive: "rgb(var(--destructive) / <alpha-value>)",
+        border: "rgb(var(--border) / <alpha-value>)",
+        input: "rgb(var(--input) / <alpha-value>)",
+        ring: "rgb(var(--ring) / <alpha-value>)",
         // Brand gradients (used for hero text via <Text> with text-primary then accent)
         "brand-from": "#3eddc0",
         "brand-to": "#d56db5",

@@ -1,12 +1,12 @@
 import { memo, useMemo } from "react";
 import { Pressable, Text, View } from "react-native";
 import { Image } from "expo-image";
-import { Heart, Reply } from "lucide-react-native";
+import { Heart, RefreshCcw, Reply } from "lucide-react-native";
+import { useColorScheme } from "nativewind";
 import {
   resolveAvatarUrl,
   type AvatarStyle,
   type Character,
-  type CharacterCatalogEntry,
 } from "@mygang/shared";
 
 import { bubbleBgForCharacter, personaNameColor } from "../../lib/bubble-colors";
@@ -23,6 +23,9 @@ export type ChatMessage = {
   created_at: string;
   reaction?: string;
   replyToId?: string;
+  source?: "chat" | "wywa" | "system";
+  deliveryStatus?: "sending" | "sent" | "failed";
+  deliveryError?: string;
 };
 
 type MessageItemProps = {
@@ -36,28 +39,11 @@ type MessageItemProps = {
   onLongPress?: () => void;
   onReactPress?: (message: ChatMessage, emoji: string) => void;
   onReplyPress?: (message: ChatMessage) => void;
+  onRetryPress?: (message: ChatMessage) => void;
   quotedMessage?: ChatMessage | null;
-  characters?: CharacterCatalogEntry[];
-  customNames?: Record<string, string>;
+  quotedSpeakerColor?: string | null;
+  quotedSpeakerName?: string | null;
 };
-
-function getQuotedSpeakerColor(
-  msg: ChatMessage,
-  characters: CharacterCatalogEntry[] | undefined,
-): string {
-  if (msg.speaker === "user") return "#3eddc0";
-  return characters?.find((c) => c.id === msg.speaker)?.color ?? "#a1a1aa";
-}
-
-function getQuotedSpeakerName(
-  msg: ChatMessage,
-  characters: CharacterCatalogEntry[] | undefined,
-  customNames?: Record<string, string>,
-): string {
-  if (msg.speaker === "user") return "You";
-  const char = characters?.find((c) => c.id === msg.speaker);
-  return customNames?.[msg.speaker] ?? char?.name ?? msg.speaker;
-}
 
 const ROUND = 18;
 const TIGHT = 5;
@@ -171,10 +157,13 @@ function MessageItemBase({
   onLongPress,
   onReactPress,
   onReplyPress,
+  onRetryPress,
   quotedMessage,
-  characters,
-  customNames,
+  quotedSpeakerColor,
+  quotedSpeakerName,
 }: MessageItemProps) {
+  const { colorScheme } = useColorScheme();
+  const scheme = colorScheme === "light" ? "light" : "dark";
   const radii = useMemo(
     () => getBubbleRadii(groupPosition, isUser),
     [groupPosition, isUser],
@@ -191,13 +180,11 @@ function MessageItemBase({
     [message.created_at],
   );
   const isHearted = message.reaction === HEART_EMOJI;
+  const isFailed = message.deliveryStatus === "failed";
+  const isSending = message.deliveryStatus === "sending";
 
-  const quotedColor = quotedMessage
-    ? getQuotedSpeakerColor(quotedMessage, characters)
-    : null;
-  const quotedName = quotedMessage
-    ? getQuotedSpeakerName(quotedMessage, characters, customNames)
-    : null;
+  const quotedColor = quotedMessage ? quotedSpeakerColor : null;
+  const quotedName = quotedMessage ? quotedSpeakerName : null;
   const quotedBlock =
     quotedMessage && quotedColor && quotedName ? (
       <View
@@ -226,12 +213,7 @@ function MessageItemBase({
     onReactPress(message, isHearted ? "" : HEART_EMOJI);
   };
   const handleReplyPress = () => {
-    if (onReplyPress) {
-      onReplyPress(message);
-      return;
-    }
-    // eslint-disable-next-line no-console
-    console.warn("[MessageItem] reply pressed but onReplyPress not wired", message.id);
+    onReplyPress?.(message);
   };
 
   const inlineActionsRow = (
@@ -240,8 +222,7 @@ function MessageItemBase({
     >
       <Pressable
         onPress={handleHeartPress}
-        hitSlop={8}
-        className="active:opacity-60"
+        className="h-11 w-11 items-center justify-center rounded-full active:bg-muted/50"
         accessibilityRole="button"
         accessibilityLabel={isHearted ? "Remove heart" : "Heart message"}
       >
@@ -253,8 +234,7 @@ function MessageItemBase({
       </Pressable>
       <Pressable
         onPress={handleReplyPress}
-        hitSlop={8}
-        className="active:opacity-60"
+        className="h-11 w-11 items-center justify-center rounded-full active:bg-muted/50"
         accessibilityRole="button"
         accessibilityLabel="Reply"
       >
@@ -270,10 +250,18 @@ function MessageItemBase({
           onLongPress={onLongPress}
           delayLongPress={350}
           style={radii}
-          className="max-w-[80%] bg-primary px-4 py-2 active:opacity-90"
+          className={`max-w-[80%] px-4 py-2 active:opacity-90 ${
+            isSending ? "bg-muted" : "bg-primary"
+          }`}
         >
           {quotedBlock}
-          <Text className="text-base text-primary-foreground">{message.content}</Text>
+          <Text
+            className={`text-base ${
+              isSending ? "text-muted-foreground" : "text-primary-foreground"
+            }`}
+          >
+            {message.content}
+          </Text>
           {message.reaction ? (
             <Text className="mt-1 text-base">{message.reaction}</Text>
           ) : null}
@@ -290,6 +278,32 @@ function MessageItemBase({
             </>
           ) : null}
         </View>
+        {isSending ? (
+          <Text className="mt-1 px-1 text-[10px] text-muted-foreground/70">
+            Sending...
+          </Text>
+        ) : null}
+        {isFailed ? (
+          <View className="mt-1 flex-row items-center gap-2 px-1">
+            <Text
+              className="flex-1 text-[10px] text-destructive"
+              numberOfLines={1}
+            >
+              {message.deliveryError ?? "Failed to send"}
+            </Text>
+            <Pressable
+              onPress={() => onRetryPress?.(message)}
+              className="min-h-11 flex-row items-center gap-1 rounded-full border border-destructive/30 px-3 active:bg-destructive/10"
+              accessibilityRole="button"
+              accessibilityLabel="Retry failed message"
+            >
+              <RefreshCcw size={12} color="#f87171" strokeWidth={2.5} />
+              <Text className="text-[10px] font-bold uppercase tracking-wider text-destructive">
+                Retry
+              </Text>
+            </Pressable>
+          </View>
+        ) : null}
       </View>
     );
   }
@@ -298,8 +312,8 @@ function MessageItemBase({
   const avatarUrl = character
     ? `${SITE_URL}${resolveAvatarUrl(character.id, avatarStyle)}`
     : undefined;
-  const bubbleBg = bubbleBgForCharacter(character?.color);
-  const nameColor = personaNameColor(character?.color);
+  const bubbleBg = bubbleBgForCharacter(character?.color, scheme);
+  const nameColor = personaNameColor(character?.color, scheme);
   const avatarBgColor = character?.color ?? "#555";
   const showHeader = !isContinued; // first or single
   const showAvatar = showHeader; // hide on middle/last
@@ -377,6 +391,9 @@ function arePropsEqual(prev: MessageItemProps, next: MessageItemProps): boolean 
   if (prev.message.content !== next.message.content) return false;
   if (prev.message.reaction !== next.message.reaction) return false;
   if (prev.message.replyToId !== next.message.replyToId) return false;
+  if (prev.message.source !== next.message.source) return false;
+  if (prev.message.deliveryStatus !== next.message.deliveryStatus) return false;
+  if (prev.message.deliveryError !== next.message.deliveryError) return false;
   if (prev.message.created_at !== next.message.created_at) return false;
   if (prev.groupPosition !== next.groupPosition) return false;
   if (prev.isContinued !== next.isContinued) return false;
@@ -390,6 +407,8 @@ function arePropsEqual(prev: MessageItemProps, next: MessageItemProps): boolean 
   if (prevQ?.id !== nextQ?.id) return false;
   if (prevQ?.content !== nextQ?.content) return false;
   if (prevQ?.speaker !== nextQ?.speaker) return false;
+  if (prev.quotedSpeakerColor !== next.quotedSpeakerColor) return false;
+  if (prev.quotedSpeakerName !== next.quotedSpeakerName) return false;
   return true;
 }
 

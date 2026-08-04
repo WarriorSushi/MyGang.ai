@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { memo, useEffect, useRef, useState } from "react";
 import { Pressable, TextInput, View, Text } from "react-native";
 import { ArrowRight, X } from "lucide-react-native";
 
@@ -14,25 +14,50 @@ export type ReplyTargetChip = {
 
 type ChatInputProps = {
   onSend: (text: string) => void;
-  disabled?: boolean;
+  isSending?: boolean;
+  sendBlocked?: boolean;
   replyTarget?: ReplyTargetChip | null;
   onCancelReply?: () => void;
+  cooldownPlaceholder?: string | null;
 };
 
-export function ChatInput({
+function ChatInputBase({
   onSend,
-  disabled = false,
+  isSending = false,
+  sendBlocked = false,
   replyTarget = null,
   onCancelReply,
+  cooldownPlaceholder = null,
 }: ChatInputProps) {
   const [text, setText] = useState("");
+  const [showWaitNotice, setShowWaitNotice] = useState(false);
+  const waitNoticeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const trimmed = text.trim();
-  const canSend = trimmed.length > 0 && !disabled;
+  const canSend = trimmed.length > 0 && !isSending && !sendBlocked;
   const showCounter = text.length >= COUNTER_THRESHOLD;
   const remaining = MAX_LEN - text.length;
 
+  useEffect(() => {
+    return () => {
+      if (waitNoticeTimerRef.current) clearTimeout(waitNoticeTimerRef.current);
+    };
+  }, []);
+
+  function showPreviousMessageNotice() {
+    setShowWaitNotice(true);
+    if (waitNoticeTimerRef.current) clearTimeout(waitNoticeTimerRef.current);
+    waitNoticeTimerRef.current = setTimeout(() => {
+      waitNoticeTimerRef.current = null;
+      setShowWaitNotice(false);
+    }, 2200);
+  }
+
   function handleSend() {
-    if (!canSend) return;
+    if (!trimmed || sendBlocked) return;
+    if (isSending) {
+      showPreviousMessageNotice();
+      return;
+    }
     onSend(trimmed);
     setText("");
   }
@@ -60,8 +85,7 @@ export function ChatInput({
           </View>
           <Pressable
             onPress={onCancelReply}
-            hitSlop={8}
-            className="h-7 w-7 items-center justify-center rounded-full active:bg-muted"
+            className="h-11 w-11 items-center justify-center rounded-full active:bg-muted"
             accessibilityRole="button"
             accessibilityLabel="Cancel reply"
           >
@@ -78,26 +102,50 @@ export function ChatInput({
           {remaining} chars left
         </Text>
       ) : null}
+      {showWaitNotice ? (
+        <Text
+          className="mb-1 pr-2 text-right text-[10px] text-muted-foreground"
+          accessibilityLiveRegion="polite"
+        >
+          Wait for the previous message to send.
+        </Text>
+      ) : null}
       <View className="flex-row items-end gap-2 rounded-[24px] border border-border bg-card-translucent pl-4 pr-1.5 py-1.5">
         <TextInput
           value={text}
           onChangeText={setText}
-          placeholder="Send a message..."
+          placeholder={cooldownPlaceholder ?? "Send a message..."}
           placeholderTextColor="#71717a"
           multiline
           maxLength={MAX_LEN}
-          editable={!disabled}
+          editable
+          accessibilityLabel="Message"
+          accessibilityHint={
+            isSending
+              ? "Keep typing. Send becomes available when the previous message finishes."
+              : sendBlocked
+                ? "Keep typing. Sending is temporarily unavailable during the cooldown."
+                : "Type a message to send to your gang."
+          }
           className="flex-1 max-h-[120px] py-2 text-base text-foreground"
           // Avoid Android line-height bug that clips emojis when multiline
           style={{ textAlignVertical: "center" }}
         />
         <Pressable
           onPress={handleSend}
-          disabled={!canSend}
-          className={`h-9 w-9 items-center justify-center rounded-full ${
+          disabled={!trimmed || sendBlocked}
+          className={`h-11 w-11 items-center justify-center rounded-full ${
             canSend ? "bg-primary" : "bg-muted"
           }`}
           accessibilityLabel="Send message"
+          accessibilityHint={
+            isSending ? "Wait for the previous message to finish." : undefined
+          }
+          accessibilityRole="button"
+          accessibilityState={{
+            disabled: !trimmed || sendBlocked,
+            busy: isSending,
+          }}
         >
           <ArrowRight
             size={18}
@@ -109,3 +157,5 @@ export function ChatInput({
     </View>
   );
 }
+
+export const ChatInput = memo(ChatInputBase);

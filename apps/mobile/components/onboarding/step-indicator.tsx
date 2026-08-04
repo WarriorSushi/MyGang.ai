@@ -1,4 +1,5 @@
 import { View } from "react-native";
+import { useColorScheme } from "nativewind";
 
 type StepIndicatorProps = {
   total: number;
@@ -7,6 +8,10 @@ type StepIndicatorProps = {
 };
 
 export function StepIndicator({ total, current }: StepIndicatorProps) {
+  const { colorScheme } = useColorScheme();
+  const inactiveColor =
+    colorScheme === "light" ? "rgba(45,49,56,0.18)" : "rgba(255,255,255,0.18)";
+
   return (
     <View className="flex-row items-center justify-center gap-1.5">
       {Array.from({ length: total }).map((_, i) => {
@@ -20,7 +25,7 @@ export function StepIndicator({ total, current }: StepIndicatorProps) {
               width: isCurrent ? 10 : 6,
               height: isCurrent ? 10 : 6,
               backgroundColor:
-                isPast || isCurrent ? "#3eddc0" : "rgba(255,255,255,0.18)",
+                isPast || isCurrent ? "#3eddc0" : inactiveColor,
             }}
           />
         );

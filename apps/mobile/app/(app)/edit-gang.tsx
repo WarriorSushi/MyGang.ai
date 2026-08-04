@@ -19,7 +19,7 @@ import { SelectionStep } from "../../components/onboarding/selection-step";
 
 export default function EditGangScreen() {
   const router = useRouter();
-  const { user, profile, refreshProfile } = useAuth();
+  const { user, profile, refreshProfile, applyProfilePatch } = useAuth();
   const tier: SubscriptionTier =
     (profile?.subscription_tier as SubscriptionTier) ?? "free";
   const maxMembers = getSquadLimit(tier);
@@ -54,10 +54,35 @@ export default function EditGangScreen() {
     });
   }
 
+  function showLimitReached() {
+    Alert.alert(
+      "Squad limit reached",
+      `Your ${tier} plan supports up to ${maxMembers} friends.`,
+      [
+        { text: "OK", style: "cancel" },
+        ...(tier !== "pro"
+          ? [
+              {
+                text: "See plans",
+                onPress: () => router.push("/(app)/pricing"),
+              },
+            ]
+          : []),
+      ],
+    );
+  }
+
   async function save() {
     if (!user) return;
     if (selectedIds.length < 2) {
       Alert.alert("Not enough", "Pick at least 2 friends.");
+      return;
+    }
+    if (selectedIds.length > maxMembers) {
+      Alert.alert(
+        "Too many friends",
+        `Your ${tier} plan supports up to ${maxMembers}. Remove ${selectedIds.length - maxMembers} before saving.`,
+      );
       return;
     }
 
@@ -66,7 +91,10 @@ export default function EditGangScreen() {
       await persistGangMembership(supabase, user.id, selectedIds);
       const { error } = await supabase
         .from("profiles")
-        .update({ preferred_squad: selectedIds })
+        .update({
+          preferred_squad: selectedIds,
+          pending_squad_downgrade: false,
+        })
         .eq("id", user.id);
 
       if (error) {
@@ -74,6 +102,10 @@ export default function EditGangScreen() {
         setIsSaving(false);
         return;
       }
+      applyProfilePatch({
+        preferred_squad: selectedIds,
+        pending_squad_downgrade: false,
+      } as never);
       await refreshProfile();
       router.back();
     } catch (err) {
@@ -90,7 +122,9 @@ export default function EditGangScreen() {
       <View className="flex-row items-center justify-between border-b border-border px-4 py-3">
         <Pressable
           onPress={() => router.back()}
-          className="rounded-full border border-border bg-card px-3 py-1.5"
+          className="min-h-11 justify-center rounded-full border border-border bg-card px-3"
+          accessibilityRole="button"
+          accessibilityLabel="Go back"
         >
           <Text className="text-xs font-semibold text-muted-foreground">← Back</Text>
         </Pressable>
@@ -98,15 +132,21 @@ export default function EditGangScreen() {
         <Pressable
           onPress={() => void save()}
           disabled={isSaving || selectedIds.length < 2}
-          className={`rounded-full px-3 py-1.5 ${
-            isSaving || selectedIds.length < 2
+          className={`min-h-11 justify-center rounded-full px-3 ${
+            isSaving || selectedIds.length < 2 || selectedIds.length > maxMembers
               ? "bg-muted"
               : "bg-primary"
           }`}
+          accessibilityRole="button"
+          accessibilityLabel="Save gang"
+          accessibilityState={{
+            disabled: isSaving || selectedIds.length < 2 || selectedIds.length > maxMembers,
+            busy: isSaving,
+          }}
         >
           <Text
             className={`text-xs font-semibold ${
-              isSaving || selectedIds.length < 2
+              isSaving || selectedIds.length < 2 || selectedIds.length > maxMembers
                 ? "text-muted-foreground/70"
                 : "text-primary-foreground"
             }`}
@@ -122,7 +162,11 @@ export default function EditGangScreen() {
         toggleCharacter={toggleCharacter}
         maxMembers={maxMembers}
         avatarStyle={avatarStyle}
+        title="Edit your gang"
+        subtitle={`Choose 2-${maxMembers} friends for this plan.`}
+        ctaLabel="Save gang"
         onNext={() => void save()}
+        onLimitReached={showLimitReached}
       />
     </SafeAreaView>
   );

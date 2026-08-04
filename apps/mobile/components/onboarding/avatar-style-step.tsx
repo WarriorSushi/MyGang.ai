@@ -218,7 +218,7 @@ export function AvatarStyleStep({
         showsVerticalScrollIndicator={false}
       >
         <Text className="mt-4 px-6 text-center text-2xl font-black text-foreground">
-          Pick your gang's look
+          {"Pick your gang's look"}
         </Text>
         <Text className="mb-4 px-6 text-center text-sm text-muted-foreground">
           Swipe to see all packs.

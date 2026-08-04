@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { Alert, Linking, Platform, Pressable, ScrollView, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
@@ -21,20 +21,19 @@ import {
   ShieldCheck,
   Sparkles,
 } from "lucide-react-native";
-import { useIAP, type Purchase } from "expo-iap";
 import {
-  ANDROID_SKU,
   TIER_COPY,
   getTierFromProfile,
-  type AndroidSku,
   type SubscriptionTier,
 } from "@mygang/shared";
 
 import { useAuth } from "../../lib/auth-context";
 import { GradientText } from "../../components/gradient-text";
-import { verifyAndroidPurchase } from "../../lib/billing";
+import { SITE_URL, apiUrl } from "../../lib/config";
+import { openBillingPortal } from "../../lib/billing-portal";
+import { supabase } from "../../lib/supabase";
 
-const PRICING_URL = "https://mygang.ai/pricing";
+const CHECKOUT_URL = apiUrl("checkout");
 
 const FEATURES_BY_TIER: Record<SubscriptionTier, string[]> = {
   free: [
@@ -61,11 +60,16 @@ const FEATURES_BY_TIER: Record<SubscriptionTier, string[]> = {
 };
 
 const ORDER: SubscriptionTier[] = ["free", "basic", "pro"];
+const TIER_RANK: Record<SubscriptionTier, number> = {
+  free: 0,
+  basic: 1,
+  pro: 2,
+};
 
 const PLAN_HERO: Record<SubscriptionTier, { image: string | null }> = {
   free: { image: null },
-  basic: { image: "https://mygang.ai/plan-basic.jpg" },
-  pro: { image: "https://mygang.ai/plan-pro.jpg" },
+  basic: { image: `${SITE_URL}/plan-basic.jpg` },
+  pro: { image: `${SITE_URL}/plan-pro.jpg` },
 };
 
 const PLAN_PRICE: Record<
@@ -108,125 +112,54 @@ const FAQS: { q: string; a: string }[] = [
 
 export default function PricingScreen() {
   const router = useRouter();
-  const { profile, refreshProfile } = useAuth();
+  const { profile } = useAuth();
   const currentTier = getTierFromProfile(profile?.subscription_tier ?? null);
   const [openFaqIndex, setOpenFaqIndex] = useState<number | null>(null);
   const [purchasing, setPurchasing] = useState(false);
 
-  // Server-side validate the purchase, finish the transaction, refresh the
-  // profile so the UI flips to "Current Plan". On Android only.
-  const handlePurchaseSuccess = useCallback(
-    async (purchase: Purchase) => {
-      if (Platform.OS !== "android") return;
-      const productId = purchase.productId as AndroidSku | undefined;
-      const purchaseToken = purchase.purchaseToken ?? null;
-      if (!purchaseToken || !productId) {
-        Alert.alert("Purchase issue", "Couldn't read the purchase receipt.");
-        return;
-      }
-      const tier = await verifyAndroidPurchase({ purchaseToken, productId });
-      if (!tier) {
-        Alert.alert(
-          "Couldn't verify purchase",
-          "Your purchase went through Google Play but we couldn't activate the subscription on your account. Contact support if this persists.",
-        );
-      } else {
-        await refreshProfile();
-        Alert.alert(
-          `Welcome to ${tier.charAt(0).toUpperCase() + tier.slice(1)}!`,
-          "Your gang is feeling extra fancy.",
-        );
-      }
-      try {
-        await finishTransaction({ purchase, isConsumable: false });
-      } catch (err) {
-        console.warn("[billing] finishTransaction failed:", err);
-      }
-    },
-    [refreshProfile],
-  );
-
-  const {
-    connected,
-    subscriptions,
-    fetchProducts,
-    requestPurchase,
-    finishTransaction,
-  } = useIAP({
-    onPurchaseSuccess: (purchase) => {
-      void handlePurchaseSuccess(purchase);
-    },
-    onPurchaseError: (error) => {
-      // User cancellation is not an error worth alerting about.
-      if (error?.code === "user-cancelled") return;
-      console.warn("[billing] purchase error:", error);
-      Alert.alert("Purchase failed", error?.message ?? "Try again in a moment.");
-    },
-  });
-
-  // Load product details once Play Billing connects.
-  useEffect(() => {
-    if (Platform.OS !== "android" || !connected) return;
-    void fetchProducts({
-      skus: Object.values(ANDROID_SKU),
-      type: "subs",
-    });
-  }, [connected, fetchProducts]);
-
   async function startSubscriptionPurchase(tier: "basic" | "pro") {
-    if (Platform.OS !== "android") {
-      void Linking.openURL(PRICING_URL);
-      return;
-    }
     if (purchasing) return;
-
-    const sku =
-      tier === "basic" ? ANDROID_SKU.basic_monthly : ANDROID_SKU.pro_monthly;
-
-    const subscription = subscriptions.find((s) => s.id === sku);
-    if (!subscription) {
-      Alert.alert("Plans loading", "Try again in a moment.");
-      return;
-    }
-
-    // Android subscriptions need an offerToken from the matched ProductSubscription.
-    // Prefer the standardized `subscriptionOffers[].offerTokenAndroid`; fall
-    // back to the deprecated `subscriptionOfferDetailsAndroid[].offerToken`
-    // for older payloads. We narrow on `platform === 'android'` to access
-    // the Android-only field on the union type.
-    let offerToken: string | null = null;
-    for (const offer of subscription.subscriptionOffers ?? []) {
-      if (offer.offerTokenAndroid) {
-        offerToken = offer.offerTokenAndroid;
-        break;
-      }
-    }
-    if (!offerToken && subscription.platform === "android") {
-      const legacy = subscription.subscriptionOfferDetailsAndroid?.[0]?.offerToken;
-      if (legacy) offerToken = legacy;
-    }
-
-    if (!offerToken) {
-      Alert.alert("Plans loading", "Try again in a moment.");
-      return;
-    }
-
     setPurchasing(true);
     try {
-      await requestPurchase({
-        request: {
-          google: {
-            skus: [sku],
-            subscriptionOffers: [{ sku, offerToken }],
-          },
+      const { data } = await supabase.auth.getSession();
+      const token = data.session?.access_token;
+      if (!token) {
+        Alert.alert("Not signed in", "Please sign in again before upgrading.");
+        return;
+      }
+
+      const res = await fetch(CHECKOUT_URL, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
         },
-        type: "subs",
+        body: JSON.stringify({ plan: tier }),
       });
+      const body = (await res.json().catch(() => ({}))) as {
+        checkout_url?: string;
+        error?: string;
+      };
+
+      if (res.ok && body.checkout_url) {
+        await Linking.openURL(body.checkout_url);
+        return;
+      }
+
+      Alert.alert(
+        "Couldn't open checkout",
+        body.error ?? "Open mygang.ai/pricing in your browser.",
+      );
     } catch (err) {
-      console.warn("[billing] requestPurchase failed:", err);
+      console.warn("[billing] checkout link failed:", err);
+      Alert.alert("Couldn't open checkout", "Open mygang.ai/pricing in your browser.");
     } finally {
       setPurchasing(false);
     }
+  }
+
+  async function managePlan() {
+    await openBillingPortal();
   }
 
 
@@ -235,7 +168,9 @@ export default function PricingScreen() {
       <View className="flex-row items-center justify-between border-b border-border px-5 pb-3 pt-12">
         <Pressable
           onPress={() => router.back()}
-          className="flex-row items-center gap-1.5 rounded-full border border-border bg-card px-3 py-1.5"
+          className="min-h-11 flex-row items-center gap-1.5 rounded-full border border-border bg-card px-3"
+          accessibilityRole="button"
+          accessibilityLabel="Go back"
         >
           <ChevronLeft size={12} color="#a1a1aa" strokeWidth={2.5} />
           <Text className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
@@ -251,7 +186,7 @@ export default function PricingScreen() {
           <View className="flex-row items-center gap-1.5 self-center rounded-full bg-primary/15 px-3 py-1.5">
             <Sparkles size={12} color="#5eead4" strokeWidth={2.5} />
             <Text className="text-[10px] font-bold uppercase tracking-[0.18em] text-primary">
-              🚀 LAUNCH PRICING — SAVE 60%
+              LAUNCH PRICING - SAVE 80%
             </Text>
           </View>
           <Text className="mt-4 text-center text-4xl font-black text-foreground">
@@ -277,6 +212,8 @@ export default function PricingScreen() {
             const hero = PLAN_HERO[tierId];
             const price = PLAN_PRICE[tierId];
             const isPro = tierId === "pro";
+            const isLowerThanCurrent = TIER_RANK[tierId] < TIER_RANK[currentTier];
+            const isUpgrade = TIER_RANK[tierId] > TIER_RANK[currentTier];
 
             const inner = (
               <View className="overflow-hidden rounded-3xl bg-background">
@@ -352,12 +289,38 @@ export default function PricingScreen() {
                           Current Plan
                         </Text>
                       </View>
-                    ) : tierId === "free" ? null : (
+                    ) : tierId === "free" ? (
+                      isLowerThanCurrent ? (
+                        <Pressable
+                          onPress={() => void managePlan()}
+                          className="min-h-11 items-center justify-center rounded-full border border-border bg-card px-4"
+                          accessibilityRole="button"
+                          accessibilityLabel="Manage plan"
+                        >
+                          <Text className="text-xs font-bold uppercase tracking-wider text-foreground">
+                            Manage plan
+                          </Text>
+                        </Pressable>
+                      ) : null
+                    ) : isLowerThanCurrent ? (
+                      <Pressable
+                        onPress={() => void managePlan()}
+                        className="min-h-11 items-center justify-center rounded-full border border-border bg-card px-4"
+                        accessibilityRole="button"
+                        accessibilityLabel="Manage plan"
+                      >
+                        <Text className="text-xs font-bold uppercase tracking-wider text-foreground">
+                          Included in your plan
+                        </Text>
+                      </Pressable>
+                    ) : (
                       <Pressable
                         onPress={() =>
-                          void startSubscriptionPurchase(
-                            tierId as "basic" | "pro",
-                          )
+                          isUpgrade
+                            ? void startSubscriptionPurchase(
+                                tierId as "basic" | "pro",
+                              )
+                            : void managePlan()
                         }
                         disabled={purchasing}
                         className={`h-11 flex-row items-center justify-center gap-1.5 rounded-full ${
@@ -386,10 +349,7 @@ export default function PricingScreen() {
             return (
               <Animated.View
                 key={tierId}
-                entering={FadeInDown.delay(i * 100)
-                  .duration(280)
-                  .springify()
-                  .damping(18)}
+                entering={FadeInDown.delay(i * 100).duration(280)}
               >
                 {isPro ? (
                   <LinearGradient
@@ -490,7 +450,11 @@ export default function PricingScreen() {
           </Text>
           <View className="mt-5 self-center">
             <Pressable
-              onPress={() => void startSubscriptionPurchase("pro")}
+              onPress={() =>
+                currentTier === "pro"
+                  ? void managePlan()
+                  : void startSubscriptionPurchase("pro")
+              }
               disabled={purchasing}
               className={`h-12 flex-row items-center justify-center gap-1.5 rounded-full bg-primary px-6 ${
                 purchasing ? "opacity-60" : ""
@@ -498,7 +462,11 @@ export default function PricingScreen() {
             >
               <Sparkles size={14} color="#1a1d24" strokeWidth={2.6} />
               <Text className="text-sm font-bold uppercase tracking-wider text-primary-foreground">
-                {purchasing ? "Opening…" : "Get Pro $19.99/mo"}
+                {purchasing
+                  ? "Opening…"
+                  : currentTier === "pro"
+                    ? "Manage Pro"
+                    : "Get Pro $19.99/mo"}
               </Text>
               <ArrowRight size={14} color="#1a1d24" strokeWidth={2.6} />
             </Pressable>
@@ -531,7 +499,7 @@ export default function PricingScreen() {
         <View className="mt-6 px-5">
           <Text className="text-center text-xs text-muted-foreground/70">
             {Platform.OS === "android"
-              ? "Billing handled by Google Play. Cancel anytime in Play Store › Subscriptions."
+              ? "Checkout opens mygang.ai while Expo Go testing continues. Google Play Billing returns before release."
               : "Subscriptions are managed via mygang.ai. Open the link to upgrade."}
           </Text>
         </View>

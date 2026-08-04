@@ -108,7 +108,7 @@ export function AvatarLightbox({
                   Sample
                 </Text>
                 <Text className="mt-0.5 text-sm italic text-foreground/85">
-                  "{character.sample}"
+                  {`"${character.sample}"`}
                 </Text>
               </View>
             ) : null}

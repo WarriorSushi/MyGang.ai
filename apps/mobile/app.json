@@ -14,6 +14,7 @@
     },
     "android": {
       "package": "ai.mygang.app",
+      "softwareKeyboardLayoutMode": "resize",
       "adaptiveIcon": {
         "backgroundColor": "#0a0e1a",
         "foregroundImage": "./assets/images/android-icon-foreground.png",
@@ -78,9 +79,10 @@
         {
           "organization": "altcorp",
           "project": "mygang-ai",
-          "note": "TODO: split into a dedicated mygang-mobile Sentry project before Phase 5/closed-beta. For now, mobile crashes share the web project."
+          "note": "Split into a dedicated mygang-mobile Sentry project before Phase 5/closed-beta. For now, mobile crashes share the web project."
         }
-      ]
+      ],
+      "expo-font"
     ],
     "notification": {
       "color": "#3eddc0",
@@ -94,6 +96,8 @@
     "extra": {
       "supabaseUrl": "https://xiekctfhbqkhoqplobep.supabase.co",
       "supabaseAnonKey": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhpZWtjdGZoYnFraG9xcGxvYmVwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzAxMzU1NTUsImV4cCI6MjA4NTcxMTU1NX0.zYYa7oFqgVBT-gJJc_fB0UfkTTRHsWIyYKFoowPdvLM",
+      "siteUrl": "https://mygang.ai",
+      "apiBaseUrl": "https://www.mygang.ai/api",
       "sentryDsn": "https://fc3d4fa4e1faca7a60d2c50fa2f4fd62@o4511054461927424.ingest.us.sentry.io/4511056086958081",
       "router": {},
       "eas": {
