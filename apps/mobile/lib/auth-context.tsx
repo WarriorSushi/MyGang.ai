@@ -1,10 +1,12 @@
 import {
   createContext,
   useContext,
+  useCallback,
   useEffect,
   useState,
   type ReactNode,
 } from "react";
+import { AppState, type AppStateStatus } from "react-native";
 import type { Session, User } from "@supabase/supabase-js";
 import type { Database } from "@mygang/shared/database/types";
 
@@ -63,11 +65,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     async function init() {
       try {
-        console.log("[auth] init: calling getSession");
         const { data, error } = await supabase.auth.getSession();
         if (error) console.warn("[auth] getSession error:", error);
         if (!mounted) return;
-        console.log("[auth] init: session =", data.session ? "present" : "null");
         setSession(data.session);
         if (data.session?.user.id) {
           const profileRow = await loadProfile(data.session.user.id);
@@ -115,18 +115,68 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     };
   }, []);
 
-  async function refreshProfile() {
+  const refreshProfile = useCallback(async () => {
     if (!session?.user.id) return;
-    const { data } = await supabase
+    const { data, error } = await supabase
       .from("profiles")
       .select("*")
       .eq("id", session.user.id)
       .maybeSingle();
-    setProfile((data as ProfileRow | null) ?? null);
-  }
+    if (error) {
+      console.warn("[auth] refreshProfile error:", error);
+      return;
+    }
+    if (data) {
+      setProfile(data as ProfileRow);
+    }
+  }, [session?.user.id]);
+
+  useEffect(() => {
+    const sub = AppState.addEventListener("change", (state: AppStateStatus) => {
+      if (state === "active") {
+        void refreshProfile();
+      }
+    });
+    return () => sub.remove();
+  }, [refreshProfile]);
 
   function applyProfilePatch(patch: Partial<ProfileRow>) {
-    setProfile((prev) => (prev ? { ...prev, ...patch } : prev));
+    setProfile((prev) => {
+      if (prev) return { ...prev, ...patch };
+      if (!session?.user.id) return prev;
+      const now = new Date().toISOString();
+      return {
+        abuse_score: 0,
+        avatar_style_preference: "robots",
+        chat_mode: "gang_focus",
+        chat_wallpaper: null,
+        created_at: now,
+        custom_character_names: null,
+        daily_msg_count: 0,
+        dodo_customer_id: null,
+        gang_vibe_score: null,
+        id: session.user.id,
+        last_active_at: null,
+        last_msg_reset: null,
+        last_wywa_generated_at: null,
+        low_cost_mode: false,
+        onboarding_completed: false,
+        pending_squad_downgrade: null,
+        preferred_squad: null,
+        purchase_celebration_pending: null,
+        relationship_state: null,
+        restored_members_pending: null,
+        session_summary: null,
+        subscription_tier: "free",
+        summary_turns: null,
+        theme: null,
+        updated_at: now,
+        user_profile: null,
+        username: session.user.email ?? null,
+        vibe_profile: null,
+        ...patch,
+      };
+    });
   }
 
   return (

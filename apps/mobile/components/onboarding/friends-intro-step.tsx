@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Image, Pressable, ScrollView, Text, TextInput, View } from "react-native";
-import { ArrowRight, ChevronRight } from "lucide-react-native";
+import { ArrowRight, ChevronRight, Lock } from "lucide-react-native";
 import {
   resolveAvatarUrl,
   type AvatarStyle,
@@ -18,6 +18,7 @@ type FriendsIntroStepProps = {
   onNameChange: (characterId: string, nextName: string) => void;
   onNext: () => void;
   avatarStyle: AvatarStyle;
+  canCustomizeNames?: boolean;
 };
 
 export function FriendsIntroStep({
@@ -27,6 +28,7 @@ export function FriendsIntroStep({
   onNameChange,
   onNext,
   avatarStyle,
+  canCustomizeNames = true,
 }: FriendsIntroStepProps) {
   const selectedCharacters = characters.filter((c) =>
     selectedIds.includes(c.id)
@@ -46,7 +48,9 @@ export function FriendsIntroStep({
           Meet your AI friends
         </Text>
         <Text className="mt-1 text-center text-xs text-muted-foreground">
-          Customize or keep defaults. Change them later anytime in settings.
+          {canCustomizeNames
+            ? "Customize or keep defaults. Change them later anytime in settings."
+            : "Custom names unlock with Basic or Pro. Defaults are ready for now."}
         </Text>
       </View>
 
@@ -79,7 +83,9 @@ export function FriendsIntroStep({
                   </View>
                   <Pressable
                     onPress={() => setDetailCharacterId(c.id)}
-                    className="flex-row items-center gap-1 self-start rounded-full border border-border bg-card-translucent px-2.5 py-1"
+                    className="min-h-8 flex-row items-center gap-1 self-start rounded-full border border-border bg-card-translucent px-2.5 py-1"
+                    accessibilityRole="button"
+                    accessibilityLabel={`View ${c.name} details`}
                   >
                     <Text className="text-[10px] font-semibold text-muted-foreground">
                       Details
@@ -87,21 +93,30 @@ export function FriendsIntroStep({
                     <ChevronRight size={11} color="#a1a1aa" strokeWidth={2.5} />
                   </Pressable>
                 </View>
-                <View className="mt-3">
-                  <Text className="text-[10px] uppercase tracking-widest text-muted-foreground/70">
-                    Change name or ignore to keep default
-                  </Text>
-                  <TextInput
-                    value={customNames[c.id] ?? ""}
-                    onChangeText={(text) =>
-                      onNameChange(c.id, text.slice(0, 30))
-                    }
-                    placeholder={c.name}
-                    placeholderTextColor="rgba(0,0,0,0.5)"
-                    maxLength={30}
-                    className="mt-1 h-10 rounded-lg bg-white/80 px-3 text-sm text-black"
-                  />
-                </View>
+                {canCustomizeNames ? (
+                  <View className="mt-3">
+                    <Text className="text-[10px] uppercase tracking-widest text-muted-foreground/70">
+                      Change name or ignore to keep default
+                    </Text>
+                    <TextInput
+                      value={customNames[c.id] ?? ""}
+                      onChangeText={(text) =>
+                        onNameChange(c.id, text.slice(0, 30))
+                      }
+                      placeholder={c.name}
+                      placeholderTextColor="#71717a"
+                      maxLength={30}
+                      className="mt-1 min-h-11 rounded-lg border border-border bg-muted px-3 text-sm text-foreground"
+                    />
+                  </View>
+                ) : (
+                  <View className="mt-3 min-h-11 flex-row items-center gap-2 rounded-lg border border-border bg-muted px-3">
+                    <Lock size={13} color="#71717a" strokeWidth={2.5} />
+                    <Text className="flex-1 text-xs text-muted-foreground">
+                      Uses default name on Free
+                    </Text>
+                  </View>
+                )}
               </View>
             );
           })}

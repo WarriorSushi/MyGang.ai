@@ -41,19 +41,30 @@ function rgbToCss(c: Rgb): string {
 }
 
 const DARK_BASE: Rgb = { r: 22, g: 30, b: 46 }; // #161e2e — matches web's mix base
+const LIGHT_BASE: Rgb = { r: 255, g: 255, b: 255 };
 
-/** Returns the bubble background color for a character. Dark mode only. */
-export function bubbleBgForCharacter(characterColor: string | undefined): string {
+/** Returns the bubble background color for a character. */
+export function bubbleBgForCharacter(
+  characterColor: string | undefined,
+  scheme: "light" | "dark" = "dark",
+): string {
   const base = parseHex(characterColor);
-  // 15% character color, 85% dark base — same ratio web uses
-  const mixed = mix(base, DARK_BASE, 0.85);
+  const mixed =
+    scheme === "light"
+      ? mix(base, LIGHT_BASE, 0.88)
+      : mix(base, DARK_BASE, 0.85);
   return rgbToCss(mixed);
 }
 
-/** Returns the persona-name text color for a character. Dark mode only. */
-export function personaNameColor(characterColor: string | undefined): string {
+/** Returns the persona-name text color for a character. */
+export function personaNameColor(
+  characterColor: string | undefined,
+  scheme: "light" | "dark" = "dark",
+): string {
   const base = parseHex(characterColor);
-  // 80% character color, 20% white — bright but readable on dark
-  const mixed = mix(base, { r: 255, g: 255, b: 255 }, 0.2);
+  const mixed =
+    scheme === "light"
+      ? mix(base, { r: 0, g: 0, b: 0 }, 0.28)
+      : mix(base, { r: 255, g: 255, b: 255 }, 0.2);
   return rgbToCss(mixed);
 }

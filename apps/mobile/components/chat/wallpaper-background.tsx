@@ -1,6 +1,7 @@
 import { type ReactNode } from "react";
 import { StyleSheet, View } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
+import { useColorScheme } from "nativewind";
 import { type ChatWallpaper } from "@mygang/shared";
 
 /**
@@ -84,13 +85,76 @@ const WALLPAPERS: Record<ChatWallpaper, Preset> = {
   },
 };
 
+const LIGHT_WALLPAPERS: Record<ChatWallpaper, Preset> = {
+  default: {
+    base: "#eff3f8",
+    overlay: ["rgba(0,0,0,0)", "rgba(0,0,0,0)"],
+  },
+  neon: {
+    base: "#edf9f7",
+    overlay: [
+      "rgba(45,188,165,0.18)",
+      "rgba(45,188,165,0)",
+      "rgba(96,165,250,0.16)",
+      "rgba(190,70,152,0)",
+      "rgba(190,70,152,0.12)",
+    ],
+  },
+  aurora: {
+    base: "#eef8fb",
+    overlay: [
+      "rgba(34,145,184,0.16)",
+      "rgba(34,145,184,0)",
+      "rgba(45,188,120,0.14)",
+      "rgba(124,92,190,0)",
+      "rgba(124,92,190,0.14)",
+    ],
+  },
+  sunset: {
+    base: "#fff2ed",
+    overlay: [
+      "rgba(234,88,12,0.15)",
+      "rgba(190,70,152,0)",
+      "rgba(190,70,152,0.12)",
+      "rgba(126,34,206,0)",
+      "rgba(126,34,206,0.12)",
+    ],
+  },
+  soft: {
+    base: "#f3f6fb",
+    overlay: [
+      "rgba(100,116,139,0.10)",
+      "rgba(100,116,139,0)",
+      "rgba(129,140,248,0.10)",
+    ],
+  },
+  graphite: {
+    base: "#eef1f5",
+    overlay: [
+      "rgba(71,85,105,0.10)",
+      "rgba(71,85,105,0)",
+      "rgba(15,23,42,0.08)",
+    ],
+  },
+  midnight: {
+    base: "#eef4ff",
+    overlay: [
+      "rgba(59,130,246,0.14)",
+      "rgba(59,130,246,0)",
+      "rgba(99,102,241,0.12)",
+    ],
+  },
+};
+
 type WallpaperBackgroundProps = {
   wallpaper: ChatWallpaper;
   children: ReactNode;
 };
 
 export function WallpaperBackground({ wallpaper, children }: WallpaperBackgroundProps) {
-  const preset = WALLPAPERS[wallpaper] ?? WALLPAPERS.default;
+  const { colorScheme } = useColorScheme();
+  const palette = colorScheme === "light" ? LIGHT_WALLPAPERS : WALLPAPERS;
+  const preset = palette[wallpaper] ?? palette.default;
 
   return (
     <View className="flex-1" style={{ backgroundColor: preset.base }}>

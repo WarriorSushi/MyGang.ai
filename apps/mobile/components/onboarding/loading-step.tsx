@@ -9,6 +9,7 @@ import Animated, {
   withTiming,
 } from "react-native-reanimated";
 import { Check, Loader2 } from "lucide-react-native";
+import { useReducedMotion } from "../../lib/use-reduced-motion";
 
 export const LOADING_STEP_DURATION_MS = 1600;
 
@@ -19,8 +20,10 @@ type LoadingStepProps = {
 
 function StepIcon({ isPast, isCurrent }: { isPast: boolean; isCurrent: boolean }) {
   const rotate = useSharedValue(0);
+  const reducedMotion = useReducedMotion();
 
   useEffect(() => {
+    if (reducedMotion) return;
     if (isCurrent) {
       rotate.value = 0;
       rotate.value = withRepeat(
@@ -29,7 +32,7 @@ function StepIcon({ isPast, isCurrent }: { isPast: boolean; isCurrent: boolean }
         false,
       );
     }
-  }, [isCurrent, rotate]);
+  }, [isCurrent, rotate, reducedMotion]);
 
   const animStyle = useAnimatedStyle(() => ({
     transform: [{ rotate: `${rotate.value}deg` }],
@@ -101,7 +104,7 @@ export function LoadingStep({ states, onComplete }: LoadingStepProps) {
           return (
             <Animated.View
               key={i}
-              entering={FadeInUp.duration(280).springify().damping(16)}
+              entering={FadeInUp.duration(280)}
               className={`mb-3 flex-row items-center gap-3 ${
                 isCurrent ? "" : "opacity-50"
               }`}

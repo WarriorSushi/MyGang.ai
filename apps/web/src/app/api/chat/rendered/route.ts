@@ -1,5 +1,5 @@
 import { z } from 'zod'
-import { createClient } from '@/lib/supabase/server'
+import { createClientFromRequest } from '@/lib/supabase/server'
 import { rateLimit } from '@/lib/rate-limit'
 import { sanitizeMessageId, isMissingHistoryMetadataColumnsError } from '@mygang/shared'
 
@@ -46,7 +46,7 @@ function toLegacyHistoryRows(rows: ChatHistoryInsertRow[]) {
 }
 
 export async function POST(req: Request) {
-    const supabase = await createClient()
+    const supabase = await createClientFromRequest(req)
     const { data: { user } } = await supabase.auth.getUser()
 
     if (!user) {

@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { ScrollView, Text, View, Alert } from "react-native";
+import { Text, View, Alert } from "react-native";
 import { Link } from "expo-router";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -14,7 +14,8 @@ import { FormField } from "../../components/form-field";
 import { PrimaryButton } from "../../components/primary-button";
 import { GlassCard } from "../../components/glass-card";
 import { EyebrowPill } from "../../components/eyebrow-pill";
-import { makeDeepLink } from "../../lib/deep-links";
+import { SITE_URL } from "../../lib/config";
+import { AuthScreenFrame } from "../../components/auth-screen-frame";
 
 export default function ForgotPasswordScreen() {
   const [submitted, setSubmitted] = useState(false);
@@ -32,7 +33,9 @@ export default function ForgotPasswordScreen() {
   async function onSubmit(values: ForgotPasswordInput) {
     setIsSubmitting(true);
     const { error } = await supabase.auth.resetPasswordForEmail(values.email, {
-      redirectTo: makeDeepLink("reset-password"),
+      // The web landing page safely relays Supabase's recovery hash into the
+      // installed app, avoiding a custom-scheme allowlist dependency.
+      redirectTo: SITE_URL,
     });
     setIsSubmitting(false);
 
@@ -45,11 +48,7 @@ export default function ForgotPasswordScreen() {
 
   if (submitted) {
     return (
-      <ScrollView
-        className="flex-1 bg-background"
-        contentContainerClassName="flex-grow justify-center px-5"
-        keyboardShouldPersistTaps="handled"
-      >
+      <AuthScreenFrame contentClassName="flex-grow justify-center px-5 py-8">
         <GlassCard>
           <View className="items-center">
             <View
@@ -73,24 +72,19 @@ export default function ForgotPasswordScreen() {
             </Link>
           </View>
         </GlassCard>
-      </ScrollView>
+      </AuthScreenFrame>
     );
   }
 
   return (
-    <ScrollView
-      className="flex-1 bg-background"
-      contentContainerClassName="flex-grow justify-center px-5 py-12"
-      keyboardShouldPersistTaps="handled"
-    >
+    <AuthScreenFrame>
       <GlassCard>
         <EyebrowPill label="PASSWORD RECOVERY" tint="sky" icon={KeyRound} />
         <Text className="mt-3 text-3xl font-bold tracking-tight text-foreground">
           Reset your password
         </Text>
         <Text className="mb-6 mt-1 text-muted-foreground">
-          Enter the email tied to your MyGang account and we'll send you a secure
-          link.
+          {"Enter the email tied to your MyGang account and we'll send you a secure link."}
         </Text>
 
         <FormField
@@ -127,6 +121,6 @@ export default function ForgotPasswordScreen() {
           Back to Sign In
         </Link>
       </GlassCard>
-    </ScrollView>
+    </AuthScreenFrame>
   );
 }

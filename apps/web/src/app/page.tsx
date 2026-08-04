@@ -2,6 +2,8 @@ import type { Metadata } from 'next'
 import Script from 'next/script'
 import dynamic from 'next/dynamic'
 
+import { MobileAuthRelay } from '@/components/mobile-auth-relay'
+
 const LandingPage = dynamic(() => import('@/components/landing/landing-page').then(mod => mod.LandingPage), { ssr: true })
 
 const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? 'https://mygang.ai'
@@ -88,6 +90,7 @@ const structuredData = {
 export default function Page() {
   return (
     <>
+      <MobileAuthRelay />
       <Script
         id="structured-data"
         type="application/ld+json"

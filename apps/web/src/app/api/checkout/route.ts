@@ -1,6 +1,6 @@
 import { NextRequest } from 'next/server'
 import { z } from 'zod'
-import { createClient } from '@/lib/supabase/server'
+import { createClientFromRequest } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { rateLimit } from '@/lib/rate-limit'
 import { getDodoClient } from '@/lib/billing-server'
@@ -15,7 +15,7 @@ const PRODUCT_IDS: Record<string, string> = {
 }
 
 export async function POST(req: NextRequest) {
-    const supabase = await createClient()
+    const supabase = await createClientFromRequest(req)
     const adminSupabase = createAdminClient()
     const { data: { user } } = await supabase.auth.getUser()
 

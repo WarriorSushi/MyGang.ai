@@ -15,9 +15,8 @@ function memoryRateLimit(key: string, limit: number, windowMs: number): RateLimi
   if (process.env.NODE_ENV === 'production' && !warnedAboutMemoryFallback) {
     warnedAboutMemoryFallback = true
     console.warn(
-      '[rate-limit] WARNING: Using in-memory rate limiting in production. ' +
-      'This resets per serverless container and is ineffective at scale. ' +
-      'Set UPSTASH_REDIS_REST_URL and UPSTASH_REDIS_REST_TOKEN for persistent rate limiting.'
+      '[rate-limit] DEGRADED: Using bounded in-memory rate limiting because Redis is unavailable. ' +
+      'Restore the Upstash connection; this fallback resets per serverless container.'
     )
   }
   const now = Date.now()
@@ -44,7 +43,10 @@ export async function rateLimit(
   windowMs = DEFAULT_WINDOW_MS
 ): Promise<RateLimitResult> {
   // C13: Fail closed in production without Redis
-  if (process.env.NODE_ENV === 'production' && !process.env.UPSTASH_REDIS_REST_URL) {
+  if (
+    process.env.NODE_ENV === 'production' &&
+    (!process.env.UPSTASH_REDIS_REST_URL || !process.env.UPSTASH_REDIS_REST_TOKEN)
+  ) {
     console.error('[rate-limit] CRITICAL: No Redis in production. Denying request.')
     return { success: false, remaining: 0, reset: Date.now() + windowMs }
   }
@@ -77,7 +79,9 @@ export async function rateLimit(
       }
     } catch (error) {
       console.error('Rate limit Redis error:', error)
-      return { success: false, remaining: 0, reset: 0 }
+      // A transient Redis/DNS outage must not impersonate a user's exhausted
+      // quota. Keep a bounded per-instance guard active while Redis recovers.
+      return memoryRateLimit(`redis-outage:${key}`, limit, windowMs)
     }
   }
 

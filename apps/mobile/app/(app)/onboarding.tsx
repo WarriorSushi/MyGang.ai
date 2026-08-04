@@ -1,7 +1,7 @@
 import { useMemo, useRef, useState } from "react";
 import { Alert, Pressable, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { useRouter } from "expo-router";
+import { useLocalSearchParams, useRouter } from "expo-router";
 import {
   CHARACTERS,
   DEFAULT_AVATAR_STYLE,
@@ -52,6 +52,14 @@ const STEP_ORDER: Step[] = [
   "LOADING",
 ];
 
+const RETAKE_STEP_ORDER: Step[] = [
+  "VIBE_QUIZ",
+  "AVATAR_STYLE",
+  "SELECTION",
+  "INTRO",
+  "LOADING",
+];
+
 const BACK_MAP: Partial<Record<Step, Step>> = {
   IDENTITY: "WELCOME",
   VIBE_QUIZ: "IDENTITY",
@@ -61,17 +69,52 @@ const BACK_MAP: Partial<Record<Step, Step>> = {
   INTRO: "SELECTION",
 };
 
+const RETAKE_BACK_MAP: Partial<Record<Step, Step>> = {
+  AVATAR_STYLE: "VIBE_QUIZ",
+  SELECTION: "AVATAR_STYLE",
+  INTRO: "SELECTION",
+};
+
+function stringArray(value: unknown): string[] {
+  return Array.isArray(value)
+    ? value.filter((id): id is string => typeof id === "string")
+    : [];
+}
+
+function customNameMap(value: unknown): Record<string, string> {
+  if (!value || typeof value !== "object" || Array.isArray(value)) return {};
+  return Object.fromEntries(
+    Object.entries(value).filter(
+      (entry): entry is [string, string] => typeof entry[1] === "string",
+    ),
+  );
+}
+
 export default function OnboardingScreen() {
   const { user, profile, refreshProfile, applyProfilePatch } = useAuth();
   const router = useRouter();
-  const [step, setStep] = useState<Step>("WELCOME");
-  const [name, setName] = useState("");
+  const params = useLocalSearchParams<{ retake?: string }>();
+  const isRetake = params.retake === "true";
+  const stepOrder = isRetake ? RETAKE_STEP_ORDER : STEP_ORDER;
+  const backMap = isRetake ? RETAKE_BACK_MAP : BACK_MAP;
+  const indicatorSteps = stepOrder.filter(
+    (item) => item !== "WELCOME" && item !== "LOADING",
+  );
+  const [step, setStep] = useState<Step>(() =>
+    isRetake ? "VIBE_QUIZ" : "WELCOME",
+  );
+  const [name, setName] = useState(() => profile?.username ?? "");
   const [vibeProfile, setVibeProfile] = useState<VibeProfile | null>(null);
   const [avatarStyle, setAvatarStyle] = useState<AvatarStyle>(
-    DEFAULT_AVATAR_STYLE
+    ((profile?.avatar_style_preference as AvatarStyle | null) ??
+      DEFAULT_AVATAR_STYLE)
   );
-  const [selectedIds, setSelectedIds] = useState<string[]>([]);
-  const [customNames, setCustomNames] = useState<Record<string, string>>({});
+  const [selectedIds, setSelectedIds] = useState<string[]>(() =>
+    isRetake ? stringArray(profile?.preferred_squad) : [],
+  );
+  const [customNames, setCustomNames] = useState<Record<string, string>>(() =>
+    isRetake ? customNameMap(profile?.custom_character_names) : {},
+  );
 
   const tier: SubscriptionTier =
     (profile?.subscription_tier as SubscriptionTier) ?? "free";
@@ -109,7 +152,7 @@ export default function OnboardingScreen() {
   }
 
   function goBack() {
-    const back = BACK_MAP[step];
+    const back = backMap[step];
     if (back) {
       directionRef.current = "backward";
       setStep(back);
@@ -121,14 +164,14 @@ export default function OnboardingScreen() {
     if (selectedIds.length < 2) return;
 
     try {
-      console.log("[onboarding] finalize: persistGangMembership for user", user.id);
       await persistGangMembership(supabase, user.id, selectedIds);
-      console.log("[onboarding] finalize: persistGangMembership ok");
 
       const trimmedCustomNames: Record<string, string> = {};
-      for (const [k, v] of Object.entries(customNames)) {
-        if (v && v.trim().length > 0) {
-          trimmedCustomNames[k] = v.trim();
+      if (tier !== "free") {
+        for (const [k, v] of Object.entries(customNames)) {
+          if (v && v.trim().length > 0) {
+            trimmedCustomNames[k] = v.trim();
+          }
         }
       }
 
@@ -139,18 +182,18 @@ export default function OnboardingScreen() {
         // Free tier cannot use ecosystem mode; force gang_focus on the
         // freshly-created profile so the chat call doesn't 403 later.
         chat_mode: "gang_focus" as const,
-        custom_character_names:
-          Object.keys(trimmedCustomNames).length > 0
-            ? trimmedCustomNames
-            : null,
         avatar_style_preference: avatarStyle,
+        ...(tier !== "free"
+          ? {
+              custom_character_names:
+                Object.keys(trimmedCustomNames).length > 0
+                  ? trimmedCustomNames
+                  : null,
+            }
+          : {}),
         ...(vibeProfile ? { vibe_profile: vibeProfile } : {}),
       };
 
-      console.log("[onboarding] finalize: profile update with patch", {
-        keys: Object.keys(profilePatch),
-        selectedCount: selectedIds.length,
-      });
       // .select() so we can verify the UPDATE actually changed a row.
       // Without it, an UPDATE that matches 0 rows (e.g. RLS quietly filtered,
       // or the profile row doesn't exist) returns no error but persists nothing.
@@ -191,15 +234,6 @@ export default function OnboardingScreen() {
           setStep("INTRO");
           return;
         }
-        console.log("[onboarding] finalize: profile INSERT ok");
-      } else {
-        console.log(
-          "[onboarding] finalize: profile UPDATE ok, rows =",
-          updatedRows.length,
-          "onboarding_completed =",
-          (updatedRows[0] as { onboarding_completed?: boolean })
-            ?.onboarding_completed,
-        );
       }
 
       // OPTIMISTIC LOCAL STATE UPDATE.
@@ -210,7 +244,6 @@ export default function OnboardingScreen() {
       // Applying the patch to local state synchronously guarantees the gate
       // sees the new state next render.
       applyProfilePatch(profilePatch);
-      console.log("[onboarding] finalize: applied optimistic patch");
 
       // Best-effort background refresh to reconcile with server. May hang;
       // that's OK — local state is already correct.
@@ -218,7 +251,6 @@ export default function OnboardingScreen() {
         console.warn("[onboarding] background refreshProfile threw:", err),
       );
 
-      console.log("[onboarding] finalize: done");
     } catch (err) {
       console.warn("[onboarding] finalize threw:", err);
       Alert.alert(
@@ -229,7 +261,7 @@ export default function OnboardingScreen() {
     }
   }
 
-  const showBack = Boolean(BACK_MAP[step]) && step !== "LOADING";
+  const showBack = Boolean(backMap[step]) && step !== "LOADING";
 
   return (
     <SafeAreaView className="flex-1 bg-background">
@@ -237,7 +269,9 @@ export default function OnboardingScreen() {
         <View className="absolute left-4 top-12 z-50">
           <Pressable
             onPress={goBack}
-            className="rounded-full border border-border bg-card px-3 py-1.5"
+            className="min-h-11 justify-center rounded-full border border-border bg-card px-3 py-1.5"
+            accessibilityRole="button"
+            accessibilityLabel="Go back"
           >
             <Text className="text-xs font-semibold text-muted-foreground">← Back</Text>
           </Pressable>
@@ -247,8 +281,8 @@ export default function OnboardingScreen() {
       {step !== "WELCOME" && step !== "LOADING" ? (
         <View className="absolute left-0 right-0 top-12 z-40 items-center">
           <StepIndicator
-            total={STEP_ORDER.length - 1}
-            current={STEP_ORDER.indexOf(step)}
+            total={indicatorSteps.length}
+            current={Math.max(0, indicatorSteps.indexOf(step))}
           />
         </View>
       ) : null}
@@ -270,7 +304,7 @@ export default function OnboardingScreen() {
           <VibeQuizStep
             onNext={(vibe) => {
               setVibeProfile(vibe);
-              goForward("AVATAR_GIFT");
+              goForward(isRetake ? "AVATAR_STYLE" : "AVATAR_GIFT");
             }}
           />
         ) : null}
@@ -306,6 +340,7 @@ export default function OnboardingScreen() {
             customNames={customNames}
             onNameChange={handleNameChange}
             avatarStyle={avatarStyle}
+            canCustomizeNames={tier !== "free"}
             onNext={() => {
               goForward("LOADING");
               // kick off backend write while loading animation plays
@@ -333,7 +368,6 @@ export default function OnboardingScreen() {
               // own refreshProfile, so the local profile state should be up
               // to date. We also kick off a background refresh as belt-and-
               // suspenders, but don't await it.
-              console.log("[onboarding] LoadingStep onComplete → /(app)/chat");
               router.replace("/(app)/chat");
               // Best-effort background refresh in case finalize's refresh
               // raced with React state propagation. Failures are harmless —

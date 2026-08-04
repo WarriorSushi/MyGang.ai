@@ -9,6 +9,7 @@ type FormFieldProps<T extends FieldValues> = {
   label?: string;
   error?: string;
   hint?: string;
+  accessibilityLabel?: string;
 } & Omit<TextInputProps, "value" | "onChangeText" | "onBlur">;
 
 export function FormField<T extends FieldValues>({
@@ -17,6 +18,7 @@ export function FormField<T extends FieldValues>({
   label,
   error,
   hint,
+  accessibilityLabel,
   ...textInputProps
 }: FormFieldProps<T>) {
   const [isFocused, setIsFocused] = useState(false);
@@ -42,6 +44,9 @@ export function FormField<T extends FieldValues>({
               onBlur();
             }}
             placeholderTextColor="#6b6f7a"
+            accessibilityLabel={accessibilityLabel ?? label ?? String(name)}
+            accessibilityHint={error ?? hint}
+            accessibilityState={{ disabled: textInputProps.editable === false }}
             className={`rounded-2xl border bg-muted/40 px-5 py-4 text-base text-foreground ${
               isFocused
                 ? "border-primary"

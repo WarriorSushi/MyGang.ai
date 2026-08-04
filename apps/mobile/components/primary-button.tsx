@@ -10,7 +10,7 @@ import { LinearGradient } from "expo-linear-gradient";
 import Animated, {
   useAnimatedStyle,
   useSharedValue,
-  withSpring,
+  withTiming,
 } from "react-native-reanimated";
 import { ArrowRight, type LucideIcon } from "lucide-react-native";
 
@@ -24,6 +24,8 @@ type PrimaryButtonProps = {
   onPress?: PressableProps["onPress"];
   isLoading?: boolean;
   disabled?: boolean;
+  accessibilityLabel?: string;
+  accessibilityHint?: string;
   size?: Size;
   variant?: Variant;
   /** Lucide icon component to render at trailing edge (e.g. ArrowRight). */
@@ -44,6 +46,8 @@ export function PrimaryButton({
   onPress,
   isLoading = false,
   disabled = false,
+  accessibilityLabel,
+  accessibilityHint,
   size = "default",
   variant = "solid",
   iconRight,
@@ -92,12 +96,16 @@ export function PrimaryButton({
     <AnimatedPressable
       onPress={onPress}
       disabled={!isInteractive}
+      accessibilityRole="button"
+      accessibilityLabel={accessibilityLabel ?? label}
+      accessibilityHint={accessibilityHint}
+      accessibilityState={{ disabled: !isInteractive, busy: isLoading }}
       onPressIn={() => {
         if (isInteractive)
-          scale.value = withSpring(0.97, { damping: 18, stiffness: 320 });
+          scale.value = withTiming(0.97, { duration: 90 });
       }}
       onPressOut={() => {
-        scale.value = withSpring(1, { damping: 18, stiffness: 320 });
+        scale.value = withTiming(1, { duration: 120 });
       }}
       style={[
         animatedStyle,

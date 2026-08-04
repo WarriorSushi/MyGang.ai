@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Modal, Pressable, StyleSheet, Text, View } from "react-native";
 import { BlurView } from "expo-blur";
 import { AlertTriangle, type LucideIcon } from "lucide-react-native";
+import { useColorScheme } from "nativewind";
 
 type ConfirmDialogProps = {
   visible: boolean;
@@ -33,7 +34,9 @@ export function ConfirmDialog({
   onCancel,
 }: ConfirmDialogProps) {
   const [armed, setArmed] = useState(false);
+  const { colorScheme } = useColorScheme();
   const isDestructive = variant === "destructive";
+  const isLight = colorScheme === "light";
 
   function handleConfirm() {
     if (twoStep && !armed) {
@@ -55,17 +58,30 @@ export function ConfirmDialog({
   return (
     <Modal visible={visible} transparent animationType="fade" onRequestClose={handleCancel}>
       <Pressable className="flex-1" onPress={handleCancel}>
-        <BlurView intensity={20} tint="dark" style={StyleSheet.absoluteFill} />
-        <View className="absolute inset-0 bg-black/60" />
+        <BlurView
+          intensity={20}
+          tint={isLight ? "light" : "dark"}
+          style={StyleSheet.absoluteFill}
+        />
+        <View
+          className="absolute inset-0"
+          style={{
+            backgroundColor: isLight
+              ? "rgba(15,23,42,0.22)"
+              : "rgba(0,0,0,0.6)",
+          }}
+        />
         <View className="flex-1 items-center justify-center px-6">
           <Pressable
             onPress={(e) => e.stopPropagation()}
-            className="w-full max-w-md overflow-hidden rounded-3xl border border-white/10"
+            className="w-full max-w-md overflow-hidden rounded-3xl border border-border"
             style={{
-              backgroundColor: "rgba(7,12,20,0.92)",
+              backgroundColor: isLight
+                ? "rgba(255,255,255,0.96)"
+                : "rgba(7,12,20,0.92)",
               shadowColor: "#000",
               shadowOffset: { width: 0, height: 24 },
-              shadowOpacity: 0.5,
+              shadowOpacity: isLight ? 0.16 : 0.5,
               shadowRadius: 40,
               elevation: 16,
             }}

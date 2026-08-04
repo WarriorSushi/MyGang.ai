@@ -208,9 +208,9 @@ export function buildStarterChips(context: PendingArrivalContext | null, fallbac
 
     if (vibeSummary?.toLowerCase().includes('honest')) {
         return [
-            `what's everyone like here?`,
+            `give me the honest read on everyone`,
             `be real with me, no sugarcoating`,
-            `who should I talk to first?`,
+            `what should I know about this crew?`,
             `give me the lowdown`,
         ]
     }

@@ -6,6 +6,7 @@ import {
   CHARACTERS,
   applyAvatarStyleToGang,
   DEFAULT_AVATAR_STYLE,
+  getTierFromProfile,
   resolveAvatarUrl,
   type AvatarStyle,
   type CharacterCatalogEntry,
@@ -13,13 +14,13 @@ import {
 
 import { useAuth } from "../../lib/auth-context";
 import { supabase } from "../../lib/supabase";
-
-const SITE_URL = "https://mygang.ai";
+import { SITE_URL } from "../../lib/config";
 
 export default function CustomNamesScreen() {
   const router = useRouter();
-  const { user, profile, refreshProfile } = useAuth();
+  const { user, profile, refreshProfile, applyProfilePatch } = useAuth();
   const [isSaving, setIsSaving] = useState(false);
+  const tier = getTierFromProfile(profile?.subscription_tier ?? null);
 
   const avatarStyle: AvatarStyle =
     (profile?.avatar_style_preference as AvatarStyle) ?? DEFAULT_AVATAR_STYLE;
@@ -61,6 +62,17 @@ export default function CustomNamesScreen() {
 
   async function save() {
     if (!user) return;
+    if (tier === "free") {
+      Alert.alert(
+        "Unlock custom names",
+        "Custom character names unlock with Basic or Pro.",
+        [
+          { text: "Not now", style: "cancel" },
+          { text: "See plans", onPress: () => router.push("/(app)/pricing") },
+        ],
+      );
+      return;
+    }
     setIsSaving(true);
 
     const trimmed: Record<string, string> = {};
@@ -81,6 +93,9 @@ export default function CustomNamesScreen() {
       Alert.alert("Could not save", error.message);
       return;
     }
+    applyProfilePatch({
+      custom_character_names: Object.keys(trimmed).length > 0 ? trimmed : null,
+    } as never);
     await refreshProfile();
     router.back();
   }
@@ -90,7 +105,9 @@ export default function CustomNamesScreen() {
       <View className="flex-row items-center justify-between border-b border-border px-4 py-3">
         <Pressable
           onPress={() => router.back()}
-          className="rounded-full border border-border bg-card px-3 py-1.5"
+          className="min-h-11 justify-center rounded-full border border-border bg-card px-3"
+          accessibilityRole="button"
+          accessibilityLabel="Go back"
         >
           <Text className="text-xs font-semibold text-muted-foreground">← Back</Text>
         </Pressable>
@@ -98,9 +115,11 @@ export default function CustomNamesScreen() {
         <Pressable
           onPress={() => void save()}
           disabled={isSaving}
-          className={`rounded-full px-3 py-1.5 ${
+          className={`min-h-11 justify-center rounded-full px-3 ${
             isSaving ? "bg-muted" : "bg-primary"
           }`}
+          accessibilityRole="button"
+          accessibilityLabel="Save custom names"
         >
           <Text
             className={`text-xs font-semibold ${
@@ -113,6 +132,22 @@ export default function CustomNamesScreen() {
       </View>
 
       <ScrollView contentContainerClassName="px-4 py-4 pb-12">
+        {tier === "free" ? (
+          <Pressable
+            onPress={() => router.push("/(app)/pricing")}
+            className="mb-4 min-h-11 rounded-2xl border border-primary/30 bg-primary/10 px-4 py-3"
+            accessibilityRole="button"
+            accessibilityLabel="See plans for custom names"
+          >
+            <Text className="text-sm font-bold text-primary">
+              Custom names unlock with Basic or Pro
+            </Text>
+            <Text className="mt-1 text-xs text-muted-foreground">
+              Your current names are safe. Upgrade when you want to rename the
+              gang across chat.
+            </Text>
+          </Pressable>
+        ) : null}
         <Text className="mb-3 text-xs text-muted-foreground/70">
           Leave blank to keep the default name. Custom names show in the chat
           and across devices.
@@ -151,7 +186,8 @@ export default function CustomNamesScreen() {
                   placeholder={c.name}
                   placeholderTextColor="#71717a"
                   maxLength={30}
-                  className="mt-2 h-10 rounded-lg border border-border bg-muted px-3 text-sm text-foreground"
+                  editable={tier !== "free"}
+                  className="mt-2 min-h-11 rounded-lg border border-border bg-muted px-3 text-sm text-foreground"
                 />
               </View>
             );

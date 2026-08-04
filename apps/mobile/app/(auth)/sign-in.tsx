@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { ScrollView, Text, View, Alert } from "react-native";
+import { Text, View, Alert } from "react-native";
 import { Link } from "expo-router";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -7,14 +7,17 @@ import { ArrowRight } from "lucide-react-native";
 import { signInInputSchema, type SignInInput } from "@mygang/shared";
 
 import { supabase } from "../../lib/supabase";
+import { signInWithGoogle } from "../../lib/google-oauth";
 import { FormField } from "../../components/form-field";
 import { PrimaryButton } from "../../components/primary-button";
 import { GradientText } from "../../components/gradient-text";
 import { GlassCard } from "../../components/glass-card";
 import { EyebrowPill } from "../../components/eyebrow-pill";
+import { AuthScreenFrame } from "../../components/auth-screen-frame";
 
 export default function SignInScreen() {
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isGoogleSubmitting, setIsGoogleSubmitting] = useState(false);
 
   const {
     control,
@@ -39,19 +42,24 @@ export default function SignInScreen() {
     // Route gate redirects on session change; nothing to do here.
   }
 
+  async function onGooglePress() {
+    setIsGoogleSubmitting(true);
+    const result = await signInWithGoogle();
+    setIsGoogleSubmitting(false);
+    if (!result.ok) {
+      Alert.alert("Google sign-in failed", result.error ?? "Please try again.");
+    }
+  }
+
   return (
-    <ScrollView
-      className="flex-1 bg-background"
-      contentContainerClassName="flex-grow justify-center px-5 py-12"
-      keyboardShouldPersistTaps="handled"
-    >
+    <AuthScreenFrame>
       <GlassCard>
         <EyebrowPill label="WELCOME BACK" tint="teal" />
         <GradientText textClassName="mt-3 text-3xl font-bold tracking-tight">
           Welcome back
         </GradientText>
         <Text className="mb-6 mt-1 text-muted-foreground">
-          Your gang's been waiting.
+          {"Your gang's been waiting."}
         </Text>
 
         <FormField
@@ -85,6 +93,23 @@ export default function SignInScreen() {
           />
         </View>
 
+        <View className="my-4 flex-row items-center gap-3">
+          <View className="h-px flex-1 bg-border" />
+          <Text className="text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">
+            or
+          </Text>
+          <View className="h-px flex-1 bg-border" />
+        </View>
+
+        <PrimaryButton
+          label="Continue with Google"
+          onPress={onGooglePress}
+          isLoading={isGoogleSubmitting}
+          disabled={isSubmitting}
+          variant="solid"
+          size="lg"
+        />
+
         <Link
           href="/(auth)/forgot-password"
           className="mt-4 self-center text-sm text-muted-foreground underline"
@@ -99,6 +124,6 @@ export default function SignInScreen() {
           </Link>
         </View>
       </GlassCard>
-    </ScrollView>
+    </AuthScreenFrame>
   );
 }

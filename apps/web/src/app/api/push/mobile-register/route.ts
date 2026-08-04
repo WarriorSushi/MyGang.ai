@@ -30,8 +30,12 @@ export async function POST(request: NextRequest) {
   if (platform !== 'ios' && platform !== 'android') {
     return NextResponse.json({ error: 'Invalid platform' }, { status: 400 })
   }
-  // Expo tokens look like ExponentPushToken[abc123...] — basic sanity check
-  if (!expo_push_token.startsWith('ExponentPushToken[') || expo_push_token.length > 200) {
+  // Expo tokens historically use ExponentPushToken[...] and newer tooling may
+  // surface ExpoPushToken[...]. Keep this a sanity check, not a brittle parser.
+  const hasExpoTokenPrefix =
+    expo_push_token.startsWith('ExponentPushToken[') ||
+    expo_push_token.startsWith('ExpoPushToken[')
+  if (!hasExpoTokenPrefix || expo_push_token.length > 200) {
     return NextResponse.json({ error: 'Invalid Expo push token format' }, { status: 400 })
   }
 

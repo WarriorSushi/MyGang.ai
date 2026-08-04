@@ -4,8 +4,9 @@ import { Platform } from "react-native";
 import Constants from "expo-constants";
 
 import { supabase } from "./supabase";
+import { apiUrl } from "./config";
 
-const REGISTER_URL = "https://www.mygang.ai/api/push/mobile-register";
+const REGISTER_URL = apiUrl("push/mobile-register");
 
 /**
  * Request OS notification permission. Returns "granted" | "denied" | "undetermined".

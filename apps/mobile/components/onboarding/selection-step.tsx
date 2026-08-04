@@ -17,9 +17,13 @@ type SelectionStepProps = {
   selectedIds: string[];
   toggleCharacter: (id: string) => void;
   onNext: () => void;
+  title?: string;
+  subtitle?: string;
+  ctaLabel?: string;
   maxMembers?: number;
   recommendedIds?: string[];
   avatarStyle: AvatarStyle;
+  onLimitReached?: () => void;
 };
 
 export function SelectionStep({
@@ -27,11 +31,16 @@ export function SelectionStep({
   selectedIds,
   toggleCharacter,
   onNext,
+  title = "Pick your gang",
+  subtitle,
+  ctaLabel = "Let's Go",
   maxMembers = 4,
   recommendedIds = [],
   avatarStyle,
+  onLimitReached,
 }: SelectionStepProps) {
-  const canContinue = selectedIds.length >= 2;
+  const overLimit = selectedIds.length > maxMembers;
+  const canContinue = selectedIds.length >= 2 && !overLimit;
   const [detailCharacterId, setDetailCharacterId] = useState<string | null>(null);
 
   const sortedCharacters =
@@ -65,10 +74,12 @@ export function SelectionStep({
     <View className="flex-1">
       <View className="px-6 pt-4 pb-2">
         <Text className="text-center text-3xl font-black text-foreground">
-          Pick your gang
+          {title}
         </Text>
         <Text className="mt-1 text-center text-sm text-muted-foreground">
-          Choose 2–{maxMembers} friends.
+          {overLimit
+            ? `Remove ${selectedIds.length - maxMembers} to fit this plan.`
+            : (subtitle ?? `Choose 2-${maxMembers} friends.`)}
         </Text>
       </View>
 
@@ -103,11 +114,20 @@ export function SelectionStep({
               }}
             >
               <Pressable
-                onPress={() => toggleCharacter(item.id)}
-                className={`overflow-hidden rounded-xl border bg-card ${
-                  isSelected ? "border-[3px] border-primary" : "border-border"
-                }`}
-              >
+            onPress={() => {
+              if (!isSelected && selectedIds.length >= maxMembers) {
+                onLimitReached?.();
+                return;
+              }
+              toggleCharacter(item.id);
+            }}
+            className={`overflow-hidden rounded-xl border bg-card ${
+              isSelected ? "border-[3px] border-primary" : "border-border"
+            }`}
+            accessibilityRole="button"
+            accessibilityLabel={`${isSelected ? "Remove" : "Add"} ${item.name}`}
+            accessibilityState={{ selected: isSelected }}
+          >
                 {isSelected ? (
                   <View className="absolute right-1.5 top-1.5 z-10 h-5 w-5 items-center justify-center rounded-full bg-primary">
                     <Text className="text-[10px] font-bold text-primary-foreground">✓</Text>
@@ -148,7 +168,9 @@ export function SelectionStep({
                       setDetailCharacterId(item.id);
                     }}
                     hitSlop={6}
-                    className="mt-1 flex-row items-center justify-center gap-0.5 rounded-full border border-border bg-card-translucent px-2 py-0.5"
+                    className="mt-1 min-h-8 flex-row items-center justify-center gap-0.5 rounded-full border border-border bg-card-translucent px-2"
+                    accessibilityRole="button"
+                    accessibilityLabel={`View ${item.name} details`}
                   >
                     <Text className="text-[9px] font-semibold text-muted-foreground">
                       Details
@@ -187,13 +209,15 @@ export function SelectionStep({
           })}
           <Text className="ml-3 text-xs text-muted-foreground">
             {selectedIds.length === 0
-              ? `Pick 2–${maxMembers}`
-              : `${selectedIds.length}/${maxMembers}`}
+              ? `Pick 2-${maxMembers}`
+              : overLimit
+                ? `${selectedIds.length}/${maxMembers} over limit`
+                : `${selectedIds.length}/${maxMembers}`}
           </Text>
         </View>
         <View className="w-32">
           <PrimaryButton
-            label="Let's Go"
+            label={ctaLabel}
             onPress={onNext}
             disabled={!canContinue}
             size="default"
