@@ -4,6 +4,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { Link, useRouter } from "expo-router";
 import { LinearGradient } from "expo-linear-gradient";
 import * as Notifications from "expo-notifications";
+import Constants from "expo-constants";
 import {
   AlertTriangle,
   BarChart3,
@@ -44,6 +45,14 @@ import {
   registerPushToken,
   requestNotificationPermission,
 } from "../../lib/push";
+import {
+  ECOSYSTEM_SPEEDS,
+  type EcosystemSpeed,
+} from "../../lib/ecosystem-speed";
+import {
+  loadEcosystemSpeed,
+  saveEcosystemSpeed,
+} from "../../lib/ecosystem-speed-storage";
 
 const STYLE_LABELS: Record<AvatarStyle, string> = {
   robots: "Robots",
@@ -55,8 +64,10 @@ type ChatMode = "gang_focus" | "ecosystem";
 
 export default function SettingsScreen() {
   const router = useRouter();
-  const { user, profile, refreshProfile } = useAuth();
+  const { user, profile, refreshProfile, applyProfilePatch } = useAuth();
   const [savingField, setSavingField] = useState<string | null>(null);
+  const [ecosystemSpeed, setEcosystemSpeed] =
+    useState<EcosystemSpeed>("normal");
   const [signOutOpen, setSignOutOpen] = useState(false);
 
   const [emailOpen, setEmailOpen] = useState(false);
@@ -103,6 +114,26 @@ export default function SettingsScreen() {
       cancelled = true;
     };
   }, []);
+
+  useEffect(() => {
+    let mounted = true;
+    if (!user?.id) return;
+    void loadEcosystemSpeed(user.id).then((speed) => {
+      if (mounted) setEcosystemSpeed(speed);
+    });
+    return () => {
+      mounted = false;
+    };
+  }, [user?.id]);
+
+  function updateEcosystemSpeed(speed: EcosystemSpeed) {
+    setEcosystemSpeed(speed);
+    if (user?.id) {
+      void saveEcosystemSpeed(user.id, speed).catch(() => {
+        Alert.alert("Could not save", "Your conversation pace was not saved.");
+      });
+    }
+  }
 
   async function enableNotifications() {
     if (notifBusy) return;
@@ -179,7 +210,8 @@ export default function SettingsScreen() {
       Alert.alert("Could not save", error.message);
       return;
     }
-    await refreshProfile();
+    applyProfilePatch({ [field]: value } as never);
+    void refreshProfile();
   }
 
   async function signOut() {
@@ -304,7 +336,13 @@ export default function SettingsScreen() {
       return;
     }
     await clearPersistedMessages(user.id);
-    await refreshProfile();
+    applyProfilePatch({
+      preferred_squad: [],
+      custom_character_names: null,
+      vibe_profile: null,
+      onboarding_completed: false,
+    });
+    void refreshProfile();
     // Route gate routes to /(app)/onboarding when onboarding_completed=false.
   }
 
@@ -382,7 +420,14 @@ export default function SettingsScreen() {
         </View>
       </View>
 
-      <ScrollView contentContainerClassName="pb-12">
+      <ScrollView
+        contentContainerClassName="pb-12"
+        contentContainerStyle={{
+          width: "100%",
+          maxWidth: 760,
+          alignSelf: "center",
+        }}
+      >
         {/* Account section */}
         <View className="mt-5 px-4">
           <Text className="mb-2 text-[10px] font-semibold uppercase tracking-[0.18em] text-muted-foreground/70">
@@ -878,6 +923,47 @@ export default function SettingsScreen() {
                   : "All 14 characters can drop in occasionally."}
               </Text>
             )}
+            {tier !== "free" && currentChatMode === "ecosystem" ? (
+              <View className="mt-4 border-t border-border/50 pt-4">
+                <Text className="mb-2 text-[10px] font-bold uppercase tracking-[0.16em] text-muted-foreground/70">
+                  Conversation pace
+                </Text>
+                <View className="flex-row rounded-full bg-muted p-1">
+                  {ECOSYSTEM_SPEEDS.map((speed) => {
+                    const selected = ecosystemSpeed === speed;
+                    return (
+                      <Pressable
+                        key={speed}
+                        onPress={() => updateEcosystemSpeed(speed)}
+                        className={`min-h-11 flex-1 items-center justify-center rounded-full px-2 ${
+                          selected ? "bg-primary" : ""
+                        }`}
+                        accessibilityRole="button"
+                        accessibilityLabel={`Use ${speed} ecosystem pace`}
+                        accessibilityState={{ selected }}
+                      >
+                        <Text
+                          className={`text-xs font-semibold capitalize ${
+                            selected
+                              ? "text-primary-foreground"
+                              : "text-foreground"
+                          }`}
+                        >
+                          {speed}
+                        </Text>
+                      </Pressable>
+                    );
+                  })}
+                </View>
+                <Text className="mt-2 text-xs text-muted-foreground/70">
+                  {ecosystemSpeed === "fast"
+                    ? "Quick-fire replies with less waiting."
+                    : ecosystemSpeed === "relaxed"
+                      ? "Slower pauses for a more natural rhythm."
+                      : "Balanced timing between character replies."}
+                </Text>
+              </View>
+            ) : null}
           </View>
         </View>
 
@@ -1116,7 +1202,7 @@ export default function SettingsScreen() {
             <LegalRow icon={FileText} label="Terms of Service" url={`${SITE_URL}/terms`} />
           </View>
           <Text className="mt-4 text-center text-[10px] uppercase tracking-[0.18em] text-muted-foreground/50">
-            MyGang.ai · v0.0.1
+            MyGang.ai · v{Constants.expoConfig?.version ?? "0.1.0"}
           </Text>
         </View>
       </ScrollView>

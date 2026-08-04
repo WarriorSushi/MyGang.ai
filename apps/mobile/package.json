@@ -1,7 +1,7 @@
 {
   "name": "@mygang/mobile",
   "main": "expo-router/entry",
-  "version": "0.0.1",
+  "version": "0.1.0",
   "private": true,
   "scripts": {
     "start": "expo start",
@@ -11,8 +11,8 @@
     "web": "expo start --web",
     "lint": "expo lint",
     "typecheck": "tsc --noEmit",
-    "test:fast": "echo 'no fast tests for @mygang/mobile yet'",
-    "test": "echo 'no tests for @mygang/mobile yet'"
+    "test:fast": "vitest run",
+    "test": "vitest run"
   },
   "dependencies": {
     "@expo/vector-icons": "^15.0.3",
@@ -37,6 +37,7 @@
     "expo-image": "~3.0.11",
     "expo-linear-gradient": "~15.0.8",
     "expo-linking": "~8.0.11",
+    "expo-network": "~8.0.8",
     "expo-notifications": "^0.32.17",
     "expo-router": "~6.0.24",
     "expo-splash-screen": "~31.0.13",
@@ -66,6 +67,7 @@
     "eslint-config-expo": "~10.0.0",
     "prettier-plugin-tailwindcss": "^0.5.14",
     "tailwindcss": "^3.4.19",
-    "typescript": "~5.9.2"
+    "typescript": "~5.9.2",
+    "vitest": "^4.1.10"
   }
 }

@@ -1,6 +1,7 @@
 import { memo, useEffect, useRef, useState } from "react";
 import { Pressable, TextInput, View, Text } from "react-native";
 import { ArrowRight, X } from "lucide-react-native";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 
 const MAX_LEN = 2000;
 const COUNTER_THRESHOLD = 1500;
@@ -19,7 +20,13 @@ type ChatInputProps = {
   replyTarget?: ReplyTargetChip | null;
   onCancelReply?: () => void;
   cooldownPlaceholder?: string | null;
+  blockedNotice?: string | null;
+  draftUserId?: string | null;
 };
+
+function draftKey(userId: string): string {
+  return `mygang:chat-draft:${userId}`;
+}
 
 function ChatInputBase({
   onSend,
@@ -28,10 +35,14 @@ function ChatInputBase({
   replyTarget = null,
   onCancelReply,
   cooldownPlaceholder = null,
+  blockedNotice = null,
+  draftUserId = null,
 }: ChatInputProps) {
   const [text, setText] = useState("");
-  const [showWaitNotice, setShowWaitNotice] = useState(false);
+  const [waitNotice, setWaitNotice] = useState<string | null>(null);
+  const [draftReady, setDraftReady] = useState(false);
   const waitNoticeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const draftTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const trimmed = text.trim();
   const canSend = trimmed.length > 0 && !isSending && !sendBlocked;
   const showCounter = text.length >= COUNTER_THRESHOLD;
@@ -40,26 +51,81 @@ function ChatInputBase({
   useEffect(() => {
     return () => {
       if (waitNoticeTimerRef.current) clearTimeout(waitNoticeTimerRef.current);
+      if (draftTimerRef.current) clearTimeout(draftTimerRef.current);
     };
   }, []);
 
-  function showPreviousMessageNotice() {
-    setShowWaitNotice(true);
+  useEffect(() => {
+    let cancelled = false;
+    setDraftReady(false);
+    setText("");
+    if (!draftUserId) {
+      setText("");
+      setDraftReady(true);
+      return () => {
+        cancelled = true;
+      };
+    }
+
+    void AsyncStorage.getItem(draftKey(draftUserId))
+      .then((draft) => {
+        if (!cancelled && draft) {
+          setText((current) => current || draft.slice(0, MAX_LEN));
+        }
+      })
+      .finally(() => {
+        if (!cancelled) setDraftReady(true);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [draftUserId]);
+
+  useEffect(() => {
+    if (!draftReady || !draftUserId) return;
+    if (draftTimerRef.current) clearTimeout(draftTimerRef.current);
+    draftTimerRef.current = setTimeout(() => {
+      draftTimerRef.current = null;
+      const operation = text
+        ? AsyncStorage.setItem(draftKey(draftUserId), text)
+        : AsyncStorage.removeItem(draftKey(draftUserId));
+      void operation.catch(() => undefined);
+    }, 250);
+    return () => {
+      if (draftTimerRef.current) {
+        clearTimeout(draftTimerRef.current);
+        draftTimerRef.current = null;
+      }
+    };
+  }, [draftReady, draftUserId, text]);
+
+  function showTemporaryNotice(message: string) {
+    setWaitNotice(message);
     if (waitNoticeTimerRef.current) clearTimeout(waitNoticeTimerRef.current);
     waitNoticeTimerRef.current = setTimeout(() => {
       waitNoticeTimerRef.current = null;
-      setShowWaitNotice(false);
+      setWaitNotice(null);
     }, 2200);
   }
 
   function handleSend() {
-    if (!trimmed || sendBlocked) return;
+    if (!trimmed) return;
+    if (sendBlocked) {
+      showTemporaryNotice(
+        blockedNotice ?? "Sending is temporarily unavailable. Try again shortly.",
+      );
+      return;
+    }
     if (isSending) {
-      showPreviousMessageNotice();
+      showTemporaryNotice("Wait for the previous message to send.");
       return;
     }
     onSend(trimmed);
     setText("");
+    if (draftUserId) {
+      void AsyncStorage.removeItem(draftKey(draftUserId)).catch(() => undefined);
+    }
   }
 
   return (
@@ -102,12 +168,12 @@ function ChatInputBase({
           {remaining} chars left
         </Text>
       ) : null}
-      {showWaitNotice ? (
+      {waitNotice ? (
         <Text
           className="mb-1 pr-2 text-right text-[10px] text-muted-foreground"
           accessibilityLiveRegion="polite"
         >
-          Wait for the previous message to send.
+          {waitNotice}
         </Text>
       ) : null}
       <View className="flex-row items-end gap-2 rounded-[24px] border border-border bg-card-translucent pl-4 pr-1.5 py-1.5">
@@ -133,7 +199,7 @@ function ChatInputBase({
         />
         <Pressable
           onPress={handleSend}
-          disabled={!trimmed || sendBlocked}
+          disabled={!trimmed}
           className={`h-11 w-11 items-center justify-center rounded-full ${
             canSend ? "bg-primary" : "bg-muted"
           }`}

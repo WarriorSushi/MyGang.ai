@@ -71,14 +71,21 @@ export async function fetchAndroidSubscriptions(): Promise<ProductSubscription[]
  *
  * Returns the new tier ("basic"|"pro") on success, or null on failure.
  */
+export type AndroidPurchaseVerification = {
+  tier: "basic" | "pro";
+  acknowledged: boolean;
+};
+
 export async function verifyAndroidPurchase(args: {
   purchaseToken: string;
   productId: AndroidSku;
-}): Promise<"basic" | "pro" | null> {
+}): Promise<AndroidPurchaseVerification | null> {
   const { data: sessionData } = await supabase.auth.getSession();
   const accessToken = sessionData.session?.access_token;
   if (!accessToken) return null;
 
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 20_000);
   try {
     const res = await fetch(VERIFY_URL, {
       method: "POST",
@@ -87,16 +94,24 @@ export async function verifyAndroidPurchase(args: {
         Authorization: `Bearer ${accessToken}`,
       },
       body: JSON.stringify(args),
+      signal: controller.signal,
     });
     if (!res.ok) {
       const text = await res.text().catch(() => "");
       console.warn("[billing] verify failed:", res.status, text);
       return null;
     }
-    const data = (await res.json()) as { tier?: "basic" | "pro" };
-    return data.tier ?? null;
+    const data = (await res.json()) as {
+      tier?: "basic" | "pro";
+      acknowledged?: boolean;
+    };
+    return data.tier
+      ? { tier: data.tier, acknowledged: data.acknowledged === true }
+      : null;
   } catch (err) {
     console.warn("[billing] verifyAndroidPurchase threw:", err);
     return null;
+  } finally {
+    clearTimeout(timeout);
   }
 }

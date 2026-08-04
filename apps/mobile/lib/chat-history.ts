@@ -2,6 +2,7 @@ import { supabase } from "./supabase";
 import { type ChatMessage } from "../components/chat/message-item";
 
 const HISTORY_PAGE_SIZE = 50;
+const HISTORY_TIMEOUT_MS = 12_000;
 
 type ChatHistoryRow = {
   id: string;
@@ -42,7 +43,27 @@ export async function fetchChatHistoryPage(
     query = query.lt("created_at", before);
   }
 
-  const { data, error } = await query;
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), HISTORY_TIMEOUT_MS);
+  let data: unknown[] | null;
+  let error: { message: string } | null;
+  try {
+    const result = await query.abortSignal(controller.signal);
+    data = result.data as unknown[] | null;
+    error = result.error;
+  } catch (err) {
+    return {
+      messages: [],
+      hasMore: false,
+      nextBefore: null,
+      error:
+        err instanceof Error && err.name === "AbortError"
+          ? "Chat history took too long to load."
+          : "Chat history could not be loaded.",
+    };
+  } finally {
+    clearTimeout(timeout);
+  }
 
   if (error) {
     return {

@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { lazy, Suspense, useEffect, useState } from "react";
 import { Alert, Linking, Platform, Pressable, ScrollView, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
@@ -32,6 +32,16 @@ import { GradientText } from "../../components/gradient-text";
 import { SITE_URL, apiUrl } from "../../lib/config";
 import { openBillingPortal } from "../../lib/billing-portal";
 import { supabase } from "../../lib/supabase";
+import Constants, { ExecutionEnvironment } from "expo-constants";
+import type {
+  NativeBillingController,
+  NativeBillingStatus,
+} from "../../lib/native-billing-controller";
+import { useReducedMotion } from "../../lib/use-reduced-motion";
+
+const NativeAndroidBilling = lazy(
+  () => import("../../components/billing/native-android-billing"),
+);
 
 const CHECKOUT_URL = apiUrl("checkout");
 
@@ -112,14 +122,39 @@ const FAQS: { q: string; a: string }[] = [
 
 export default function PricingScreen() {
   const router = useRouter();
+  const reducedMotion = useReducedMotion();
   const { profile } = useAuth();
   const currentTier = getTierFromProfile(profile?.subscription_tier ?? null);
   const [openFaqIndex, setOpenFaqIndex] = useState<number | null>(null);
-  const [purchasing, setPurchasing] = useState(false);
+  const [webPurchasing, setWebPurchasing] = useState(false);
+  const [nativeController, setNativeController] =
+    useState<NativeBillingController | null>(null);
+  const [nativeStatus, setNativeStatus] = useState<NativeBillingStatus>({
+    busy: false,
+    connected: false,
+    loaded: false,
+    prices: {},
+  });
+  const isStandaloneAndroid =
+    Platform.OS === "android" &&
+    Constants.executionEnvironment !== ExecutionEnvironment.StoreClient;
+  const purchasing = webPurchasing || nativeStatus.busy;
 
   async function startSubscriptionPurchase(tier: "basic" | "pro") {
     if (purchasing) return;
-    setPurchasing(true);
+    if (isStandaloneAndroid) {
+      if (!nativeController) {
+        Alert.alert(
+          "Connecting to Google Play",
+          "The store is still starting. Wait a moment and try again.",
+        );
+        return;
+      }
+      await nativeController.purchase(tier);
+      return;
+    }
+
+    setWebPurchasing(true);
     try {
       const { data } = await supabase.auth.getSession();
       const token = data.session?.access_token;
@@ -128,14 +163,22 @@ export default function PricingScreen() {
         return;
       }
 
-      const res = await fetch(CHECKOUT_URL, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({ plan: tier }),
-      });
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), 20_000);
+      let res: Response;
+      try {
+        res = await fetch(CHECKOUT_URL, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({ plan: tier }),
+          signal: controller.signal,
+        });
+      } finally {
+        clearTimeout(timeout);
+      }
       const body = (await res.json().catch(() => ({}))) as {
         checkout_url?: string;
         error?: string;
@@ -154,7 +197,7 @@ export default function PricingScreen() {
       console.warn("[billing] checkout link failed:", err);
       Alert.alert("Couldn't open checkout", "Open mygang.ai/pricing in your browser.");
     } finally {
-      setPurchasing(false);
+      setWebPurchasing(false);
     }
   }
 
@@ -165,6 +208,14 @@ export default function PricingScreen() {
 
   return (
     <SafeAreaView className="flex-1 bg-background">
+      <Suspense fallback={null}>
+        {isStandaloneAndroid ? (
+          <NativeAndroidBilling
+            onControllerChange={setNativeController}
+            onStatusChange={setNativeStatus}
+          />
+        ) : null}
+      </Suspense>
       <View className="flex-row items-center justify-between border-b border-border px-5 pb-3 pt-12">
         <Pressable
           onPress={() => router.back()}
@@ -181,7 +232,14 @@ export default function PricingScreen() {
         <View className="w-16" />
       </View>
 
-      <ScrollView contentContainerClassName="pb-12">
+      <ScrollView
+        contentContainerClassName="pb-12"
+        contentContainerStyle={{
+          width: "100%",
+          maxWidth: 760,
+          alignSelf: "center",
+        }}
+      >
         <View className="px-5 pt-8">
           <View className="flex-row items-center gap-1.5 self-center rounded-full bg-primary/15 px-3 py-1.5">
             <Sparkles size={12} color="#5eead4" strokeWidth={2.5} />
@@ -210,7 +268,11 @@ export default function PricingScreen() {
             const isCurrent = currentTier === tierId;
             const features = FEATURES_BY_TIER[tierId];
             const hero = PLAN_HERO[tierId];
-            const price = PLAN_PRICE[tierId];
+            const nativePrice =
+              tierId === "free" ? undefined : nativeStatus.prices[tierId];
+            const price = nativePrice
+              ? { ...PLAN_PRICE[tierId], amount: nativePrice }
+              : PLAN_PRICE[tierId];
             const isPro = tierId === "pro";
             const isLowerThanCurrent = TIER_RANK[tierId] < TIER_RANK[currentTier];
             const isUpgrade = TIER_RANK[tierId] > TIER_RANK[currentTier];
@@ -326,6 +388,12 @@ export default function PricingScreen() {
                         className={`h-11 flex-row items-center justify-center gap-1.5 rounded-full ${
                           isPro ? "bg-primary" : "border border-border bg-card"
                         } ${purchasing ? "opacity-60" : ""}`}
+                        accessibilityRole="button"
+                        accessibilityLabel={`Get ${copy.label}`}
+                        accessibilityState={{
+                          disabled: purchasing,
+                          busy: purchasing,
+                        }}
                       >
                         <Text
                           className={`text-xs font-bold uppercase tracking-wider ${
@@ -349,7 +417,11 @@ export default function PricingScreen() {
             return (
               <Animated.View
                 key={tierId}
-                entering={FadeInDown.delay(i * 100).duration(280)}
+                entering={
+                  reducedMotion
+                    ? undefined
+                    : FadeInDown.delay(i * 100).duration(280)
+                }
               >
                 {isPro ? (
                   <LinearGradient
@@ -418,6 +490,9 @@ export default function PricingScreen() {
                   <Pressable
                     onPress={() => setOpenFaqIndex(isOpen ? null : i)}
                     className="flex-row items-center gap-3 px-5 py-4 active:bg-muted/30"
+                    accessibilityRole="button"
+                    accessibilityLabel={faq.q}
+                    accessibilityState={{ expanded: isOpen }}
                   >
                     <Text className="flex-1 text-sm font-semibold text-foreground">
                       {faq.q}
@@ -426,7 +501,7 @@ export default function PricingScreen() {
                   </Pressable>
                   {isOpen ? (
                     <Animated.View
-                      entering={FadeIn.duration(200)}
+                      entering={reducedMotion ? undefined : FadeIn.duration(200)}
                       className="px-5 pb-4"
                     >
                       <Text className="text-sm text-muted-foreground">
@@ -459,6 +534,9 @@ export default function PricingScreen() {
               className={`h-12 flex-row items-center justify-center gap-1.5 rounded-full bg-primary px-6 ${
                 purchasing ? "opacity-60" : ""
               }`}
+              accessibilityRole="button"
+              accessibilityLabel={currentTier === "pro" ? "Manage Pro" : "Get Pro"}
+              accessibilityState={{ disabled: purchasing, busy: purchasing }}
             >
               <Sparkles size={14} color="#1a1d24" strokeWidth={2.6} />
               <Text className="text-sm font-bold uppercase tracking-wider text-primary-foreground">
@@ -466,7 +544,7 @@ export default function PricingScreen() {
                   ? "Opening…"
                   : currentTier === "pro"
                     ? "Manage Pro"
-                    : "Get Pro $19.99/mo"}
+                    : `Get Pro ${nativeStatus.prices.pro ?? "$19.99"}/mo`}
               </Text>
               <ArrowRight size={14} color="#1a1d24" strokeWidth={2.6} />
             </Pressable>
@@ -474,7 +552,7 @@ export default function PricingScreen() {
         </View>
 
         <View className="mt-6 px-5">
-          <View className="flex-row items-center justify-center gap-4">
+          <View className="flex-row flex-wrap items-center justify-center gap-4">
             <View className="flex-row items-center gap-1">
               <Lock size={11} color="#a1a1aa" strokeWidth={2.5} />
               <Text className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
@@ -496,10 +574,36 @@ export default function PricingScreen() {
           </View>
         </View>
 
+        {isStandaloneAndroid ? (
+          <View className="mt-5 items-center px-5">
+            <Pressable
+              onPress={() => void nativeController?.restore()}
+              disabled={purchasing || !nativeController}
+              className={`min-h-11 items-center justify-center rounded-full border border-border px-5 ${
+                purchasing || !nativeController ? "opacity-50" : ""
+              }`}
+              accessibilityRole="button"
+              accessibilityLabel="Restore Google Play purchases"
+              accessibilityState={{
+                disabled: purchasing || !nativeController,
+                busy: nativeStatus.busy,
+              }}
+            >
+              <Text className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
+                Restore purchases
+              </Text>
+            </Pressable>
+          </View>
+        ) : null}
+
         <View className="mt-6 px-5">
           <Text className="text-center text-xs text-muted-foreground/70">
             {Platform.OS === "android"
-              ? "Checkout opens mygang.ai while Expo Go testing continues. Google Play Billing returns before release."
+              ? isStandaloneAndroid
+                ? nativeStatus.loaded && Object.keys(nativeStatus.prices).length === 0
+                  ? "Plans are not available for this installation. Install MyGang from an approved Google Play testing or production track."
+                  : "Payments and renewals are securely handled by Google Play."
+                : "Expo Go uses secure web checkout for development testing only."
               : "Subscriptions are managed via mygang.ai. Open the link to upgrade."}
           </Text>
         </View>

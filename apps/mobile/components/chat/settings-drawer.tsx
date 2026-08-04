@@ -11,6 +11,7 @@ import {
   View,
 } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
+import Constants from "expo-constants";
 import { useRouter } from "expo-router";
 import Animated, {
   FadeIn,
@@ -50,6 +51,10 @@ import { useAuth } from "../../lib/auth-context";
 import { supabase } from "../../lib/supabase";
 import { clearPersistedMessages } from "../../lib/chat-storage";
 import { ConfirmDialog } from "../confirm-dialog";
+import {
+  ECOSYSTEM_SPEEDS,
+  type EcosystemSpeed,
+} from "../../lib/ecosystem-speed";
 
 const STYLE_LABELS: Record<AvatarStyle, string> = {
   robots: "Robots",
@@ -79,9 +84,16 @@ function previewColorsForWallpaper(id: string): [string, string, string] {
 type SettingsDrawerProps = {
   visible: boolean;
   onClose: () => void;
+  ecosystemSpeed: EcosystemSpeed;
+  onEcosystemSpeedChange: (speed: EcosystemSpeed) => void;
 };
 
-export function SettingsDrawer({ visible, onClose }: SettingsDrawerProps) {
+export function SettingsDrawer({
+  visible,
+  onClose,
+  ecosystemSpeed,
+  onEcosystemSpeedChange,
+}: SettingsDrawerProps) {
   const router = useRouter();
   const { user, profile, refreshProfile, applyProfilePatch } = useAuth();
   const { colorScheme, setColorScheme } = useColorScheme();
@@ -122,7 +134,7 @@ export function SettingsDrawer({ visible, onClose }: SettingsDrawerProps) {
       return false;
     }
     applyProfilePatch({ [field]: value } as never);
-    await refreshProfile();
+    void refreshProfile();
     return true;
   }
 
@@ -395,7 +407,51 @@ export function SettingsDrawer({ visible, onClose }: SettingsDrawerProps) {
                     Ecosystem mode unlocks with Basic or Pro. Your gang talks
                     freely, reacts to each other, and the chat feels alive.
                   </Text>
-                ) : null}
+                ) : currentChatMode === "ecosystem" ? (
+                  <View className="mb-3 px-3">
+                    <Text className="mb-2 px-1 text-[10px] font-bold uppercase tracking-[0.16em] text-muted-foreground/70">
+                      Conversation pace
+                    </Text>
+                    <View className="flex-row rounded-full bg-muted p-1">
+                      {ECOSYSTEM_SPEEDS.map((speed) => {
+                        const selected = ecosystemSpeed === speed;
+                        return (
+                          <Pressable
+                            key={speed}
+                            onPress={() => onEcosystemSpeedChange(speed)}
+                            className={`min-h-11 flex-1 items-center justify-center rounded-full px-2 ${
+                              selected ? "bg-primary" : ""
+                            }`}
+                            accessibilityRole="button"
+                            accessibilityLabel={`Use ${speed} ecosystem pace`}
+                            accessibilityState={{ selected }}
+                          >
+                            <Text
+                              className={`text-xs font-semibold capitalize ${
+                                selected
+                                  ? "text-primary-foreground"
+                                  : "text-foreground"
+                              }`}
+                            >
+                              {speed}
+                            </Text>
+                          </Pressable>
+                        );
+                      })}
+                    </View>
+                    <Text className="mt-2 px-1 text-xs text-muted-foreground/70">
+                      {ecosystemSpeed === "fast"
+                        ? "Quick-fire replies with less waiting."
+                        : ecosystemSpeed === "relaxed"
+                          ? "Slower pauses for a more natural rhythm."
+                          : "Balanced timing between character replies."}
+                    </Text>
+                  </View>
+                ) : (
+                  <Text className="mb-3 px-4 text-xs text-muted-foreground/70">
+                    Just your selected gang chats with you.
+                  </Text>
+                )}
               </Section>
             </View>
 
@@ -545,7 +601,7 @@ export function SettingsDrawer({ visible, onClose }: SettingsDrawerProps) {
 
             <View className="mt-8 px-4">
               <Text className="text-center text-[10px] uppercase tracking-[0.18em] text-muted-foreground/50">
-                MyGang.ai · v0.0.1
+                MyGang.ai · v{Constants.expoConfig?.version ?? "0.1.0"}
               </Text>
             </View>
           </ScrollView>

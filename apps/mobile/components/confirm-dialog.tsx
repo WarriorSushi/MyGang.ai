@@ -57,7 +57,11 @@ export function ConfirmDialog({
 
   return (
     <Modal visible={visible} transparent animationType="fade" onRequestClose={handleCancel}>
-      <Pressable className="flex-1" onPress={handleCancel}>
+      <Pressable
+        className="flex-1"
+        onPress={handleCancel}
+        accessible={false}
+      >
         <BlurView
           intensity={20}
           tint={isLight ? "light" : "dark"}
@@ -74,6 +78,8 @@ export function ConfirmDialog({
         <View className="flex-1 items-center justify-center px-6">
           <Pressable
             onPress={(e) => e.stopPropagation()}
+            accessible={false}
+            accessibilityViewIsModal
             className="w-full max-w-md overflow-hidden rounded-3xl border border-border"
             style={{
               backgroundColor: isLight
@@ -101,7 +107,10 @@ export function ConfirmDialog({
                   strokeWidth={2.2}
                 />
               </View>
-              <Text className="text-center text-xl font-bold text-foreground">
+              <Text
+                className="text-center text-xl font-bold text-foreground"
+                accessibilityRole="header"
+              >
                 {title}
               </Text>
               <Text className="mt-2 text-center text-sm text-muted-foreground">
@@ -114,6 +123,8 @@ export function ConfirmDialog({
                 <Pressable
                   onPress={handleCancel}
                   className="h-11 items-center justify-center rounded-full border border-border bg-card"
+                  accessibilityRole="button"
+                  accessibilityLabel={cancelLabel}
                 >
                   <Text className="text-sm font-semibold text-foreground">
                     {cancelLabel}
@@ -127,6 +138,13 @@ export function ConfirmDialog({
                   style={{
                     backgroundColor: isDestructive ? "#dc2626" : "#3eddc0",
                   }}
+                  accessibilityRole="button"
+                  accessibilityLabel={buttonLabel}
+                  accessibilityHint={
+                    twoStep && !armed
+                      ? "Requires one more confirmation tap"
+                      : undefined
+                  }
                 >
                   <Text
                     className="text-sm font-bold uppercase tracking-wider"

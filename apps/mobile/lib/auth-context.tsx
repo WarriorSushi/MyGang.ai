@@ -3,6 +3,7 @@ import {
   useContext,
   useCallback,
   useEffect,
+  useRef,
   useState,
   type ReactNode,
 } from "react";
@@ -18,6 +19,7 @@ type AuthState = {
   session: Session | null;
   user: User | null;
   profile: ProfileRow | null;
+  profileError: string | null;
   isLoading: boolean;
   refreshProfile: () => Promise<void>;
   /**
@@ -34,6 +36,7 @@ const AuthContext = createContext<AuthState>({
   session: null,
   user: null,
   profile: null,
+  profileError: null,
   isLoading: true,
   refreshProfile: async () => {},
   applyProfilePatch: () => {},
@@ -42,25 +45,26 @@ const AuthContext = createContext<AuthState>({
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [session, setSession] = useState<Session | null>(null);
   const [profile, setProfile] = useState<ProfileRow | null>(null);
+  const [profileError, setProfileError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const profileRef = useRef<ProfileRow | null>(null);
+
+  useEffect(() => {
+    profileRef.current = profile;
+  }, [profile]);
 
   useEffect(() => {
     let mounted = true;
     let safetyTimer: ReturnType<typeof setTimeout> | null = null;
 
     async function loadProfile(userId: string): Promise<ProfileRow | null> {
-      try {
-        const { data, error } = await supabase
-          .from("profiles")
-          .select("*")
-          .eq("id", userId)
-          .maybeSingle();
-        if (error) console.warn("[auth] loadProfile error:", error);
-        return (data as ProfileRow | null) ?? null;
-      } catch (err) {
-        console.warn("[auth] loadProfile threw:", err);
-        return null;
-      }
+      const { data, error } = await supabase
+        .from("profiles")
+        .select("*")
+        .eq("id", userId)
+        .maybeSingle();
+      if (error) throw error;
+      return (data as ProfileRow | null) ?? null;
     }
 
     async function init() {
@@ -70,8 +74,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         if (!mounted) return;
         setSession(data.session);
         if (data.session?.user.id) {
-          const profileRow = await loadProfile(data.session.user.id);
-          if (mounted) setProfile(profileRow);
+          try {
+            const profileRow = await loadProfile(data.session.user.id);
+            if (mounted) {
+              setProfile(profileRow);
+              setProfileError(null);
+            }
+          } catch (err) {
+            console.warn("[auth] loadProfile failed:", err);
+            if (mounted) {
+              setProfileError(
+                "We couldn't load your account. Check your connection and try again.",
+              );
+            }
+          }
         }
       } catch (err) {
         console.warn("[auth] init failed:", err);
@@ -100,10 +116,28 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         if (!mounted) return;
         setSession(newSession);
         if (newSession?.user.id) {
-          const profileRow = await loadProfile(newSession.user.id);
-          if (mounted) setProfile(profileRow);
+          const needsInitialProfile =
+            profileRef.current?.id !== newSession.user.id;
+          if (needsInitialProfile) setIsLoading(true);
+          try {
+            const profileRow = await loadProfile(newSession.user.id);
+            if (mounted) {
+              setProfile(profileRow);
+              setProfileError(null);
+            }
+          } catch (err) {
+            console.warn("[auth] auth-change profile load failed:", err);
+            if (mounted && needsInitialProfile) {
+              setProfileError(
+                "We couldn't load your account. Check your connection and try again.",
+              );
+            }
+          } finally {
+            if (mounted && needsInitialProfile) setIsLoading(false);
+          }
         } else {
           setProfile(null);
+          setProfileError(null);
         }
       }
     );
@@ -117,17 +151,22 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const refreshProfile = useCallback(async () => {
     if (!session?.user.id) return;
-    const { data, error } = await supabase
-      .from("profiles")
-      .select("*")
-      .eq("id", session.user.id)
-      .maybeSingle();
-    if (error) {
-      console.warn("[auth] refreshProfile error:", error);
-      return;
-    }
-    if (data) {
-      setProfile(data as ProfileRow);
+    try {
+      const { data, error } = await supabase
+        .from("profiles")
+        .select("*")
+        .eq("id", session.user.id)
+        .maybeSingle();
+      if (error) throw error;
+      setProfile((data as ProfileRow | null) ?? null);
+      setProfileError(null);
+    } catch (err) {
+      console.warn("[auth] refreshProfile error:", err);
+      if (!profileRef.current) {
+        setProfileError(
+          "We couldn't load your account. Check your connection and try again.",
+        );
+      }
     }
   }, [session?.user.id]);
 
@@ -185,6 +224,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         session,
         user: session?.user ?? null,
         profile,
+        profileError,
         isLoading,
         refreshProfile,
         applyProfilePatch,

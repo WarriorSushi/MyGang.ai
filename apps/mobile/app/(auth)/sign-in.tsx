@@ -29,6 +29,7 @@ export default function SignInScreen() {
   });
 
   async function onSubmit(values: SignInInput) {
+    if (isSubmitting || isGoogleSubmitting) return;
     setIsSubmitting(true);
     const { error } = await supabase.auth.signInWithPassword({
       email: values.email,
@@ -43,6 +44,7 @@ export default function SignInScreen() {
   }
 
   async function onGooglePress() {
+    if (isSubmitting || isGoogleSubmitting) return;
     setIsGoogleSubmitting(true);
     const result = await signInWithGoogle();
     setIsGoogleSubmitting(false);
@@ -86,6 +88,7 @@ export default function SignInScreen() {
             label="Sign In"
             onPress={handleSubmit(onSubmit)}
             isLoading={isSubmitting}
+            disabled={isGoogleSubmitting}
             variant="gradient"
             upperCase
             iconRight={ArrowRight}
@@ -105,7 +108,7 @@ export default function SignInScreen() {
           label="Continue with Google"
           onPress={onGooglePress}
           isLoading={isGoogleSubmitting}
-          disabled={isSubmitting}
+          disabled={isSubmitting || isGoogleSubmitting}
           variant="solid"
           size="lg"
         />

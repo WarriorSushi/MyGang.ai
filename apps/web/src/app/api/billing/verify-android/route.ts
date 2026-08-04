@@ -2,6 +2,10 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createClientFromRequest } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { rateLimit } from '@/lib/rate-limit'
+import {
+    validateGooglePlaySubscription,
+    type GooglePlaySubscriptionV2,
+} from '@/lib/google-play-subscription'
 
 export const runtime = 'nodejs'
 export const maxDuration = 15
@@ -64,12 +68,13 @@ export async function POST(request: NextRequest) {
     }
 
     // Call Google Play Developer API to validate the purchase
-    const url = `https://androidpublisher.googleapis.com/androidpublisher/v3/applications/${ANDROID_PACKAGE}/purchases/subscriptions/${productId}/tokens/${purchaseToken}`
+    const url = `https://androidpublisher.googleapis.com/androidpublisher/v3/applications/${ANDROID_PACKAGE}/purchases/subscriptionsv2/tokens/${purchaseToken}`
 
     let googleResponse: Response
     try {
         googleResponse = await fetch(url, {
             headers: { Authorization: `Bearer ${accessToken}` },
+            signal: AbortSignal.timeout(8_000),
         })
     } catch (err) {
         console.error('[billing/verify-android] Google API fetch failed:', err)
@@ -82,24 +87,30 @@ export async function POST(request: NextRequest) {
         return NextResponse.json({ error: 'Purchase verification failed' }, { status: 400 })
     }
 
-    const purchaseInfo = (await googleResponse.json()) as {
-        expiryTimeMillis?: string
-        paymentState?: number
-        autoRenewing?: boolean
+    const purchaseInfo = (await googleResponse.json()) as GooglePlaySubscriptionV2
+    const validation = validateGooglePlaySubscription(purchaseInfo, productId, user.id)
+    if (!validation.ok) {
+        if (validation.status === 403) {
+            console.error('[billing/verify-android] purchase account mismatch')
+        }
+        return NextResponse.json({ error: validation.error }, { status: validation.status })
     }
+    const { expiry } = validation
 
-    // paymentState: 0=pending, 1=received, 2=free trial, 3=pending deferred upgrade
-    if (purchaseInfo.paymentState !== 1 && purchaseInfo.paymentState !== 2) {
-        return NextResponse.json({ error: 'Purchase not in valid state' }, { status: 400 })
+    // Older preview purchases may not have an obfuscated account ID. If this
+    // token is already known, it must still belong to the current user.
+    const admin = createAdminClient()
+    const { data: existingSubscription } = await admin
+        .from('subscriptions')
+        .select('user_id')
+        .eq('id', purchaseToken)
+        .maybeSingle()
+    if (existingSubscription?.user_id && existingSubscription.user_id !== user.id) {
+        return NextResponse.json({ error: 'Purchase belongs to another account' }, { status: 403 })
     }
-
-    const expiry = purchaseInfo.expiryTimeMillis
-        ? new Date(parseInt(purchaseInfo.expiryTimeMillis, 10)).toISOString()
-        : null
 
     // Update subscriptions table. The `id` column is `text primary key` (no
     // default) — use the purchase token as a stable, unique identifier.
-    const admin = createAdminClient()
     const { error: subError } = await admin.from('subscriptions').upsert(
         {
             id: purchaseToken,
@@ -127,7 +138,33 @@ export async function POST(request: NextRequest) {
         return NextResponse.json({ error: 'Could not update tier' }, { status: 500 })
     }
 
-    return NextResponse.json({ ok: true, tier, expiresAt: expiry })
+    let acknowledged = validation.acknowledged
+    if (!acknowledged) {
+        const acknowledgeUrl = `https://androidpublisher.googleapis.com/androidpublisher/v3/applications/${ANDROID_PACKAGE}/purchases/subscriptions/${productId}/tokens/${purchaseToken}:acknowledge`
+        try {
+            const acknowledgeResponse = await fetch(acknowledgeUrl, {
+                method: 'POST',
+                headers: {
+                    Authorization: `Bearer ${accessToken}`,
+                    'Content-Type': 'application/json',
+                },
+                body: '{}',
+                signal: AbortSignal.timeout(8_000),
+            })
+            acknowledged = acknowledgeResponse.ok
+            if (!acknowledgeResponse.ok) {
+                console.error(
+                    '[billing/verify-android] acknowledge failed:',
+                    acknowledgeResponse.status,
+                    await acknowledgeResponse.text().catch(() => ''),
+                )
+            }
+        } catch (err) {
+            console.error('[billing/verify-android] acknowledge threw:', err)
+        }
+    }
+
+    return NextResponse.json({ ok: true, tier, expiresAt: expiry, acknowledged })
 }
 
 /**
@@ -168,6 +205,7 @@ async function getGoogleAccessToken(serviceAccountB64: string): Promise<string> 
         method: 'POST',
         headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
         body: `grant_type=urn:ietf:params:oauth:grant-type:jwt-bearer&assertion=${encodeURIComponent(jwt)}`,
+        signal: AbortSignal.timeout(8_000),
     })
     if (!tokenRes.ok) {
         throw new Error(`Token mint failed: ${tokenRes.status} ${await tokenRes.text()}`)

@@ -96,7 +96,7 @@ export default function CustomNamesScreen() {
     applyProfilePatch({
       custom_character_names: Object.keys(trimmed).length > 0 ? trimmed : null,
     } as never);
-    await refreshProfile();
+    void refreshProfile();
     router.back();
   }
 
@@ -131,7 +131,14 @@ export default function CustomNamesScreen() {
         </Pressable>
       </View>
 
-      <ScrollView contentContainerClassName="px-4 py-4 pb-12">
+      <ScrollView
+        contentContainerClassName="px-4 py-4 pb-12"
+        contentContainerStyle={{
+          width: "100%",
+          maxWidth: 720,
+          alignSelf: "center",
+        }}
+      >
         {tier === "free" ? (
           <Pressable
             onPress={() => router.push("/(app)/pricing")}

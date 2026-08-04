@@ -1,5 +1,5 @@
 import { memo, useMemo } from "react";
-import { Pressable, Text, View } from "react-native";
+import { Alert, Linking, Pressable, Text, View } from "react-native";
 import { Image } from "expo-image";
 import { Heart, RefreshCcw, Reply } from "lucide-react-native";
 import { useColorScheme } from "nativewind";
@@ -10,6 +10,7 @@ import {
 } from "@mygang/shared";
 
 import { bubbleBgForCharacter, personaNameColor } from "../../lib/bubble-colors";
+import { splitMessageLinks } from "../../lib/message-links";
 
 const SITE_URL = "https://mygang.ai";
 const HEART_EMOJI = "❤️"; // ❤️
@@ -182,6 +183,30 @@ function MessageItemBase({
   const isHearted = message.reaction === HEART_EMOJI;
   const isFailed = message.deliveryStatus === "failed";
   const isSending = message.deliveryStatus === "sending";
+  const contentParts = useMemo(
+    () => splitMessageLinks(message.content),
+    [message.content],
+  );
+
+  const renderedContent = contentParts.map((part, index) =>
+    part.type === "text" ? (
+      part.value
+    ) : (
+      <Text
+        key={`${part.url}-${index}`}
+        className="font-semibold underline"
+        accessibilityRole="link"
+        accessibilityLabel={`Open link ${part.value}`}
+        onPress={() => {
+          void Linking.openURL(part.url).catch(() => {
+            Alert.alert("Couldn't open link", "The link could not be opened on this device.");
+          });
+        }}
+      >
+        {part.value}
+      </Text>
+    ),
+  );
 
   const quotedColor = quotedMessage ? quotedSpeakerColor : null;
   const quotedName = quotedMessage ? quotedSpeakerName : null;
@@ -249,7 +274,7 @@ function MessageItemBase({
         <Pressable
           onLongPress={onLongPress}
           delayLongPress={350}
-          style={radii}
+          style={{ ...radii, maxWidth: 560 }}
           className={`max-w-[80%] px-4 py-2 active:opacity-90 ${
             isSending ? "bg-muted" : "bg-primary"
           }`}
@@ -260,7 +285,7 @@ function MessageItemBase({
               isSending ? "text-muted-foreground" : "text-primary-foreground"
             }`}
           >
-            {message.content}
+            {renderedContent}
           </Text>
           {message.reaction ? (
             <Text className="mt-1 text-base">{message.reaction}</Text>
@@ -337,7 +362,7 @@ function MessageItemBase({
       ) : (
         <View className="h-8 w-8" />
       )}
-      <View className="max-w-[78%]">
+      <View className="max-w-[78%]" style={{ maxWidth: 560 }}>
         {showHeader ? (
           <View className="mb-1 flex-row items-baseline gap-1.5">
             <Text
@@ -360,7 +385,7 @@ function MessageItemBase({
           className="px-4 py-2 active:opacity-90"
         >
           {quotedBlock}
-          <Text className="text-base text-foreground">{message.content}</Text>
+          <Text className="text-base text-foreground">{renderedContent}</Text>
           {message.reaction ? (
             <Text className="mt-1 text-base">{message.reaction}</Text>
           ) : null}

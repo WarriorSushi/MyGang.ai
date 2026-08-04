@@ -3,6 +3,7 @@ import {
   KeyboardAvoidingView,
   Platform,
   ScrollView,
+  View,
   type ScrollViewProps,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -28,7 +29,7 @@ export function AuthScreenFrame({
           contentContainerClassName={contentClassName}
           keyboardShouldPersistTaps={keyboardShouldPersistTaps}
         >
-          {children}
+          <View className="w-full max-w-xl self-center">{children}</View>
         </ScrollView>
       </KeyboardAvoidingView>
     </SafeAreaView>

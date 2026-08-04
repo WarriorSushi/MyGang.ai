@@ -25,7 +25,7 @@ const { width: SCREEN_WIDTH } = Dimensions.get("window");
 const CARD_GAP = 12;
 // Card occupies 86% of viewport width — leaves ~14% for the next card to peek
 // (split between the start of next + end of prev, indicating "swipe for more").
-const CARD_W = Math.round(SCREEN_WIDTH * 0.86);
+const CARD_W = Math.min(Math.round(SCREEN_WIDTH * 0.86), 520);
 const CARD_FULL = CARD_W + CARD_GAP;
 // Center-snap padding so each card centers in the viewport when settled.
 const SIDE_PADDING = Math.round((SCREEN_WIDTH - CARD_W) / 2);
@@ -73,7 +73,13 @@ function PackCard({
   const heroUrl = `${SITE_URL}${resolveAvatarUrl(hero.id, style)}`;
 
   return (
-    <Pressable onPress={onSelect} style={{ width: CARD_W }}>
+    <Pressable
+      onPress={onSelect}
+      style={{ width: CARD_W }}
+      accessibilityRole="button"
+      accessibilityLabel={`${STYLE_LABEL[style]} avatar pack. ${STYLE_TAGLINE[style]}`}
+      accessibilityState={{ selected: isSelected }}
+    >
       {/* Outer halo wrapper — simulates ring-[3px] ring-primary/35 */}
       <View
         className={`rounded-[28px] ${

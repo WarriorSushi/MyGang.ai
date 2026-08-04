@@ -27,7 +27,12 @@ export function WelcomeStep({ onNext, onLogin }: WelcomeStepProps) {
           iconRight={ArrowRight}
         />
         {onLogin ? (
-          <Pressable className="mt-5 self-center" onPress={onLogin}>
+          <Pressable
+            className="mt-5 self-center"
+            onPress={onLogin}
+            accessibilityRole="button"
+            accessibilityLabel="Sign in to an existing account"
+          >
             <Text className="text-[10px] font-semibold uppercase tracking-[0.18em] text-muted-foreground/70">
               Already have an account? Log in
             </Text>

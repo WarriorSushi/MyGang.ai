@@ -24,6 +24,10 @@ export function CharacterCard({
       className={`mb-3 flex-row items-center rounded-xl border-2 p-3 ${
         selected ? "border-primary bg-card" : "border-border bg-background"
       }`}
+      accessibilityRole="button"
+      accessibilityLabel={`${character.name}. ${character.vibe}`}
+      accessibilityHint={selected ? "Double tap to remove from your gang" : "Double tap to add to your gang"}
+      accessibilityState={{ selected }}
     >
       <Image
         source={{ uri: avatarUrl }}

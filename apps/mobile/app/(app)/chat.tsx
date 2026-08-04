@@ -1,11 +1,12 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { Alert, Pressable, Share, Text, View } from "react-native";
+import { Alert, AppState, Pressable, Share, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { KeyboardAvoidingView } from "react-native-keyboard-controller";
 import { useRouter } from "expo-router";
 import { Gesture, GestureDetector } from "react-native-gesture-handler";
 import * as Clipboard from "expo-clipboard";
 import { runOnJS } from "react-native-reanimated";
+import { useNetworkState } from "expo-network";
 import {
   CHARACTERS,
   applyAvatarStyleToGang,
@@ -45,6 +46,14 @@ import { SettingsDrawer } from "../../components/chat/settings-drawer";
 import { MemoryVaultDrawer } from "../../components/chat/memory-vault-drawer";
 import { PurchaseCelebration } from "../../components/chat/purchase-celebration";
 import { type ChatMessage } from "../../components/chat/message-item";
+import {
+  getEcosystemPacingMultiplier,
+  type EcosystemSpeed,
+} from "../../lib/ecosystem-speed";
+import {
+  loadEcosystemSpeed,
+  saveEcosystemSpeed,
+} from "../../lib/ecosystem-speed-storage";
 
 const MAX_EVENT_DELAY_MS = 5_000;
 const MAX_TURN_PRESENTATION_MS = 30_000;
@@ -73,6 +82,12 @@ export default function ChatScreen() {
   const [celebrationPlan, setCelebrationPlan] = useState<"basic" | "pro" | null>(
     null,
   );
+  const [ecosystemSpeed, setEcosystemSpeed] =
+    useState<EcosystemSpeed>("normal");
+  const networkState = useNetworkState();
+  const isOffline =
+    networkState.isConnected === false ||
+    networkState.isInternetReachable === false;
   const userIdRef = useRef<string | null>(null);
   const messagesRef = useRef<ChatMessage[]>([]);
   const isWaitingRef = useRef(false);
@@ -107,6 +122,32 @@ export default function ChatScreen() {
   useEffect(() => {
     messagesRef.current = messages;
   }, [messages]);
+
+  useEffect(() => {
+    let mounted = true;
+    if (!user?.id) {
+      setEcosystemSpeed("normal");
+      return () => {
+        mounted = false;
+      };
+    }
+    void loadEcosystemSpeed(user.id).then((speed) => {
+      if (mounted) setEcosystemSpeed(speed);
+    });
+    return () => {
+      mounted = false;
+    };
+  }, [user?.id]);
+
+  const updateEcosystemSpeed = useCallback(
+    (speed: EcosystemSpeed) => {
+      setEcosystemSpeed(speed);
+      if (user?.id) {
+        void saveEcosystemSpeed(user.id, speed).catch(() => undefined);
+      }
+    },
+    [user?.id],
+  );
 
   useEffect(() => {
     isMountedRef.current = true;
@@ -236,6 +277,7 @@ export default function ChatScreen() {
     () => allCharacters.filter((c) => gangIds.includes(c.id)),
     [allCharacters, gangIds]
   );
+  const pacingMultiplier = getEcosystemPacingMultiplier(ecosystemSpeed);
 
   // Render incoming events with their delay timing.
   // - "typing_ghost" events show "X is typing..." for `delay` ms.
@@ -246,12 +288,17 @@ export default function ChatScreen() {
       let cumulative = 0;
       events.forEach((event) => {
         const eventDelay = Math.min(
-          MAX_EVENT_DELAY_MS,
-          Math.max(0, Number.isFinite(event.delay) ? event.delay : 0),
+          MAX_EVENT_DELAY_MS * pacingMultiplier,
+          Math.max(
+            0,
+            Number.isFinite(event.delay)
+              ? event.delay * pacingMultiplier
+              : 0,
+          ),
         );
         const fireAt = cumulative;
         cumulative = Math.min(
-          MAX_TURN_PRESENTATION_MS,
+          MAX_TURN_PRESENTATION_MS * pacingMultiplier,
           cumulative + eventDelay,
         );
 
@@ -297,7 +344,7 @@ export default function ChatScreen() {
         onComplete?.();
       }, cumulative + 100);
     },
-    [scheduleTurnTimer, updateWaiting]
+    [pacingMultiplier, scheduleTurnTimer, updateWaiting]
   );
 
   // Free tier cannot use ecosystem mode (server returns 403). Mirror the web
@@ -511,11 +558,12 @@ export default function ChatScreen() {
           result.data.turn_id ?? `auto-${sourceUserMessageId}`,
           preparedEvents,
         );
-      }, delayMs);
+      }, delayMs * pacingMultiplier);
     },
     [
       chatMode,
       lowCostMode,
+      pacingMultiplier,
       persistRenderedEventsForTurn,
       prepareEvents,
       scheduleEvents,
@@ -775,6 +823,7 @@ export default function ChatScreen() {
 
   const handleReact = useCallback(
     async (msg: ChatMessage, emoji: string) => {
+      const previousReaction = msg.reaction ?? "";
       // Update the local message with the reaction
       setMessages((prev) =>
         prev.map((m) => (m.id === msg.id ? { ...m, reaction: emoji } : m))
@@ -787,6 +836,17 @@ export default function ChatScreen() {
         .eq("client_message_id", msg.id);
       if (error) {
         console.warn("[chat] could not persist reaction:", error.message);
+        setMessages((prev) =>
+          prev.map((m) =>
+            m.id === msg.id
+              ? { ...m, reaction: previousReaction || undefined }
+              : m,
+          ),
+        );
+        Alert.alert(
+          "Reaction not saved",
+          "Your connection changed before the reaction could be saved. Try again.",
+        );
       }
     },
     [user?.id]
@@ -816,6 +876,15 @@ export default function ChatScreen() {
     setHistoryCursor(page.nextBefore);
     if (page.messages.length > 0) setMessages(page.messages);
   }, [user?.id]);
+
+  useEffect(() => {
+    const subscription = AppState.addEventListener("change", (state) => {
+      if (state === "active" && !isWaitingRef.current && !isOffline) {
+        void handleRefreshHistory();
+      }
+    });
+    return () => subscription.remove();
+  }, [handleRefreshHistory, isOffline]);
 
   const handleLoadOlderHistory = useCallback(async () => {
     if (!user?.id || !historyCursor || loadingOlder) return;
@@ -908,6 +977,8 @@ export default function ChatScreen() {
           <SettingsDrawer
             visible
             onClose={closeSettings}
+            ecosystemSpeed={ecosystemSpeed}
+            onEcosystemSpeedChange={updateEcosystemSpeed}
           />
         ) : null}
         {memoryVaultOpen ? (
@@ -956,6 +1027,19 @@ export default function ChatScreen() {
                     } left this window. Tap to see plans.`}
               </Text>
             </Pressable>
+          ) : null}
+          {isOffline ? (
+            <View
+              className="mx-3 mt-3 rounded-2xl border border-amber-400/30 bg-amber-400/10 px-3 py-2"
+              accessibilityRole="alert"
+            >
+              <Text className="text-xs font-bold uppercase tracking-[0.16em] text-amber-300">
+                {"You're offline"}
+              </Text>
+              <Text className="mt-1 text-sm text-foreground">
+                {"Keep typing—your draft is saved. Send will return when you're connected."}
+              </Text>
+            </View>
           ) : null}
           {showResumedPill && messages.length > 0 ? (
             <View className="self-center mt-3 mb-1 rounded-full border border-border bg-card-translucent px-3 py-1.5">
@@ -1015,10 +1099,20 @@ export default function ChatScreen() {
           <ChatInput
             onSend={handleSend}
             isSending={isWaiting}
-            sendBlocked={Boolean(cooldownLabel)}
+            sendBlocked={Boolean(cooldownLabel) || isOffline}
             replyTarget={replyChipProps}
             onCancelReply={() => setReplyTarget(null)}
-            cooldownPlaceholder={cooldownLabel}
+            cooldownPlaceholder={
+              isOffline ? "Offline — draft saved" : cooldownLabel
+            }
+            blockedNotice={
+              isOffline
+                ? "You're offline. Your draft is saved."
+                : cooldownLabel
+                  ? `${cooldownLabel}. Try again when it ends.`
+                  : null
+            }
+            draftUserId={user?.id ?? null}
           />
           <AiDisclaimer />
         </SafeAreaView>
@@ -1072,6 +1166,8 @@ export default function ChatScreen() {
           <SettingsDrawer
             visible
             onClose={closeSettings}
+            ecosystemSpeed={ecosystemSpeed}
+            onEcosystemSpeedChange={updateEcosystemSpeed}
           />
       ) : null}
 

@@ -106,7 +106,7 @@ export default function EditGangScreen() {
         preferred_squad: selectedIds,
         pending_squad_downgrade: false,
       } as never);
-      await refreshProfile();
+      void refreshProfile();
       router.back();
     } catch (err) {
       Alert.alert(

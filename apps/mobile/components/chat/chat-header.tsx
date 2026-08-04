@@ -1,5 +1,5 @@
 import { memo, useEffect, useState } from "react";
-import { Image, Pressable, Text, View } from "react-native";
+import { Image, Pressable, Text, useWindowDimensions, View } from "react-native";
 import Animated, {
   useAnimatedStyle,
   useSharedValue,
@@ -48,6 +48,8 @@ function ChatHeaderBase({
   const router = useRouter();
   const { colorScheme } = useColorScheme();
   const reducedMotion = useReducedMotion();
+  const { width } = useWindowDimensions();
+  const visibleAvatarCount = width < 360 ? 2 : width < 400 ? 3 : width < 480 ? 4 : 6;
   const [isRefreshing, setIsRefreshing] = useState(false);
   const refreshRotation = useSharedValue(0);
   const typingPulse = useSharedValue(1);
@@ -103,7 +105,7 @@ function ChatHeaderBase({
     <View className="min-h-[56px] flex-row items-center justify-between border-b border-border bg-background px-3 py-2">
       <View className="flex-1 flex-row items-center pr-2">
         <View className="h-10 flex-row items-center">
-          {characters.slice(0, 6).map((c, index) => {
+          {characters.slice(0, visibleAvatarCount).map((c, index) => {
             const url = `${SITE_URL}${resolveAvatarUrl(c.id, avatarStyle)}`;
             return (
               <Pressable
@@ -116,7 +118,7 @@ function ChatHeaderBase({
                 style={{
                   backgroundColor: c.color,
                   marginLeft: index === 0 ? 0 : -12,
-                  zIndex: characters.length - index,
+                  zIndex: visibleAvatarCount - index,
                   shadowColor: c.color,
                   shadowOpacity: 0.25,
                   shadowRadius: 8,

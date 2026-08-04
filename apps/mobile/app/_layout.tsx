@@ -1,12 +1,13 @@
 import { Stack, useLocalSearchParams, useRouter, useSegments } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import "react-native-reanimated";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import * as Notifications from "expo-notifications";
 import * as Sentry from "@sentry/react-native";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { KeyboardProvider } from "react-native-keyboard-controller";
 import { useColorScheme } from "nativewind";
+import { Pressable, Text, View } from "react-native";
 
 import "../global.css";
 import { AuthProvider, useAuth } from "../lib/auth-context";
@@ -14,6 +15,7 @@ import { LoadingScreen } from "../components/loading-screen";
 import { configureForegroundHandler } from "../lib/push";
 import { AppErrorBoundary } from "../components/app-error-boundary";
 import { SENTRY_DSN } from "../lib/config";
+import { supabase } from "../lib/supabase";
 
 Sentry.init({
   dsn: SENTRY_DSN,
@@ -23,14 +25,22 @@ Sentry.init({
 });
 
 function RouteGate() {
-  const { session, profile, isLoading } = useAuth();
+  const { session, profile, profileError, isLoading, refreshProfile } = useAuth();
   const { colorScheme } = useColorScheme();
   const segments = useSegments();
   const params = useLocalSearchParams<{ retake?: string }>();
   const router = useRouter();
+  const [isRetryingProfile, setIsRetryingProfile] = useState(false);
+
+  async function retryProfile() {
+    if (isRetryingProfile) return;
+    setIsRetryingProfile(true);
+    await refreshProfile();
+    setIsRetryingProfile(false);
+  }
 
   useEffect(() => {
-    if (isLoading) return;
+    if (isLoading || (session && profileError)) return;
     const segs = segments as string[];
     const inAuthGroup = segs[0] === "(auth)";
     const inAppGroup = segs[0] === "(app)";
@@ -59,7 +69,7 @@ function RouteGate() {
         router.replace("/(app)");
       }
     }
-  }, [session, profile, isLoading, segments, params.retake, router]);
+  }, [session, profile, profileError, isLoading, segments, params.retake, router]);
 
   // Foreground notification config + tap-to-open chat deep link.
   // Lives outside the auth gate so the listener is always wired; if the user
@@ -77,6 +87,46 @@ function RouteGate() {
 
   if (isLoading) {
     return <LoadingScreen label="Waking up the gang…" />;
+  }
+
+  if (session && profileError) {
+    return (
+      <View className="flex-1 items-center justify-center bg-background px-6">
+        <View className="w-full max-w-xl rounded-3xl border border-border bg-card p-6">
+          <Text className="text-2xl font-black text-foreground">
+            Your account is still here
+          </Text>
+          <Text className="mt-2 text-base leading-6 text-muted-foreground">
+            {profileError}{" We won't send you through setup again until your account has loaded safely."}
+          </Text>
+          <Pressable
+            onPress={() => void retryProfile()}
+            disabled={isRetryingProfile}
+            className={`mt-6 min-h-12 items-center justify-center rounded-full bg-primary px-5 ${
+              isRetryingProfile ? "opacity-60" : ""
+            }`}
+            accessibilityRole="button"
+            accessibilityLabel="Retry loading account"
+            accessibilityState={{
+              disabled: isRetryingProfile,
+              busy: isRetryingProfile,
+            }}
+          >
+            <Text className="font-bold text-primary-foreground">
+              {isRetryingProfile ? "Trying…" : "Try again"}
+            </Text>
+          </Pressable>
+          <Pressable
+            onPress={() => void supabase.auth.signOut()}
+            className="mt-3 min-h-11 items-center justify-center rounded-full border border-border px-5"
+            accessibilityRole="button"
+            accessibilityLabel="Sign out"
+          >
+            <Text className="font-semibold text-muted-foreground">Sign out</Text>
+          </Pressable>
+        </View>
+      </View>
+    );
   }
 
   return (

@@ -2,7 +2,7 @@
   "expo": {
     "name": "MyGang",
     "slug": "mygang-mobile",
-    "version": "0.0.1",
+    "version": "0.1.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
     "scheme": "mygang",
